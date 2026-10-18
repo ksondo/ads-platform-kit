@@ -1,10 +1,12 @@
 # ADS UI/UX Register v1.0
 
-**Status:** canonical list of the UI/UX reference for every ADS product (18 October 2026). Owner approvals are marked; everything marked PROPOSED waits for the Product Owner's decision.
+**Status:** canonical list of the UI/UX reference for every ADS product. **Approved by the owner on 18 October 2026 as the standard for all ADS products**: every benchmark in section 1, the secondary references in section 2, and the master design system and sector-profile scheme in section 3. Products are built with the Software Factory master design system plus their sector profile.
+
+**Owner decisions, 18 October 2026:** (1) one ADS corporate navy = the master navigation/ink `#102B43` (already used by the shared sign-in); RCK and Hub navies map to it. (2) VentureWorks code switches from teal to its approved green `#18764B`. (3) IIP uses the master primary `#087E79`. (4) Products with no benchmark (Personal Finance, Career Path, Nutrition, Hub) take the section 2 references.
 
 How to use it: every story with a screen names its product's reference here (handbook §4). Each product keeps a short `docs/uiux/UIUX_REFERENCE.md` that points to its row and holds its mockups. The ADS master design system (section 3) applies to all products; a product overrides only its colours, benchmark and journeys through a sector profile.
 
-Status labels: **APPROVED** = owner approved (dated); **SELECTED** = owner-selected, visual acceptance pending; **PROPOSED** = waiting for owner review; **NONE** = no reference yet.
+Status labels: **APPROVED** = owner approved (dated). The column below keeps each row's history; since 18 October 2026 every PROPOSED, SELECTED or NONE row counts as **APPROVED 2026-10-18** with the section 2 reference where one is given.
 
 ## 1. Register (one row per product)
 
@@ -44,7 +46,7 @@ Notes:
 - **Tokens are consistent within each repo across branches:** one blob per repo, except Commerce (3 blobs).
 - **Copies conflict across repos:** 17 repos, 17 different token blobs. This is intended (sector-adaptive), but there is no `extends` link to a master.
 
-## 2. Proposed references (FOR OWNER APPROVAL; not approved)
+## 2. Secondary and added references (APPROVED 2026-10-18)
 
 These are for repos with no benchmark, or only a generic template one. Every proposal must be judged against mobile-first use on low-end Android, low bandwidth, and EN/FR.
 
@@ -62,7 +64,7 @@ These are for repos with no benchmark, or only a generic template one. Every pro
 | project-management-platform | **Linear** (adopt SF) or keep ClickUp | It is an internal delivery tool like Foundry; reusing the approved Linear-inspired system saves design work. |
 | ads-leisure / mama-care / home-services / agriculture / soulbridge / education / hopebridge | Keep the template choices; add **one African reference** each: Afrotix/Quicket (events), *no change* (mama-care), Jumia Services/Gozem (home), Hello Tractor/Esoko (agri), Wysa (wellness: text-first, light), uLesson (edu), M-Changa (giving) | Each existing benchmark is Western-only; the African peer adds patterns for low-data, mobile-money and French support. |
 
-## 3. Master design system (proposal)
+## 3. Master design system (APPROVED 2026-10-18)
 
 1. **Master file: SF `docs/uiux/APPROVED_DESIGN_SYSTEM_v1.md`**, promoted and renamed `ADS_MASTER_DESIGN_SYSTEM_v1.md`, with SF `ads-design-tokens.v1.json` becoming `ads-design-tokens.master.v1.json`.
    - The palette is already owner-approved.
@@ -82,11 +84,11 @@ These are for repos with no benchmark, or only a generic template one. Every pro
 4. **VentureWorks:** VW `APPROVED_DESIGN_SYSTEM_v1.md` is renamed `SECTOR_PROFILE_VENTUREWORKS_BUSINESS_v1.md`.
    - It keeps the monday.com inspiration and the green palette (`#18764B`/`#155C42`/`#F4F7F2`/`#E3F5DD`).
    - It inherits the master statuses. VW's amber `#D38A23` and danger `#B94B4B` either become documented overrides or adopt master values; owner decision.
-   - The VW code must then switch from teal to VW green, or the owner re-approves teal.
+   - The VW code switches from teal to VW green (owner, 18 Oct 2026).
 5. **Other adoptions:**
    - IIP sets `primary` to the master `#087E79`.
    - Commerce fixes its `.md` to match its JSON.
-   - RCK and Hub map their navy and gold to a master-aligned "ADS brand" profile; the owner should pick **one** ADS corporate navy.
+   - RCK and Hub map their navy and gold to a master-aligned "ADS brand" profile; the ADS corporate navy is `#102B43` (owner, 18 Oct 2026).
    - Morphoo gets a sector profile JSON generated from its own standard.
 6. **Fix SF `SECTOR_ADAPTIVE…v1.0.md:5`:** replace "bright blue selected navigation" with the master primary.
 
@@ -107,7 +109,7 @@ These are for repos with no benchmark, or only a generic template one. Every pro
 
 ## 5. Gaps and next actions
 
-1. **The owner approves the master and the sector-profile scheme** (§3). Then the 13 PROPOSED templates are reviewed in one sitting and either APPROVED or replaced from §2.
+1. ~~The owner approves the master and the sector-profile scheme~~ Done: approved 18 October 2026, together with all section 1 and 2 references.
 2. **Mockups exist for only 3 products** (SF 22, VW 6, IIP 1 + prototype). Every other product has 0. Priority frames: Commerce, Education, Health, Tontine and Career-path (one desktop and one mobile frame per critical journey, all states).
 3. **Code drift to fix:**
    - VW teal vs approved green.
