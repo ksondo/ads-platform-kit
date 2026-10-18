@@ -58,7 +58,7 @@ export function createMocks({ webhookSecret = DEFAULT_WEBHOOK_SECRET, log = cons
 }
 
 function controlRoutes(engine) {
-  const PROVIDERS = ['momo', 'bank', 'sms', 'email', 'kyc', 'insurer', 'registry', 'dispatch', 'rag'];
+  const PROVIDERS = ['momo', 'momo_refund', 'bank', 'sms', 'email', 'kyc', 'insurer', 'registry', 'dispatch', 'rag'];
   const op = id => {
     const found = engine.state.operations.get(id);
     if (!found) throw new MockError(404, 'NOT_FOUND');

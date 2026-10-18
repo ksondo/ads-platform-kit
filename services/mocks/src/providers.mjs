@@ -43,6 +43,17 @@ const OUTCOMES = {
       timeout: [],
     })[o],
   },
+  // Refund (reversal / disbursement back to the payer) of a SUCCESSFUL collection.
+  momo_refund: {
+    allowed: ['refunded', 'failed', 'timeout', 'duplicate'],
+    magic: a => ({ '0005': 'failed', '0006': 'timeout', '0007': 'duplicate' })[tail(a.msisdn)],
+    steps: (o, opts, id) => ({
+      refunded: [{ status: 'REFUNDED', patch: { financial_transaction_id: `TEST-RF-${id.slice(-6)}`, refunded_at: new Date().toISOString() } }],
+      duplicate: [{ status: 'REFUNDED', patch: { financial_transaction_id: `TEST-RF-${id.slice(-6)}`, refunded_at: new Date().toISOString() } }],
+      failed: [{ status: 'FAILED', patch: { reason: opts.reason ?? 'REFUND_REJECTED' } }],
+      timeout: [],
+    })[o],
+  },
   bank: {
     allowed: ['credited', 'short_credit', 'no_agent', 'not_credited'],
     steps: (o, opts, id, body) => {
@@ -91,6 +102,22 @@ const OUTCOMES = {
   },
 };
 
+// Refunded so far (REFUNDED) and still refundable (pending refunds hold their amount).
+function refundTotals(engine, payment) {
+  let refunded = 0;
+  let held = 0;
+  for (const op of engine.state.operations.values()) {
+    if (op.provider !== 'momo_refund' || op.data.payment_id !== payment.id) continue;
+    if (op.status === 'REFUNDED') refunded += op.data.amount;
+    else if (op.status === 'PENDING') held += op.data.amount;
+  }
+  const amount = payment.data.amount;
+  return {
+    refunded_amount: refunded, refund_pending_amount: held, refundable_amount: amount - refunded - held,
+    refund_status: refunded === 0 ? 'NONE' : refunded >= amount ? 'REFUNDED' : 'PARTIALLY_REFUNDED',
+  };
+}
+
 function startAsync(engine, { provider, kind, prefix, body, attrs, fallback, initial, data }) {
   const table = OUTCOMES[provider === 'insurer' ? 'claim' : provider];
   const callbackUrl = optionalUrl(body.callbackUrl);
@@ -126,7 +153,33 @@ export function providerRoutes() {
     });
     return { status: 202, body: engine.view(op) };
   }]);
-  r.push(['GET', /^\/momo\/v1\/requests\/([\w-]+)$/, ({ params, engine }) => get(engine, params[0], 'momo')]);
+  r.push(['GET', /^\/momo\/v1\/requests\/([\w-]+)$/, ({ params, engine }) => {
+    const op = engine.state.operations.get(params[0]);
+    if (!op || op.provider !== 'momo' || op.kind !== 'payment') throw new MockError(404, 'NOT_FOUND');
+    return { status: 200, body: { ...engine.view(op), ...refundTotals(engine, op) } };
+  }]);
+
+  // ----- Mobile money refunds: full or partial, against a SUCCESSFUL collection -----
+  r.push(['POST', /^\/momo\/v1\/refunds$/, ({ body, engine }) => {
+    need(body, 'paymentId', 'reference');
+    const replay = idempotent(engine, 'momo_refund', 'refund', body.reference);
+    if (replay) return replay;
+    const payment = engine.state.operations.get(String(body.paymentId));
+    if (!payment || payment.provider !== 'momo' || payment.kind !== 'payment') throw new MockError(404, 'PAYMENT_NOT_FOUND');
+    if (payment.status !== 'SUCCESSFUL') throw new MockError(409, 'PAYMENT_NOT_REFUNDABLE', { status: payment.status });
+    const { refundable_amount: refundable } = refundTotals(engine, payment);
+    const amount = body.amount === undefined || body.amount === null ? refundable : positiveInt(body.amount, 'amount');
+    if (amount <= 0 || amount > refundable) throw new MockError(409, 'REFUND_EXCEEDS_PAYMENT', { refundable_amount: refundable, requested: amount });
+    const op = startAsync(engine, {
+      provider: 'momo_refund', kind: 'refund', prefix: payment.data.operator === 'mtn' ? 'MTNRF' : 'OMRF', body,
+      attrs: { ...body, msisdn: payment.data.msisdn, operator: payment.data.operator, paymentReference: payment.reference },
+      fallback: 'refunded', initial: 'PENDING',
+      data: { payment_id: payment.id, payment_reference: payment.reference, operator: payment.data.operator, msisdn: payment.data.msisdn,
+        amount, currency: payment.data.currency, refund_reason: body.reason ?? null },
+    });
+    return { status: 202, body: engine.view(op) };
+  }]);
+  r.push(['GET', /^\/momo\/v1\/refunds\/([\w-]+)$/, ({ params, engine }) => get(engine, params[0], 'momo_refund')]);
 
   // ----- Bank: merchant cash collection, agent custody, authoritative bank-credit confirmation -----
   r.push(['POST', /^\/bank\/v1\/cash-collections$/, ({ body, engine }) => {

@@ -29,9 +29,26 @@ const waitFor = async (fn, ms = 2000) => {
   }
 };
 
+// Random free port, or the first free one in ADS_TEST_PORT_RANGE=from-to (shared build machines).
+async function listen(server) {
+  const range = String(process.env.ADS_TEST_PORT_RANGE ?? '').match(/^(\d+)-(\d+)$/);
+  const tryPort = port => new Promise((resolve, reject) => {
+    const onError = error => { server.off('listening', onListening); reject(error); };
+    const onListening = () => { server.off('error', onError); resolve(); };
+    server.once('error', onError);
+    server.once('listening', onListening);
+    server.listen(port, '127.0.0.1');
+  });
+  if (!range) return tryPort(0);
+  for (let port = Number(range[1]); port <= Number(range[2]); port += 1) {
+    try { return await tryPort(port); } catch (error) { if (error.code !== 'EADDRINUSE') throw error; }
+  }
+  throw new Error('no free port in ADS_TEST_PORT_RANGE');
+}
+
 before(async () => {
   mocks = createMocks({ webhookSecret: SECRET, log: quiet, defaultDelayMs: 5 });
-  await new Promise(r => mocks.server.listen(0, '127.0.0.1', r));
+  await listen(mocks.server);
   base = `http://127.0.0.1:${mocks.server.address().port}`;
   receiver = http.createServer((req, res) => {
     const chunks = [];
@@ -43,7 +60,7 @@ before(async () => {
       res.end();
     });
   });
-  await new Promise(r => receiver.listen(0, '127.0.0.1', r));
+  await listen(receiver);
   hookUrl = `http://127.0.0.1:${receiver.address().port}/webhooks`;
 });
 after(async () => {
@@ -245,6 +262,128 @@ describe('regulator / registry lookups', () => {
     assert.equal(seeded.body.name, 'Dr Test');
     assert.equal(seeded.body.status, 'ACTIVE');
     assert.equal((await get('/registry/v1/unknown/1')).status, 404);
+  });
+});
+
+describe('mobile money refunds (reversal to the payer)', () => {
+  // A SUCCESSFUL collection of `amount` for this msisdn, settled before the test refunds it.
+  const paid = async (msisdn = '237670009999', amount = 5000) => {
+    const p = await pay({ msisdn, amount });
+    await waitFor(() => hooks.some(h => h.body.data.id === p.body.id && h.body.data.status === 'SUCCESSFUL'));
+    hooks = [];
+    return p.body;
+  };
+  const refund = (payment, extra = {}) => post('/momo/v1/refunds', { paymentId: payment.id, reference: `rf-${Math.random()}`, callbackUrl: hookUrl, ...extra });
+
+  it('full refund: PENDING then REFUNDED, signed webhook, TEST MODE, payment shows REFUNDED', async () => {
+    const p = await paid();
+    const created = await refund(p);
+    assert.equal(created.status, 202);
+    assert.equal(created.body.status, 'PENDING');
+    assert.equal(created.body.amount, 5000, 'no amount = everything still refundable');
+    assert.equal(created.body.payment_id, p.id);
+    assert.match(created.body.id, /^MTNRF-/);
+    assert.equal(created.body.test_mode, true);
+    assert.match(created.body.notice, /TEST MODE/);
+    assert.equal(created.headers.get('x-ads-test-mode'), 'true');
+    await waitFor(() => hooks.length === 1);
+    assert.equal(hooks[0].body.type, 'refund.refunded');
+    assert.equal(hooks[0].body.test_mode, true);
+    assert.match(hooks[0].body.data.financial_transaction_id, /^TEST-RF-/);
+    assert.ok(verifySignature(hooks[0].raw, hooks[0].signature, SECRET));
+    const payment = (await get(`/momo/v1/requests/${p.id}`)).body;
+    assert.equal(payment.status, 'SUCCESSFUL', 'the collection itself keeps its status');
+    assert.deepEqual([payment.refunded_amount, payment.refundable_amount, payment.refund_status], [5000, 0, 'REFUNDED']);
+    assert.equal((await get(`/momo/v1/refunds/${created.body.id}`)).body.status, 'REFUNDED');
+  });
+
+  it('partial refunds add up; over-refund and refunds of unpaid collections are refused', async () => {
+    const p = await paid('237670009998', 5000);
+    const r1 = await refund(p, { amount: 2000 });
+    assert.equal(r1.status, 202);
+    // While r1 is pending its amount is held: 3000 left.
+    assert.equal((await refund(p, { amount: 3001 })).body.error.code, 'REFUND_EXCEEDS_PAYMENT');
+    await waitFor(async () => (await get(`/momo/v1/refunds/${r1.body.id}`)).body.status === 'REFUNDED');
+    let payment = (await get(`/momo/v1/requests/${p.id}`)).body;
+    assert.deepEqual([payment.refunded_amount, payment.refundable_amount, payment.refund_status], [2000, 3000, 'PARTIALLY_REFUNDED']);
+    const over = await refund(p, { amount: 3500 });
+    assert.equal(over.status, 409);
+    assert.equal(over.body.error.code, 'REFUND_EXCEEDS_PAYMENT');
+    assert.equal(over.body.error.details.refundable_amount, 3000);
+    const r2 = await refund(p, { amount: 3000 });
+    await waitFor(async () => (await get(`/momo/v1/refunds/${r2.body.id}`)).body.status === 'REFUNDED');
+    payment = (await get(`/momo/v1/requests/${p.id}`)).body;
+    assert.equal(payment.refund_status, 'REFUNDED');
+    assert.equal((await refund(p, { amount: 1 })).status, 409, 'nothing left');
+
+    const failedPayment = await pay({ msisdn: '237670000001' });
+    await waitFor(async () => (await get(`/momo/v1/requests/${failedPayment.body.id}`)).body.status === 'FAILED');
+    assert.equal((await refund(failedPayment.body)).body.error.code, 'PAYMENT_NOT_REFUNDABLE');
+    assert.equal((await refund({ id: 'MTN-000000-nope' })).status, 404);
+    assert.equal((await refund(p, { amount: -5 })).body.error.code, 'AMOUNT_INVALID');
+    assert.equal((await post('/momo/v1/refunds', { paymentId: p.id })).body.error.code, 'FIELD_REQUIRED');
+  });
+
+  it('is idempotent on the refund reference', async () => {
+    const p = await paid('237670009997');
+    const a = await refund(p, { amount: 1000, reference: 'refund-order-7' });
+    const b = await refund(p, { amount: 1000, reference: 'refund-order-7' });
+    assert.equal(b.status, 200);
+    assert.equal(b.body.id, a.body.id);
+    assert.equal(b.body.idempotent_replay, true);
+    await waitFor(async () => (await get(`/momo/v1/refunds/${a.body.id}`)).body.status === 'REFUNDED');
+    assert.equal((await get(`/momo/v1/requests/${p.id}`)).body.refunded_amount, 1000, 'refunded once');
+  });
+
+  it('duplicate webhook: the same refund event is delivered twice', async () => {
+    const p = await paid('237670009996');
+    await post('/_control/scripts', { provider: 'momo_refund', outcome: 'duplicate', match: { paymentReference: p.reference } });
+    const r = await refund(p);
+    await waitFor(() => hooks.length === 2);
+    assert.equal(hooks[0].body.event_id, hooks[1].body.event_id);
+    assert.equal(hooks[0].body.data.id, r.body.id);
+    assert.equal((await get(`/_control/webhooks?operation=${r.body.id}`)).body.items.length, 2);
+    // Magic payer number ending 0007 does the same without a script.
+    const p2 = await paid('237670000007');
+    const r2 = await refund(p2);
+    await waitFor(() => hooks.filter(h => h.body.data.id === r2.body.id).length === 2);
+  });
+
+  it('failure and timeout: scripted reason, magic numbers, forced final status; failed refunds release the amount', async () => {
+    const p = await paid('237670009995');
+    await post('/_control/scripts', { provider: 'momo_refund', outcome: 'failed', reason: 'PAYEE_ACCOUNT_BLOCKED', match: { msisdn: '237670009995' } });
+    const f = await refund(p);
+    await waitFor(() => hooks.length === 1);
+    assert.equal(hooks[0].body.type, 'refund.failed');
+    assert.equal(hooks[0].body.data.reason, 'PAYEE_ACCOUNT_BLOCKED');
+    assert.equal((await get(`/momo/v1/refunds/${f.body.id}`)).body.status, 'FAILED');
+    assert.equal((await get(`/momo/v1/requests/${p.id}`)).body.refundable_amount, 5000, 'failed refund holds nothing');
+
+    const pf = await paid('237670000005');
+    const mf = await refund(pf);
+    await waitFor(async () => (await get(`/momo/v1/refunds/${mf.body.id}`)).body.status === 'FAILED');
+    assert.equal((await get(`/momo/v1/refunds/${mf.body.id}`)).body.reason, 'REFUND_REJECTED');
+
+    const pt = await paid('237670000006');
+    const t = await refund(pt);
+    await new Promise(r => setTimeout(r, 60));
+    assert.equal((await get(`/momo/v1/refunds/${t.body.id}`)).body.status, 'PENDING', 'timeout never settles');
+    assert.equal(hooks.filter(h => h.body.data.id === t.body.id).length, 0);
+    assert.equal((await get(`/momo/v1/requests/${pt.id}`)).body.refundable_amount, 0, 'pending refund holds its amount');
+    const expired = await post(`/_control/operations/${t.body.id}/advance`, { status: 'FAILED', patch: { reason: 'TIMEOUT' } });
+    assert.equal(expired.body.status, 'FAILED');
+    assert.equal(hooks.at(-1).body.type, 'refund.failed');
+    assert.equal((await get(`/momo/v1/requests/${pt.id}`)).body.refundable_amount, 5000);
+
+    // Manual settle: nothing moves until the test advances it.
+    const pm = await paid('237670009994');
+    await post('/_control/scripts', { provider: 'momo_refund', outcome: 'refunded', settle: 'manual', match: { msisdn: '237670009994' } });
+    const m = await refund(pm, { amount: 500 });
+    assert.deepEqual((await get(`/_control/operations/${m.body.id}`)).body.pending_steps, ['REFUNDED']);
+    assert.equal((await post(`/_control/operations/${m.body.id}/advance`, {})).body.status, 'REFUNDED');
+    assert.equal((await post('/momo/v1/refunds', { paymentId: pm.id, reference: 'x-unavail', amount: 100 })).status, 202);
+    await post('/_control/scripts', { provider: 'momo_refund', outcome: 'unavailable', match: { msisdn: '237670009994' } });
+    assert.equal((await refund(pm, { amount: 1 })).status, 503);
   });
 });
 
