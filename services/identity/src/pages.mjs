@@ -1,0 +1,193 @@
+// Server-rendered sign-in pages. No JavaScript needed; forms post back to the identity service.
+// Branding comes from the product (oauth client) the user arrived from, with ADS as the fallback.
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const T = {
+  en: {
+    signIn: 'Sign in', signInTo: 'Sign in to {product}', email: 'Email address', password: 'Password',
+    continue: 'Continue', google: 'Continue with Google', or: 'or', noAccount: "Don't have an account?",
+    createAccount: 'Create an account', forgot: 'Forgot your password?', haveAccount: 'Already have an account?',
+    register: 'Create your account', name: 'Full name (optional)', confirm: 'Confirm password',
+    passwordHint: 'At least {min} characters.', checkEmail: 'Check your email',
+    checkEmailBody: 'If {email} can receive email, we sent a link to it. Open it to continue. The link expires soon, so use it today.',
+    resend: 'Send the link again', verified: 'Your email is confirmed', verifiedBody: 'Your account is active. You can sign in now.',
+    linkInvalid: 'This link is invalid or has expired', linkInvalidBody: 'Ask for a new one below.',
+    forgotTitle: 'Reset your password', forgotBody: 'Enter your email and we will send you a reset link.',
+    sendLink: 'Send reset link', resetTitle: 'Choose a new password', savePassword: 'Save new password',
+    resetDone: 'Password changed', resetDoneBody: 'You were signed out everywhere. Sign in with your new password.',
+    chooseTitle: 'Choose a workspace', chooseBody: 'Your account belongs to several organisations. Which one do you want to use in {product}?',
+    noAccessTitle: 'No access yet', noAccessBody: 'Your account is signed in, but you have not been given access to {product}. Ask your organisation administrator.',
+    errorTitle: 'Something went wrong', backToSignIn: 'Back to sign in', securedBy: 'Secured by Africa Digital Synergy',
+    signedIn: 'You are signed in', signedInBody: 'Signed in as {email}. You can now open any ADS app.',
+    signedOut: 'You are signed out', signedOutBody: 'You have been signed out of your ADS account on this device.',
+    activateTitle: 'Confirm your email', activateBody: 'Enter the password you chose when you registered to activate your account.', activate: 'Activate and sign in',
+    confirmLogout: 'Sign out?', confirmLogoutBody: 'Sign out of your ADS account on this device?', signOut: 'Sign out',
+    errors: {
+      INVALID_CREDENTIALS: 'Email or password is incorrect.',
+      EMAIL_NOT_VERIFIED: 'Please confirm your email first. We just sent you a new link.',
+      ACCOUNT_DISABLED: 'This account is disabled. Contact your administrator.',
+      TOO_MANY_ATTEMPTS: 'Too many attempts. Wait a few minutes and try again.',
+      EMAIL_INVALID: 'Enter a valid email address.',
+      EMAIL_ALREADY_REGISTERED: 'An account already exists for this email. Sign in or reset your password.',
+      PASSWORD_TOO_SHORT: 'The password is too short.', PASSWORD_TOO_LONG: 'The password is too long.',
+      PASSWORD_TOO_WEAK: 'Choose a less common password.', PASSWORDS_DO_NOT_MATCH: 'The two passwords do not match.',
+      FORM_EXPIRED: 'This form expired. Please try again.', SIGN_IN_REQUEST_EXPIRED: 'The sign-in request expired. Go back to the app and try again.',
+      GOOGLE_SIGN_IN_FAILED: 'Google sign-in did not complete. Please try again.', GOOGLE_EMAIL_NOT_VERIFIED: 'Your Google email is not verified.',
+      UNKNOWN_CLIENT: 'This app is not registered for ADS sign-in.', INVALID_REDIRECT_URI: 'This app sent an invalid return address.',
+      INVALID_REQUEST: 'The sign-in request is not valid.',
+    },
+  },
+  fr: {
+    signIn: 'Se connecter', signInTo: 'Se connecter à {product}', email: 'Adresse e-mail', password: 'Mot de passe',
+    continue: 'Continuer', google: 'Continuer avec Google', or: 'ou', noAccount: "Vous n'avez pas de compte ?",
+    createAccount: 'Créer un compte', forgot: 'Mot de passe oublié ?', haveAccount: 'Vous avez déjà un compte ?',
+    register: 'Créez votre compte', name: 'Nom complet (facultatif)', confirm: 'Confirmez le mot de passe',
+    passwordHint: 'Au moins {min} caractères.', checkEmail: 'Vérifiez vos e-mails',
+    checkEmailBody: "Si {email} peut recevoir des e-mails, nous y avons envoyé un lien. Ouvrez-le pour continuer. Le lien expire bientôt, utilisez-le aujourd'hui.",
+    resend: 'Renvoyer le lien', verified: 'Votre e-mail est confirmé', verifiedBody: 'Votre compte est actif. Vous pouvez vous connecter.',
+    linkInvalid: 'Ce lien est invalide ou a expiré', linkInvalidBody: 'Demandez-en un nouveau ci-dessous.',
+    forgotTitle: 'Réinitialiser le mot de passe', forgotBody: 'Saisissez votre e-mail et nous vous enverrons un lien.',
+    sendLink: 'Envoyer le lien', resetTitle: 'Choisissez un nouveau mot de passe', savePassword: 'Enregistrer',
+    resetDone: 'Mot de passe modifié', resetDoneBody: 'Toutes vos sessions ont été fermées. Connectez-vous avec le nouveau mot de passe.',
+    chooseTitle: 'Choisissez un espace', chooseBody: 'Votre compte appartient à plusieurs organisations. Laquelle voulez-vous utiliser dans {product} ?',
+    noAccessTitle: "Pas encore d'accès", noAccessBody: "Vous êtes connecté, mais aucun accès à {product} ne vous a été attribué. Contactez l'administrateur de votre organisation.",
+    errorTitle: 'Une erreur est survenue', backToSignIn: 'Retour à la connexion', securedBy: 'Sécurisé par Africa Digital Synergy',
+    signedIn: 'Vous êtes connecté', signedInBody: 'Connecté en tant que {email}. Vous pouvez ouvrir toutes les applications ADS.',
+    signedOut: 'Vous êtes déconnecté', signedOutBody: 'Vous avez été déconnecté de votre compte ADS sur cet appareil.',
+    activateTitle: 'Confirmez votre e-mail', activateBody: "Saisissez le mot de passe choisi lors de l'inscription pour activer votre compte.", activate: 'Activer et se connecter',
+    confirmLogout: 'Se déconnecter ?', confirmLogoutBody: 'Se déconnecter de votre compte ADS sur cet appareil ?', signOut: 'Se déconnecter',
+    errors: {
+      INVALID_CREDENTIALS: 'E-mail ou mot de passe incorrect.',
+      EMAIL_NOT_VERIFIED: "Confirmez d'abord votre e-mail. Nous venons de vous envoyer un nouveau lien.",
+      ACCOUNT_DISABLED: 'Ce compte est désactivé. Contactez votre administrateur.',
+      TOO_MANY_ATTEMPTS: 'Trop de tentatives. Patientez quelques minutes.',
+      EMAIL_INVALID: 'Saisissez une adresse e-mail valide.',
+      EMAIL_ALREADY_REGISTERED: 'Un compte existe déjà pour cet e-mail. Connectez-vous ou réinitialisez le mot de passe.',
+      PASSWORD_TOO_SHORT: 'Le mot de passe est trop court.', PASSWORD_TOO_LONG: 'Le mot de passe est trop long.',
+      PASSWORD_TOO_WEAK: 'Choisissez un mot de passe moins courant.', PASSWORDS_DO_NOT_MATCH: 'Les deux mots de passe ne correspondent pas.',
+      FORM_EXPIRED: 'Ce formulaire a expiré. Réessayez.', SIGN_IN_REQUEST_EXPIRED: "La demande de connexion a expiré. Retournez dans l'application et réessayez.",
+      GOOGLE_SIGN_IN_FAILED: "La connexion Google n'a pas abouti. Réessayez.", GOOGLE_EMAIL_NOT_VERIFIED: "Votre e-mail Google n'est pas vérifié.",
+      UNKNOWN_CLIENT: "Cette application n'est pas enregistrée pour la connexion ADS.", INVALID_REDIRECT_URI: "Cette application a envoyé une adresse de retour invalide.",
+      INVALID_REQUEST: "La demande de connexion n'est pas valide.",
+    },
+  },
+};
+
+export const pickLocale = (query, acceptLanguage, fallback = 'en') => {
+  if (query === 'fr' || query === 'en') return query;
+  if (/^fr\b/i.test(String(acceptLanguage ?? ''))) return 'fr';
+  return fallback === 'fr' ? 'fr' : 'en';
+};
+
+const fill = (s, vars) => String(s).replace(/\{(\w+)\}/g, (_, k) => esc(vars[k] ?? ''));
+
+function layout({ locale, title, client, nonce, body, langPath }) {
+  const t = T[locale];
+  const accent = client?.accent_color ?? '#087E79';
+  const product = client?.display_name ?? 'Africa Digital Synergy';
+  const other = locale === 'fr' ? 'en' : 'fr';
+  const sep = langPath.includes('?') ? '&' : '?';
+  return `<!doctype html><html lang="${locale}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(title)} · ${esc(product)}</title>
+<style nonce="${nonce}">
+:root{--accent:${esc(accent)};--ink:#102B43;--muted:#5b6b7a;--line:#d9e0e6;--bg:#f5f7f9;--card:#fff;--danger:#b42318}
+@media (prefers-color-scheme:dark){:root{--ink:#e8eef3;--muted:#9fb0bf;--line:#2c3a46;--bg:#0f1720;--card:#16212c}}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+main{max-width:420px;margin:0 auto;padding:40px 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:28px}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:20px;font-weight:600}.brand img{height:36px;width:auto}
+h1{font-size:22px;margin:0 0 8px}p{margin:0 0 16px;color:var(--muted)}
+label{display:block;font-size:14px;margin:14px 0 6px;color:var(--ink)}
+input[type=email],input[type=password],input[type=text]{width:100%;padding:11px 12px;font-size:16px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+input:focus,button:focus,a:focus{outline:2px solid var(--accent);outline-offset:2px}
+button,.button{display:block;width:100%;margin-top:20px;padding:12px;font-size:16px;font-weight:600;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer;text-align:center;text-decoration:none}
+.secondary{background:transparent;color:var(--ink);border:1px solid var(--line);margin-top:12px}
+.or{display:flex;align-items:center;gap:10px;margin:20px 0 4px;color:var(--muted);font-size:13px}.or:before,.or:after{content:"";flex:1;border-top:1px solid var(--line)}
+.links{margin-top:18px;font-size:14px}.links a{color:var(--accent)}
+.error{background:#fef3f2;border:1px solid #fecdca;color:var(--danger);padding:10px 12px;border-radius:8px;margin:12px 0;font-size:14px}
+.hint{font-size:13px;color:var(--muted);margin-top:6px}.choice{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:8px;margin-top:8px}
+footer{display:flex;justify-content:space-between;margin-top:16px;font-size:12px;color:var(--muted)}footer a{color:var(--muted)}
+</style></head><body><main><div class="card">
+<div class="brand">${client?.logo_url ? `<img src="${esc(client.logo_url)}" alt="">` : ''}<span>${esc(product)}</span></div>
+${body}
+</div><footer><span>${esc(t.securedBy)}</span><a href="${esc(langPath + sep + 'lang=' + other)}">${other === 'fr' ? 'Français' : 'English'}</a></footer></main></body></html>`;
+}
+
+const errorBox = (locale, code) => (code ? `<div class="error" role="alert">${esc(T[locale].errors[code] ?? T[locale].errors.INVALID_REQUEST)}</div>` : '');
+const hidden = (name, value) => (value ? `<input type="hidden" name="${esc(name)}" value="${esc(value)}">` : '');
+
+export function renderPage(view, ctx) {
+  const { locale, client, csrf, req, error, values = {}, googleEnabled, minPassword, nonce } = ctx;
+  const t = T[locale];
+  const product = client?.display_name ?? 'Africa Digital Synergy';
+  const q = req ? `?req=${encodeURIComponent(req)}` : '';
+  const langPath = ctx.path + (ctx.path.includes('?') ? '' : q);
+  const base = { locale, client, nonce, langPath };
+  const csrfField = hidden('csrf', csrf) + hidden('req', req) + hidden('lang', locale);
+  switch (view) {
+    case 'login':
+      return layout({ ...base, title: t.signIn, body: `<h1>${fill(t.signInTo, { product })}</h1>${errorBox(locale, error)}
+<form method="post" action="/login" novalidate>${csrfField}
+<label for="email">${esc(t.email)}</label><input id="email" name="email" type="email" autocomplete="email" required value="${esc(values.email)}">
+<label for="password">${esc(t.password)}</label><input id="password" name="password" type="password" autocomplete="current-password" required>
+<button type="submit">${esc(t.continue)}</button></form>
+${googleEnabled ? `<div class="or">${esc(t.or)}</div><a class="button secondary" href="/google/start${q}">${esc(t.google)}</a>` : ''}
+<div class="links"><a href="/forgot-password${q}">${esc(t.forgot)}</a><br>${esc(t.noAccount)} <a href="/register${q}">${esc(t.createAccount)}</a></div>` });
+    case 'register':
+      return layout({ ...base, title: t.register, body: `<h1>${esc(t.register)}</h1>${errorBox(locale, error)}
+<form method="post" action="/register" novalidate>${csrfField}
+<label for="name">${esc(t.name)}</label><input id="name" name="name" type="text" autocomplete="name" maxlength="120" value="${esc(values.name)}">
+<label for="email">${esc(t.email)}</label><input id="email" name="email" type="email" autocomplete="email" required value="${esc(values.email)}">
+<label for="password">${esc(t.password)}</label><input id="password" name="password" type="password" autocomplete="new-password" required minlength="${minPassword}">
+<div class="hint">${fill(t.passwordHint, { min: minPassword })}</div>
+<label for="confirm">${esc(t.confirm)}</label><input id="confirm" name="confirm" type="password" autocomplete="new-password" required>
+<button type="submit">${esc(t.createAccount)}</button></form>
+${googleEnabled ? `<div class="or">${esc(t.or)}</div><a class="button secondary" href="/google/start${q}">${esc(t.google)}</a>` : ''}
+<div class="links">${esc(t.haveAccount)} <a href="/login${q}">${esc(t.signIn)}</a></div>` });
+    case 'check_email':
+      return layout({ ...base, title: t.checkEmail, body: `<h1>${esc(t.checkEmail)}</h1><p>${fill(t.checkEmailBody, { email: values.email })}</p>
+<div class="links"><a href="/login${q}">${esc(t.backToSignIn)}</a></div>` });
+    case 'verified':
+      return layout({ ...base, title: t.verified, body: `<h1>${esc(t.verified)}</h1><p>${esc(t.verifiedBody)}</p><a class="button" href="/login${q}">${esc(t.signIn)}</a>` });
+    case 'link_invalid':
+      return layout({ ...base, title: t.linkInvalid, body: `<h1>${esc(t.linkInvalid)}</h1><p>${esc(t.linkInvalidBody)}</p>
+<a class="button" href="${esc(values.retry ?? '/forgot-password')}${q}">${esc(values.retryLabel ?? t.sendLink)}</a>` });
+    case 'forgot':
+      return layout({ ...base, title: t.forgotTitle, body: `<h1>${esc(t.forgotTitle)}</h1><p>${esc(t.forgotBody)}</p>${errorBox(locale, error)}
+<form method="post" action="/forgot-password" novalidate>${csrfField}
+<label for="email">${esc(t.email)}</label><input id="email" name="email" type="email" autocomplete="email" required value="${esc(values.email)}">
+<button type="submit">${esc(t.sendLink)}</button></form><div class="links"><a href="/login${q}">${esc(t.backToSignIn)}</a></div>` });
+    case 'reset':
+      return layout({ ...base, title: t.resetTitle, body: `<h1>${esc(t.resetTitle)}</h1>${errorBox(locale, error)}
+<form method="post" action="/reset-password" novalidate>${csrfField}${hidden('token', values.token)}
+<label for="password">${esc(t.password)}</label><input id="password" name="password" type="password" autocomplete="new-password" required minlength="${minPassword}">
+<div class="hint">${fill(t.passwordHint, { min: minPassword })}</div>
+<label for="confirm">${esc(t.confirm)}</label><input id="confirm" name="confirm" type="password" autocomplete="new-password" required>
+<button type="submit">${esc(t.savePassword)}</button></form>` });
+    case 'reset_done':
+      return layout({ ...base, title: t.resetDone, body: `<h1>${esc(t.resetDone)}</h1><p>${esc(t.resetDoneBody)}</p><a class="button" href="/login${q}">${esc(t.signIn)}</a>` });
+    case 'choose_workspace':
+      return layout({ ...base, title: t.chooseTitle, body: `<h1>${esc(t.chooseTitle)}</h1><p>${fill(t.chooseBody, { product })}</p>
+<form method="post" action="/choose-workspace">${csrfField}
+${values.workspaces.map((w, i) => `<label class="choice"><input type="radio" name="tenant" value="${esc(w.tenantId)}"${i === 0 ? ' checked' : ''}> ${esc(w.organizationName)}${w.tenantName !== w.organizationName ? ` · ${esc(w.tenantName)}` : ''}</label>`).join('')}
+<button type="submit">${esc(t.continue)}</button></form>` });
+    case 'activate':
+      return layout({ ...base, title: t.activateTitle, body: `<h1>${esc(t.activateTitle)}</h1><p>${esc(t.activateBody)}</p>${errorBox(locale, error)}
+<form method="post" action="/verify-email" novalidate>${csrfField}${hidden('token', values.token)}
+<label for="password">${esc(t.password)}</label><input id="password" name="password" type="password" autocomplete="current-password" required>
+<button type="submit">${esc(t.activate)}</button></form>
+<div class="links"><a href="/forgot-password${q}">${esc(t.forgot)}</a></div>` });
+    case 'confirm_logout':
+      return layout({ ...base, title: t.confirmLogout, body: `<h1>${esc(t.confirmLogout)}</h1><p>${esc(t.confirmLogoutBody)}</p>
+<form method="post" action="/logout">${csrfField}${hidden('client_id', values.clientId)}<button type="submit">${esc(t.signOut)}</button></form>` });
+    case 'signed_in':
+      return layout({ ...base, title: t.signedIn, body: `<h1>${esc(t.signedIn)}</h1><p>${fill(t.signedInBody, { email: values.email })}</p>` });
+    case 'signed_out':
+      return layout({ ...base, title: t.signedOut, body: `<h1>${esc(t.signedOut)}</h1><p>${esc(t.signedOutBody)}</p><a class="button" href="/login">${esc(t.signIn)}</a>` });
+    case 'no_access':
+      return layout({ ...base, title: t.noAccessTitle, body: `<h1>${esc(t.noAccessTitle)}</h1><p>${fill(t.noAccessBody, { product })}</p>` });
+    default:
+      return layout({ ...base, title: t.errorTitle, body: `<h1>${esc(t.errorTitle)}</h1>${errorBox(locale, error)}` });
+  }
+}

@@ -1,0 +1,38 @@
+# ADS Platform Kit: shared sign-in (identity) + its PostgreSQL.
+# Put a TLS reverse proxy (nginx/Caddy/Traefik) in front and route https://login.africadigitalsynergy.com to port 8084.
+#
+#   cp deploy/.env.example deploy/.env   # fill in the values
+#   docker compose -f deploy/docker-compose.yml --env-file deploy/.env up -d --build
+services:
+  identity-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ads_identity
+      POSTGRES_USER: ads_identity
+      POSTGRES_PASSWORD: ${IDENTITY_DB_PASSWORD:?set IDENTITY_DB_PASSWORD}
+    volumes:
+      - identity-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ads_identity -d ads_identity"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  identity:
+    build:
+      context: ..
+      dockerfile: services/identity/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      identity-db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://ads_identity:${IDENTITY_DB_PASSWORD}@identity-db:5432/ads_identity
+      IDENTITY_TRUST_PROXY: "true"
+    ports:
+      - "127.0.0.1:8084:8084"
+
+volumes:
+  identity-db-data:
