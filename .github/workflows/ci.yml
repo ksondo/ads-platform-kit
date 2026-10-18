@@ -40,3 +40,44 @@ jobs:
       - name: Docker image builds
         working-directory: .
         run: docker build -f services/identity/Dockerfile -t ads-identity:ci .
+
+  mocks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/mocks
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
+
+  e2e-kit:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: kit
+          POSTGRES_PASSWORD: kit
+          POSTGRES_DB: kit_e2e
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U kit -d kit_e2e"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --no-audit --no-fund
+        working-directory: services/identity
+      - run: npm ci --no-audit --no-fund
+        working-directory: packages/e2e-kit
+      - run: npm audit --omit=dev --audit-level=high
+        working-directory: packages/e2e-kit
+      - run: npm test
+        working-directory: packages/e2e-kit
+        env:
+          E2E_KIT_TEST_DATABASE_URL: postgres://kit:kit@127.0.0.1:5432/kit_e2e

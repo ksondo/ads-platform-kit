@@ -1,0 +1,190 @@
+# Reusable end-to-end test workflow for ADS products (docs/E2E_TESTING.md).
+#
+# Starts PostgreSQL 16, the REAL ADS identity service and the shared mock providers from
+# ksondo/ads-platform-kit, runs the product's migrations, starts the product (or lets Playwright's
+# webServer do it) and runs Playwright. No real partner, money or customer data is involved.
+#
+# In a product repo, .github/workflows/e2e.yml:
+#   jobs:
+#     e2e:
+#       uses: ksondo/ads-platform-kit/.github/workflows/e2e-template.yml@main
+#       with:
+#         client-id: health-web
+#         redirect-uris: http://localhost:4100/
+#         migrate-command: npm run migrate
+#         start-command: npm start
+#         health-url: http://localhost:4100/health
+#       secrets: inherit   # only needed while ads-platform-kit is private (ADS_KIT_TOKEN)
+name: e2e-template
+
+on:
+  workflow_call:
+    inputs:
+      client-id:
+        description: Product sign-in client id (also the token audience), e.g. health-web
+        type: string
+        required: true
+      redirect-uris:
+        description: Comma-separated sign-in return addresses to register (leave empty if the product's Playwright globalSetup registers itself)
+        type: string
+        default: ''
+      self-roles:
+        description: Comma-separated roles anyone gets in their personal workspace (empty for staff-only products)
+        type: string
+        default: ''
+      working-directory:
+        description: Product folder inside the repo
+        type: string
+        default: '.'
+      node-version:
+        type: string
+        default: '22'
+      install-command:
+        type: string
+        default: npm ci --no-audit --no-fund
+      migrate-command:
+        description: Runs with DATABASE_URL pointing at the product test database. Empty to skip.
+        type: string
+        default: ''
+      start-command:
+        description: Starts the product in the background. Empty when Playwright's webServer starts it.
+        type: string
+        default: ''
+      health-url:
+        description: Waited on after start-command
+        type: string
+        default: ''
+      test-command:
+        type: string
+        default: npx playwright test
+      product-env:
+        description: Extra KEY=VALUE lines for the product and tests (test values only, never secrets)
+        type: string
+        default: ''
+      kit-repository:
+        type: string
+        default: ksondo/ads-platform-kit
+      kit-ref:
+        description: Kit version to test against (pin a tag or commit for reproducible runs)
+        type: string
+        default: main
+    secrets:
+      ADS_KIT_TOKEN:
+        description: Read token for ads-platform-kit while it is private (defaults to the workflow token)
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      KIT_DIR: ${{ github.workspace }}/.ads-platform-kit
+      ADS_E2E_STATE: ${{ github.workspace }}/.ads-e2e/state.json
+      ADS_IDENTITY_CLIENT_ID: ${{ inputs.client-id }}
+      PRODUCT_DATABASE_URL: postgres://postgres:postgres@localhost:5432/product_e2e
+      IDENTITY_DATABASE_URL: postgres://postgres:postgres@localhost:5432/ads_identity_e2e
+      PGPASSWORD: postgres
+      CI: 'true'
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check out ads-platform-kit
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.kit-repository }}
+          ref: ${{ inputs.kit-ref }}
+          path: .ads-platform-kit
+          token: ${{ secrets.ADS_KIT_TOKEN || github.token }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Create test databases
+        working-directory: .
+        run: |
+          createdb -h localhost -U postgres ads_identity_e2e
+          createdb -h localhost -U postgres product_e2e
+
+      - name: Install the kit (identity service + e2e-kit)
+        working-directory: .
+        run: |
+          npm ci --no-audit --no-fund --prefix "$KIT_DIR/services/identity"
+          npm ci --no-audit --no-fund --prefix "$KIT_DIR/packages/e2e-kit"
+
+      - name: Install the product
+        run: |
+          ${{ inputs.install-command }}
+          # Makes `import ... from '@ads/e2e-kit'` resolve to the checked-out kit.
+          npm install --no-save --no-audit --no-fund "$KIT_DIR/packages/e2e-kit"
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start identity + mock providers
+        run: |
+          node "$KIT_DIR/packages/e2e-kit/bin/ads-e2e.mjs" up --database-url "$IDENTITY_DATABASE_URL"
+          node "$KIT_DIR/packages/e2e-kit/bin/ads-e2e.mjs" env --client "${{ inputs.client-id }}" --format github
+
+      - name: Register the product as a sign-in client
+        if: inputs.redirect-uris != ''
+        run: >-
+          node "$KIT_DIR/packages/e2e-kit/bin/ads-e2e.mjs" register-client
+          --id "${{ inputs.client-id }}" --name "${{ inputs.client-id }}"
+          --redirect "${{ inputs.redirect-uris }}" --self-roles "${{ inputs.self-roles }}"
+
+      - name: Product environment
+        env:
+          PRODUCT_ENV: ${{ inputs.product-env }}
+        run: |
+          echo "DATABASE_URL=$PRODUCT_DATABASE_URL" >> "$GITHUB_ENV"
+          if [ -n "$PRODUCT_ENV" ]; then printf '%s\n' "$PRODUCT_ENV" | grep -E '^[A-Za-z_][A-Za-z0-9_]*=' >> "$GITHUB_ENV"; fi
+
+      - name: Run product migrations
+        if: inputs.migrate-command != ''
+        run: ${{ inputs.migrate-command }}
+
+      - name: Start the product
+        if: inputs.start-command != ''
+        run: |
+          nohup sh -c '${{ inputs.start-command }}' > "$GITHUB_WORKSPACE/.ads-e2e/product.log" 2>&1 &
+          if [ -n "${{ inputs.health-url }}" ]; then
+            for i in $(seq 1 60); do curl -fsS "${{ inputs.health-url }}" > /dev/null && exit 0; sleep 1; done
+            echo "product did not become healthy"; cat "$GITHUB_WORKSPACE/.ads-e2e/product.log"; exit 1
+          fi
+
+      - name: Run end-to-end tests
+        run: ${{ inputs.test-command }}
+
+      - name: Stop identity + mocks
+        if: always()
+        run: node "$KIT_DIR/packages/e2e-kit/bin/ads-e2e.mjs" down || true
+
+      - name: Upload report and logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-${{ inputs.client-id }}
+          retention-days: 14
+          if-no-files-found: ignore
+          path: |
+            ${{ inputs.working-directory }}/playwright-report
+            ${{ inputs.working-directory }}/test-results
+            .ads-e2e/*.log

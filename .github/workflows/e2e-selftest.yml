@@ -1,0 +1,21 @@
+# Proves the reusable e2e template works: runs it against examples/sample-product using the kit
+# at this commit, exactly as a product repo would call it.
+name: e2e-selftest
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  sample-product:
+    uses: ./.github/workflows/e2e-template.yml
+    with:
+      client-id: sample-web
+      working-directory: examples/sample-product
+      kit-repository: ${{ github.repository }}
+      kit-ref: ${{ github.sha }}
+      test-command: npx playwright test
