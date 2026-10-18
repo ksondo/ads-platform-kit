@@ -5,6 +5,8 @@ Shared building blocks for every Africa Digital Synergy (ADS) product, built onc
 | Piece | Status | What it gives products |
 | --- | --- | --- |
 | **Sign-in** (`services/identity`, `packages/identity-client`) | **MVP ready** | One ADS account across all products: register with an activation email, sign in with email/password or Google, forgotten-password email, single sign-on, signed tokens |
+| **End-to-end test setup** (`packages/e2e-kit`, `.github/workflows/e2e-template.yml`) | **Ready** | Real ADS sign-in on PostgreSQL for tests, Playwright sign-in helpers, test users/tenants/roles, a reusable CI workflow. See [docs/E2E_TESTING.md](docs/E2E_TESTING.md) |
+| **Mock providers** (`services/mocks`) | **Ready (first set)** | Test-mode MTN MoMo / Orange Money, bank cash collection, SMS and email capture, KYC, insurer, registry lookups, dispatch, Progress Agentic RAG (PLAT-EXT-001). See [services/mocks/README.md](services/mocks/README.md) |
 | Roles and admin panel | Next | Admins create roles, grant services per organisation, invite and deactivate users |
 | Audit trail | Partly (sign-in events) | Who did what and when, viewable by admins |
 | Notifications | Planned | Email, SMS, push, USSD through one service |
@@ -17,7 +19,7 @@ Shared building blocks for every Africa Digital Synergy (ADS) product, built onc
 The ADS Handbook is the standard for building every ADS app. It is hosted in both places: the source is in [Software Factory `docs/handbook/`](https://github.com/ksondo/Software-Factory/tree/main/docs/handbook), and a copy sits here in [`docs/handbook/`](docs/handbook/) next to the services that implement it ([how the copy is kept in step](docs/handbook/MIRROR.md)).
 
 - [ADS Software Delivery Handbook](docs/handbook/ADS_SOFTWARE_DELIVERY_HANDBOOK_v1.md): how every ADS product is specified, built, tested and released.
-- [ADS Platform Requirements](docs/handbook/PLATFORM_REQUIREMENTS.md): what every product must meet. This kit delivers them: PLAT-ID-001/002 (sign-in) today; PLAT-ROLE, PLAT-AUD, PLAT-NOT, PLAT-PAY, PLAT-I18N/UX/A11Y, PLAT-CH and the shared sandbox/mock providers for PLAT-EXT-001 (mock bank, MoMo/Orange Money, regulator, insurer, KYC) next.
+- [ADS Platform Requirements](docs/handbook/PLATFORM_REQUIREMENTS.md): what every product must meet. This kit delivers them: PLAT-ID-001/002 (sign-in) and the shared mock providers for PLAT-EXT-001 (mock bank, MoMo/Orange Money, regulator, insurer, KYC and more) today; PLAT-ROLE, PLAT-AUD, PLAT-NOT, PLAT-PAY, PLAT-I18N/UX/A11Y and PLAT-CH next.
 - [UI/UX register](docs/handbook/UIUX_REGISTER.md): the master design system the kit's shared screens use.
 
 ## How products use it
@@ -64,6 +66,8 @@ TEST_DATABASE_URL=postgres://user:pass@localhost:5432/test npm test   # needs Po
 ```
 
 Tests run the real service against a real PostgreSQL database, including a simulated browser using the `ads-identity.js` library.
+
+End-to-end setup for products (real sign-in, mocks, Playwright, CI template) and its self-test: [docs/E2E_TESTING.md](docs/E2E_TESTING.md).
 
 ## Known limits of the MVP
 

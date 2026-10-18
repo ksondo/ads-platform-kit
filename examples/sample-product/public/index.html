@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ADS Sample Product</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/ads-identity.js" defer
+          data-issuer="{{ISSUER}}"
+          data-client-id="{{CLIENT_ID}}"
+          data-redirect-uri="{{REDIRECT_URI}}"
+          data-post-logout-redirect-uri="{{REDIRECT_URI}}"></script>
+  <script src="/app.js" defer data-test-mode="{{TEST_MODE}}"></script>
+</head>
+<body>
+  <div id="test-mode" class="test-mode" role="status" data-testid="test-mode" hidden></div>
+  <header>
+    <strong data-i18n="title">ADS Sample Product</strong>
+    <button id="sign-in" type="button" data-testid="sign-in"></button>
+  </header>
+  <main>
+    <p id="who" data-testid="who" aria-live="polite"></p>
+
+    <section id="notes-section" hidden>
+      <h2 data-i18n="notes">Notes</h2>
+      <form id="note-form">
+        <label for="note-text" data-i18n="newNote">New note</label>
+        <input id="note-text" name="body" maxlength="500" required data-testid="note-text">
+        <button type="submit" data-testid="note-add" data-i18n="addNote">Add note</button>
+      </form>
+      <p id="notes-empty" data-testid="notes-empty" data-i18n="noNotes" hidden>No notes yet</p>
+      <ul id="notes" data-testid="notes"></ul>
+    </section>
+
+    <section id="pay-section" hidden>
+      <h2 data-i18n="payments">Mobile money payment</h2>
+      <form id="pay-form">
+        <label for="operator" data-i18n="operator">Operator</label>
+        <select id="operator" name="operator" data-testid="pay-operator">
+          <option value="mtn">MTN MoMo</option>
+          <option value="orange">Orange Money</option>
+        </select>
+        <label for="msisdn" data-i18n="phone">Phone number</label>
+        <input id="msisdn" name="msisdn" inputmode="tel" required data-testid="pay-msisdn">
+        <label for="amount" data-i18n="amount">Amount (XAF)</label>
+        <input id="amount" name="amount" inputmode="numeric" required data-testid="pay-amount">
+        <button type="submit" data-testid="pay-submit" data-i18n="pay">Request payment</button>
+      </form>
+      <p id="pay-status" data-testid="pay-status" aria-live="polite"></p>
+    </section>
+
+    <p id="error" class="error" role="alert" data-testid="error" hidden></p>
+  </main>
+</body>
+</html>
