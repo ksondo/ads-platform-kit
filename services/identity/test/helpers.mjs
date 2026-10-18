@@ -128,7 +128,8 @@ export const mailCount = (svc, to) => svc.mailer.outbox.filter(m => m.to === to)
 export async function activate(b, link, password) {
   const page = await b.get(link);
   const token = new URL(link).searchParams.get('token');
-  return b.post('/verify-email', { csrf: csrfFrom(page.text), token, password, req: new URL(link).searchParams.get('req') ?? '' });
+  const params = new URL(link).searchParams;
+  return b.post('/verify-email', { csrf: csrfFrom(page.text), token, password, req: params.get('req') ?? '', next: params.get('next') ?? '' });
 }
 
 // Signs a user in through the hosted pages and exchanges the code: { access_token, refresh_token, ... }.

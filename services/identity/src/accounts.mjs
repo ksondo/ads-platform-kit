@@ -33,9 +33,10 @@ export function createAccounts({ pool, config, mailer, audit, log = console }) {
     });
   }
 
-  async function sendVerification(user, { req, product, passwordHash } = {}) {
+  // `next`: an ADS page to continue to after activation (an invitation or the admin page).
+  async function sendVerification(user, { req, product, passwordHash, next } = {}) {
     const token = await withTransaction(pool, c => issueEmailToken(c, user.id, 'verify_email', config.verifyEmailTtl, passwordHash ?? null));
-    send(user.email, 'verify_email', { link: link('/verify-email', { token, ...(req ? { req } : {}) }), hours: Math.round(config.verifyEmailTtl / 3600), product });
+    send(user.email, 'verify_email', { link: link('/verify-email', { token, ...(req ? { req } : {}), ...(next ? { next } : {}) }), hours: Math.round(config.verifyEmailTtl / 3600), product });
   }
 
   async function sendReset(user, { req } = {}) {
@@ -50,7 +51,7 @@ export function createAccounts({ pool, config, mailer, audit, log = console }) {
   }
 
   // Returns { user, created }. Existing accounts are never overwritten.
-  async function register({ email, password, name, locale = 'en', product, req, ip, clientId, revealExisting = false }) {
+  async function register({ email, password, name, locale = 'en', product, req, ip, clientId, revealExisting = false, next }) {
     const normalized = normalizeEmail(email);
     if (!isEmail(normalized)) fail(400, 'EMAIL_INVALID');
     const weak = checkPasswordStrength(password, config.passwordMinLength);
@@ -62,7 +63,7 @@ export function createAccounts({ pool, config, mailer, audit, log = console }) {
       await audit('register', { userId: existing.id, outcome: 'denied', reason: 'EMAIL_ALREADY_REGISTERED', ip, clientId });
       if (existing.status === 'pending') {
         // Another registration for an unconfirmed email: give it its own activation link.
-        await sendVerification(existing, { req, product, passwordHash });
+        await sendVerification(existing, { req, product, passwordHash, next });
         if (revealExisting) fail(409, 'EMAIL_ALREADY_REGISTERED');
         return { user: existing, created: false };
       }
@@ -85,7 +86,7 @@ export function createAccounts({ pool, config, mailer, audit, log = console }) {
     }
     const user = { id, email: normalized, status: requireVerify ? 'pending' : 'active' };
     await audit('register', { userId: id, outcome: 'allowed', ip, clientId });
-    if (requireVerify) await sendVerification(user, { req, product, passwordHash });
+    if (requireVerify) await sendVerification(user, { req, product, passwordHash, next });
     return { user, created: true };
   }
 

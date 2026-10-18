@@ -23,6 +23,11 @@ const T = {
     signedOut: 'You are signed out', signedOutBody: 'You have been signed out of your ADS account on this device.',
     activateTitle: 'Confirm your email', activateBody: 'Enter the password you chose when you registered to activate your account.', activate: 'Activate and sign in',
     confirmLogout: 'Sign out?', confirmLogoutBody: 'Sign out of your ADS account on this device?', signOut: 'Sign out',
+    inviteTitle: 'You are invited', inviteBody: '{organization} invited {email} to {product} as {roles}.',
+    inviteSignIn: 'Sign in to accept', inviteRegister: 'Create my ADS account', inviteAccept: 'Accept and join',
+    inviteAs: 'You are signed in as {email}.', inviteWrongAccount: 'This invitation is for {email}, but you are signed in as {current}. Sign out, then sign in or create an account with {email}.',
+    inviteSwitch: 'Sign out and use {email}', inviteAccepted: 'Welcome to {organization}', inviteAcceptedBody: 'You now have access to {product} as {roles}.',
+    openProduct: 'Open {product}', inviteInvalid: 'This invitation is invalid or has expired', inviteInvalidBody: 'Ask the person who invited you to send a new one.',
     errors: {
       INVALID_CREDENTIALS: 'Email or password is incorrect.',
       EMAIL_NOT_VERIFIED: 'Please confirm your email first. We just sent you a new link.',
@@ -36,6 +41,7 @@ const T = {
       GOOGLE_SIGN_IN_FAILED: 'Google sign-in did not complete. Please try again.', GOOGLE_EMAIL_NOT_VERIFIED: 'Your Google email is not verified.',
       UNKNOWN_CLIENT: 'This app is not registered for ADS sign-in.', INVALID_REDIRECT_URI: 'This app sent an invalid return address.',
       INVALID_REQUEST: 'The sign-in request is not valid.',
+      INVITATION_INVALID: 'This invitation is invalid or has expired.', INVITATION_EMAIL_MISMATCH: 'This invitation was sent to another email address.',
     },
   },
   fr: {
@@ -57,6 +63,11 @@ const T = {
     signedOut: 'Vous êtes déconnecté', signedOutBody: 'Vous avez été déconnecté de votre compte ADS sur cet appareil.',
     activateTitle: 'Confirmez votre e-mail', activateBody: "Saisissez le mot de passe choisi lors de l'inscription pour activer votre compte.", activate: 'Activer et se connecter',
     confirmLogout: 'Se déconnecter ?', confirmLogoutBody: 'Se déconnecter de votre compte ADS sur cet appareil ?', signOut: 'Se déconnecter',
+    inviteTitle: 'Vous êtes invité', inviteBody: '{organization} invite {email} sur {product} en tant que {roles}.',
+    inviteSignIn: 'Se connecter pour accepter', inviteRegister: 'Créer mon compte ADS', inviteAccept: 'Accepter et rejoindre',
+    inviteAs: 'Vous êtes connecté en tant que {email}.', inviteWrongAccount: "Cette invitation est destinée à {email}, mais vous êtes connecté en tant que {current}. Déconnectez-vous, puis connectez-vous ou créez un compte avec {email}.",
+    inviteSwitch: 'Se déconnecter et utiliser {email}', inviteAccepted: 'Bienvenue chez {organization}', inviteAcceptedBody: 'Vous avez maintenant accès à {product} en tant que {roles}.',
+    openProduct: 'Ouvrir {product}', inviteInvalid: 'Cette invitation est invalide ou a expiré', inviteInvalidBody: "Demandez à la personne qui vous a invité d'en envoyer une nouvelle.",
     errors: {
       INVALID_CREDENTIALS: 'E-mail ou mot de passe incorrect.',
       EMAIL_NOT_VERIFIED: "Confirmez d'abord votre e-mail. Nous venons de vous envoyer un nouveau lien.",
@@ -70,6 +81,7 @@ const T = {
       GOOGLE_SIGN_IN_FAILED: "La connexion Google n'a pas abouti. Réessayez.", GOOGLE_EMAIL_NOT_VERIFIED: "Votre e-mail Google n'est pas vérifié.",
       UNKNOWN_CLIENT: "Cette application n'est pas enregistrée pour la connexion ADS.", INVALID_REDIRECT_URI: "Cette application a envoyé une adresse de retour invalide.",
       INVALID_REQUEST: "La demande de connexion n'est pas valide.",
+      INVITATION_INVALID: 'Cette invitation est invalide ou a expiré.', INVITATION_EMAIL_MISMATCH: 'Cette invitation a été envoyée à une autre adresse e-mail.',
     },
   },
 };
@@ -82,7 +94,7 @@ export const pickLocale = (query, acceptLanguage, fallback = 'en') => {
 
 const fill = (s, vars) => String(s).replace(/\{(\w+)\}/g, (_, k) => esc(vars[k] ?? ''));
 
-function layout({ locale, title, client, nonce, body, langPath }) {
+export function layout({ locale, title, client, nonce, body, langPath, wide = false }) {
   const t = T[locale];
   const accent = client?.accent_color ?? '#087E79';
   const product = client?.display_name ?? 'Africa Digital Synergy';
@@ -94,7 +106,17 @@ function layout({ locale, title, client, nonce, body, langPath }) {
 :root{--accent:${esc(accent)};--ink:#102B43;--muted:#5b6b7a;--line:#d9e0e6;--bg:#f5f7f9;--card:#fff;--danger:#b42318}
 @media (prefers-color-scheme:dark){:root{--ink:#e8eef3;--muted:#9fb0bf;--line:#2c3a46;--bg:#0f1720;--card:#16212c}}
 *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
-main{max-width:420px;margin:0 auto;padding:40px 16px}
+main{max-width:${wide ? 980 : 420}px;margin:0 auto;padding:40px 16px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+.inline{display:inline}.inline button,.small{display:inline-block;width:auto;margin:2px 4px 2px 0;padding:5px 10px;font-size:13px;font-weight:500}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}.row>*{flex:1 1 180px}.row button{flex:0 0 auto;width:auto}
+.tag{display:inline-block;padding:1px 8px;margin:1px 2px;border-radius:999px;border:1px solid var(--line);font-size:12px}
+.ok{background:#ecfdf3;border:1px solid #abefc6;color:#067647;padding:10px 12px;border-radius:8px;margin:12px 0;font-size:14px}
+select{width:100%;padding:10px;font-size:15px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+h2{font-size:17px;margin:26px 0 8px}.muted{color:var(--muted)}
+td .inline input[type=text]{width:auto;min-width:0;max-width:100%;padding:6px 8px;font-size:14px}
+@media (max-width:640px){table,tbody,tr,td{display:block;width:100%}thead,td.hide{display:none}
+tr{border:1px solid var(--line);border-radius:8px;margin:0 0 10px;padding:6px}td{border:0;padding:4px 2px}td .inline input[type=text]{width:100%}}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:28px}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:20px;font-weight:600}.brand img{height:36px;width:auto}
 h1{font-size:22px;margin:0 0 8px}p{margin:0 0 16px;color:var(--muted)}
@@ -121,10 +143,13 @@ export function renderPage(view, ctx) {
   const { locale, client, csrf, req, error, values = {}, googleEnabled, minPassword, nonce } = ctx;
   const t = T[locale];
   const product = client?.display_name ?? 'Africa Digital Synergy';
-  const q = req ? `?req=${encodeURIComponent(req)}` : '';
+  const qp = new URLSearchParams();
+  if (req) qp.set('req', req);
+  if (ctx.next) qp.set('next', ctx.next);
+  const q = qp.toString() ? `?${qp}` : '';
   const langPath = ctx.path + (ctx.path.includes('?') ? '' : q);
   const base = { locale, client, nonce, langPath };
-  const csrfField = hidden('csrf', csrf) + hidden('req', req) + hidden('lang', locale);
+  const csrfField = hidden('csrf', csrf) + hidden('req', req) + hidden('lang', locale) + hidden('next', ctx.next);
   switch (view) {
     case 'login':
       return layout({ ...base, title: t.signIn, body: `<h1>${fill(t.signInTo, { product })}</h1>${errorBox(locale, error)}
@@ -185,6 +210,30 @@ ${values.workspaces.map((w, i) => `<label class="choice"><input type="radio" nam
       return layout({ ...base, title: t.signedIn, body: `<h1>${esc(t.signedIn)}</h1><p>${fill(t.signedInBody, { email: values.email })}</p>` });
     case 'signed_out':
       return layout({ ...base, title: t.signedOut, body: `<h1>${esc(t.signedOut)}</h1><p>${esc(t.signedOutBody)}</p><a class="button" href="/login">${esc(t.signIn)}</a>` });
+    case 'invite': {
+      const inv = values.invitation;
+      const vars = { organization: inv.organizationName, product: inv.productName, email: inv.email, roles: inv.roles.join(', '), current: values.signedInEmail };
+      const next = `/invite?token=${values.token}`;
+      const enc = encodeURIComponent(next);
+      let actions;
+      if (values.signedInEmail && values.matches) {
+        actions = `<p>${fill(t.inviteAs, { email: values.signedInEmail })}</p>
+<form method="post" action="/invite/accept">${hidden('csrf', csrf)}${hidden('lang', locale)}${hidden('token', values.token)}<button type="submit">${esc(t.inviteAccept)}</button></form>`;
+      } else if (values.signedInEmail) {
+        actions = `<div class="error" role="alert">${fill(t.inviteWrongAccount, vars)}</div>
+<form method="post" action="/logout">${hidden('csrf', csrf)}${hidden('lang', locale)}${hidden('next', next)}<button type="submit">${fill(t.inviteSwitch, vars)}</button></form>`;
+      } else {
+        actions = `<a class="button" href="/login?next=${enc}">${esc(t.inviteSignIn)}</a><a class="button secondary" href="/register?next=${enc}">${esc(t.inviteRegister)}</a>`;
+      }
+      return layout({ ...base, title: t.inviteTitle, body: `<h1>${esc(t.inviteTitle)}</h1><p>${fill(t.inviteBody, vars)}</p>${errorBox(locale, error)}${actions}` });
+    }
+    case 'invite_accepted': {
+      const vars = { organization: values.organizationName, product: values.productName, roles: values.roles.join(', ') };
+      return layout({ ...base, title: fill(t.inviteAccepted, vars), body: `<h1>${fill(t.inviteAccepted, vars)}</h1><p>${fill(t.inviteAcceptedBody, vars)}</p>
+${values.productUrl ? `<a class="button" href="${esc(values.productUrl)}">${fill(t.openProduct, vars)}</a>` : ''}` });
+    }
+    case 'invite_invalid':
+      return layout({ ...base, title: t.inviteInvalid, body: `<h1>${esc(t.inviteInvalid)}</h1><p>${esc(t.inviteInvalidBody)}</p>` });
     case 'no_access':
       return layout({ ...base, title: t.noAccessTitle, body: `<h1>${esc(t.noAccessTitle)}</h1><p>${fill(t.noAccessBody, { product })}</p>` });
     default:

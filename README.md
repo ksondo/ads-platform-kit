@@ -6,9 +6,9 @@ Shared building blocks for every Africa Digital Synergy (ADS) product, built onc
 | --- | --- | --- |
 | **Sign-in** (`services/identity`, `packages/identity-client`) | **MVP ready** | One ADS account across all products: register with an activation email, sign in with email/password or Google, forgotten-password email, single sign-on, signed tokens |
 | **End-to-end test setup** (`packages/e2e-kit`, `.github/workflows/e2e-template.yml`) | **Ready** | Real ADS sign-in on PostgreSQL for tests, Playwright sign-in helpers, test users/tenants/roles, a reusable CI workflow. See [docs/E2E_TESTING.md](docs/E2E_TESTING.md) |
-| **Mock providers** (`services/mocks`) | **Ready (first set)** | Test-mode MTN MoMo / Orange Money, bank cash collection, SMS and email capture, KYC, insurer, registry lookups, dispatch, Progress Agentic RAG (PLAT-EXT-001). See [services/mocks/README.md](services/mocks/README.md) |
-| Roles and admin panel | Next | Admins create roles, grant services per organisation, invite and deactivate users |
-| Audit trail | Partly (sign-in events) | Who did what and when, viewable by admins |
+| **Mock providers** (`services/mocks`) | **Ready (first set)** | Test-mode MTN MoMo / Orange Money (collections and refunds), bank cash collection, SMS and email capture, KYC, insurer, registry lookups, dispatch, Progress Agentic RAG (PLAT-EXT-001). See [services/mocks/README.md](services/mocks/README.md) |
+| **Roles, admin page and invitations** (`services/identity` `/admin`, `/admin/v1`, `/invite`) | **MVP ready** (PLAT-ROLE-001) | Organisation admins list members, grant/revoke product roles, deactivate members and invite people (email, SMS hook) on a bilingual hosted page, or from the product's own screens through the admin API (product server token exchange, no service-role bypass). See [docs/INTEGRATING_A_PRODUCT.md](docs/INTEGRATING_A_PRODUCT.md#organisations-roles-and-invitations-plat-role-001). Per-role menus of services (AC-1) remain the product's job for now |
+| Audit trail | Partly (sign-in and admin events; no viewer yet) | Who did what and when, viewable by admins |
 | Notifications | Planned | Email, SMS, push, USSD through one service |
 | Payments | Planned | MTN MoMo and Orange Money |
 | Monitoring | Planned | Logs, error alerts, health checks |
@@ -19,7 +19,7 @@ Shared building blocks for every Africa Digital Synergy (ADS) product, built onc
 The ADS Handbook is the standard for building every ADS app. It is hosted in both places: the source is in [Software Factory `docs/handbook/`](https://github.com/ksondo/Software-Factory/tree/main/docs/handbook), and a copy sits here in [`docs/handbook/`](docs/handbook/) next to the services that implement it ([how the copy is kept in step](docs/handbook/MIRROR.md)).
 
 - [ADS Software Delivery Handbook](docs/handbook/ADS_SOFTWARE_DELIVERY_HANDBOOK_v1.md): how every ADS product is specified, built, tested and released.
-- [ADS Platform Requirements](docs/handbook/PLATFORM_REQUIREMENTS.md): what every product must meet. This kit delivers them: PLAT-ID-001/002 (sign-in) and the shared mock providers for PLAT-EXT-001 (mock bank, MoMo/Orange Money, regulator, insurer, KYC and more) today; PLAT-ROLE, PLAT-AUD, PLAT-NOT, PLAT-PAY, PLAT-I18N/UX/A11Y and PLAT-CH next.
+- [ADS Platform Requirements](docs/handbook/PLATFORM_REQUIREMENTS.md): what every product must meet. This kit delivers them: PLAT-ID-001/002 (sign-in), PLAT-ROLE-001 (organisation admin, roles and invitations) and the shared mock providers for PLAT-EXT-001 (mock bank, MoMo/Orange Money, regulator, insurer, KYC and more) today; PLAT-AUD, PLAT-NOT, PLAT-PAY, PLAT-I18N/UX/A11Y and PLAT-CH next.
 - [UI/UX register](docs/handbook/UIUX_REGISTER.md): the master design system the kit's shared screens use.
 
 ## How products use it
@@ -40,7 +40,7 @@ A standalone app (one that is not part of a larger ADS product) uses the kit the
 - Hosted, bilingual (English/French) pages showing each product's own name and logo, "Secured by Africa Digital Synergy" underneath.
 - Registration needs email confirmation: the person opens the link (valid 24 h) and types the password they chose, which signs them in. Opening a link alone activates nothing, so mail scanners cannot, and a stranger who pre-registers someone's email cannot take the account. Forgotten-password links are valid 1 h, work once and sign the user out everywhere.
 - Google sign-in (optional). An unconfirmed account pre-registered with someone's email loses its unproven password when the real owner signs in with Google.
-- Authorization code + PKCE, 15-minute access tokens, rotating refresh tokens with theft detection, single sign-on across products, sign-out everywhere.
+- Authorization code + PKCE, 15-minute access tokens, rotating refresh tokens with theft detection (a 30-second grace window returns the same successor, so quick reloads and duplicated tabs never sign users out), single sign-on across products, sign-out everywhere.
 - Rate limits on sign-in, registration and email sending; CSRF protection; sign-in requests bound to the browser that started them; `__Host-` cookies; strict security headers; append-only audit of sign-in events with IP.
 - Reviewed by an independent security review (18 Oct 2026); every finding is fixed and has a regression test in `services/identity/test/security.test.mjs`.
 - The JSON API Software Factory already uses (`/v1/identity/*`, `/internal/*`) is kept unchanged, so Software Factory can switch to this service by changing one address. See [docs/SOFTWARE_FACTORY_SWITCH_OVER.md](docs/SOFTWARE_FACTORY_SWITCH_OVER.md).
@@ -72,6 +72,7 @@ End-to-end setup for products (real sign-in, mocks, Playwright, CI template) and
 ## Known limits of the MVP
 
 - Rate limits are kept in memory, so run one identity instance (or move limits to Redis before scaling out).
-- Until the admin panel exists, operators grant roles with `node src/cli.mjs grant-role ...`.
+- Operators create organisations and their first owner with `node src/cli.mjs create-organization`; everything after that is done by the organisation's admins (`/admin` or the admin API).
+- Invitation SMS go to `IDENTITY_SMS_URL` (the mocks in tests); real SMS waits for the notification service.
 - Block `/internal/*` at the public reverse proxy; only Software Factory's server needs it, over the private network.
 - Phone-number sign-up with SMS codes is not included yet; it can be added to the same service.

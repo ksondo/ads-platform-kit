@@ -17,7 +17,7 @@ export const uniquePassword = () => `E2e-${rand(6)}-Pass!`;
 
 export function createHarness({ url, issuer, databaseUrl, signingKeyPem, kid = 'ads-e2e', mocksUrl = null, webhookSecret = null, outbox = null, stop = null }) {
   const pool = new pg.Pool({ connectionString: databaseUrl, max: 3 });
-  const created = { users: new Set(), organizations: new Set(), tenants: new Set() };
+  const created = { users: new Set(), organizations: new Set(), tenants: new Set(), emails: new Set() };
   let privateKey;
   const key = async () => (privateKey ??= await importPKCS8(signingKeyPem, 'RS256'));
   const mocks = mocksUrl ? createMocksClient(mocksUrl, { webhookSecret }) : null;
@@ -48,7 +48,10 @@ export function createHarness({ url, issuer, databaseUrl, signingKeyPem, kid = '
     url, issuer, databaseUrl, jwksUrl: `${url}/.well-known/jwks.json`, mocks, mocksUrl, webhookSecret, outbox, pool,
 
     // Registers (or updates) a product as a sign-in client. origins: extra browser origins allowed to call /token.
-    async registerClient({ clientId, redirectUris, origins = [], postLogoutRedirectUris, name, selfRoles = [], personal = true, logoUrl = null, accent = null, waitForCorsReady = true }) {
+    // Admin API (PLAT-ROLE-001): clientSecret (a string, or true to generate one; returned) lets the product
+    // SERVER exchange an org admin's token for an admin token; adminScopes, adminRoles, assignableRoles as in the CLI.
+    async registerClient({ clientId, redirectUris, origins = [], postLogoutRedirectUris, name, selfRoles = [], personal = true, logoUrl = null, accent = null, waitForCorsReady = true,
+      clientSecret = null, adminScopes = ['members:read', 'roles:write', 'members:write', 'invitations:write'], adminRoles = [], assignableRoles = [] }) {
       if (!clientId || !Array.isArray(redirectUris) || !redirectUris.length) throw new Error('registerClient: clientId and redirectUris are required');
       const redirects = [...redirectUris];
       for (const o of origins) if (!redirects.some(u => new URL(u).origin === new URL(o).origin)) redirects.push(`${new URL(o).origin}/`);
@@ -59,8 +62,11 @@ export function createHarness({ url, issuer, databaseUrl, signingKeyPem, kid = '
           redirect_uris=EXCLUDED.redirect_uris, post_logout_redirect_uris=EXCLUDED.post_logout_redirect_uris,
           self_service_roles=EXCLUDED.self_service_roles, allow_personal_workspace=EXCLUDED.allow_personal_workspace, status='active'`,
       [clientId, name ?? clientId, logoUrl, accent, redirects, logout, selfRoles, personal]);
+      const secret = clientSecret === true ? crypto.randomBytes(24).toString('base64url') : clientSecret;
+      await pool.query('UPDATE platform.oauth_clients SET admin_scopes=$2, admin_roles=$3, assignable_roles=$4, client_secret_hash=coalesce($5, client_secret_hash) WHERE client_id=$1',
+        [clientId, adminScopes, adminRoles, assignableRoles, secret ? crypto.createHash('sha256').update(secret).digest('hex') : null]);
       if (waitForCorsReady) for (const origin of new Set(redirects.map(u => new URL(u).origin))) await waitForCors(origin);
-      return { clientId, redirectUris: redirects, postLogoutRedirectUris: logout };
+      return { clientId, redirectUris: redirects, postLogoutRedirectUris: logout, clientSecret: secret ?? null };
     },
 
     // An active account with a known password, ready to sign in on the real hosted pages.
@@ -108,6 +114,80 @@ export function createHarness({ url, issuer, databaseUrl, signingKeyPem, kid = '
       return { userId: uid, tenantId, product, roles: list };
     },
 
+    // Makes a member an organisation admin (owners already are). Test setup, like the CLI make-org-admin.
+    async makeOrgAdmin({ user, org, tenant }) {
+      const r = await pool.query("UPDATE platform.memberships SET role='admin' WHERE user_id=$1 AND tenant_id=$2 AND role<>'owner'", [await userIdOf(user), tenantIdOf(org ?? tenant)]);
+      return r.rowCount > 0;
+    },
+
+    // ---- the REAL admin API (PLAT-ROLE-001), exactly as a product server calls it ----
+    // An admin token for `admin` in `org`/`product`: the admin's product token (minted with the service
+    // key, as the product's browser would hold it) exchanged with the product's client secret.
+    async adminToken({ admin, org, tenant, product, clientSecret, scope }) {
+      if (!product || !clientSecret) throw new Error('adminToken: product and clientSecret are required (registerClient({ clientSecret: true }))');
+      const subject = await harness.mintAccessToken({ sub: await userIdOf(admin), tenant_id: tenantIdOf(org ?? tenant), roles: [], audience: product });
+      const res = await fetch(`${url}/token`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded', authorization: `Basic ${Buffer.from(`${product}:${clientSecret}`).toString('base64')}` },
+        body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange', subject_token: subject, subject_token_type: 'urn:ietf:params:oauth:token-type:access_token', ...(scope ? { scope } : {}) }),
+      });
+      const body = await res.json();
+      if (!res.ok) throw Object.assign(new Error(`adminToken: ${res.status} ${body.error}`), { status: res.status, code: body.error });
+      return body.access_token;
+    },
+
+    // A small client for /admin/v1 acting as `admin`. Methods throw an Error with .status and .code on refusal.
+    async adminApi(opts) {
+      const token = await harness.adminToken(opts);
+      const call = async (method, path, body) => {
+        const res = await fetch(`${url}/admin/v1${path}`, { method, headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
+        const json = await res.json();
+        if (!res.ok) throw Object.assign(new Error(`admin API ${method} ${path}: ${res.status} ${json.error?.code}`), { status: res.status, code: json.error?.code });
+        return json;
+      };
+      const rolesOf = (role, roles) => [...(roles ?? []), ...(role ? [role] : [])];
+      return {
+        token,
+        me: () => call('GET', '/me'),
+        members: async () => (await call('GET', '/members')).items,
+        grant: async (user, roles) => call('POST', `/members/${await userIdOf(user)}/roles/grant`, { roles }),
+        revoke: async (user, roles) => call('POST', `/members/${await userIdOf(user)}/roles/revoke`, { roles }),
+        deactivate: async user => call('POST', `/members/${await userIdOf(user)}/deactivate`),
+        reactivate: async user => call('POST', `/members/${await userIdOf(user)}/reactivate`),
+        setOrgAdmin: async (user, admin) => call('POST', `/members/${await userIdOf(user)}/org-admin`, { admin }),
+        invitations: async () => (await call('GET', '/invitations')).items,
+        invite: ({ email, role, roles, phone, locale, orgAdmin }) => {
+          created.emails.add(String(email).trim().toLowerCase());
+          return call('POST', '/invitations', { email, roles: rolesOf(role, roles), phone, locale, orgAdmin });
+        },
+        revokeInvitation: id => call('POST', `/invitations/${id}/revoke`),
+      };
+    },
+
+    // Grants product roles through the real admin API (what an org admin's product server does).
+    async grantRoleViaApi({ admin, org, tenant, product, clientSecret, user, role, roles }) {
+      const api = await harness.adminApi({ admin, org, tenant, product, clientSecret });
+      return api.grant(user, [...(roles ?? []), ...(role ? [role] : [])]);
+    },
+
+    // Invites someone through the real admin API and returns { invitation, link } from the email it sent.
+    async inviteViaApi({ admin, org, tenant, product, clientSecret, email = uniqueEmail('invitee'), role, roles, phone, locale, orgAdmin, timeoutMs }) {
+      const api = await harness.adminApi({ admin, org, tenant, product, clientSecret });
+      const invitation = await api.invite({ email, role, roles, phone, locale, orgAdmin });
+      return { invitation, email: invitation.email, link: await harness.invitationLink({ to: invitation.email, timeoutMs }) };
+    },
+
+    // The invitation link from the latest invitation email to `to`.
+    async invitationLink({ to, timeoutMs }) {
+      const mail = await harness.waitForEmail({ to, subject: 'invited you', timeoutMs });
+      const m = String(mail.text).match(/https?:\/\/\S+\/invite\?token=[A-Za-z0-9_-]+/);
+      if (!m) throw new Error(`e2e-kit: no invitation link in the email to ${to}`);
+      return m[0];
+    },
+
+    // Accounts made through the hosted pages (e.g. an invitee registering) are deleted by cleanup() too.
+    trackEmail(email) { created.emails.add(String(email).trim().toLowerCase()); },
+
     // The usual per-test setup: a fresh organisation (unique tenant) with one user holding roles in a product.
     async seedTenant({ product, roles, email, password, name, orgName } = {}) {
       const user = await harness.createUser({ email, password, name });
@@ -152,6 +232,10 @@ export function createHarness({ url, issuer, databaseUrl, signingKeyPem, kid = '
 
     // Deletes users and organisations this harness created (and personal workspaces made at sign-in).
     async cleanup() {
+      if (created.emails.size) {
+        const extra = await pool.query('SELECT id FROM platform.users WHERE email = ANY($1::text[])', [[...created.emails]]);
+        for (const r of extra.rows) created.users.add(r.id);
+      }
       const users = [...created.users];
       const orgs = [...created.organizations];
       if (users.length) {
@@ -167,6 +251,7 @@ export function createHarness({ url, issuer, databaseUrl, signingKeyPem, kid = '
       created.users.clear();
       created.organizations.clear();
       created.tenants.clear();
+      created.emails.clear();
     },
 
     async close() {

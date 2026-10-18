@@ -53,14 +53,32 @@ export async function signIn(page, { email, password, startUrl, button, tenantId
   if (startUrl) await page.goto(startUrl);
   const productOrigin = originOf(page.url());
   await waitForAdsIdentity(page, timeout);
-  if (button) await (typeof button === 'string' ? page.locator(button) : button).click();
-  else await page.evaluate(() => { void window.adsIdentity.signIn(); });
+  let navigations = 0;
+  const onNavigate = frame => { if (frame === page.mainFrame()) navigations += 1; };
+  page.on('framenavigated', onNavigate);
+  try {
+    if (button) await (typeof button === 'string' ? page.locator(button) : button).click();
+    else await page.evaluate(() => { void window.adsIdentity.signIn(); });
 
-  await page.waitForURL(u => u.origin !== productOrigin && (u.pathname === '/login' || u.pathname === '/register'), { timeout });
-  if (new URL(page.url()).pathname === '/register') await page.goto(page.url().replace('/register', '/login'));
-  await page.locator('input[name="email"]').fill(email);
-  await page.locator('input[name="password"]').fill(password);
-  await page.locator('form[action="/login"] button[type="submit"]').click();
+    // Either the hosted login page, or (already signed in to ADS: single sign-on) straight back to
+    // the product or to an identity page such as "choose a workspace" / "no access".
+    const until = Date.now() + timeout;
+    for (;;) {
+      const at = new URL(page.url());
+      if (navigations > 0 && at.origin !== productOrigin && (at.pathname === '/login' || at.pathname === '/register')) {
+        if (at.pathname === '/register') await page.goto(page.url().replace('/register', '/login'));
+        await page.locator('input[name="email"]').fill(email);
+        await page.locator('input[name="password"]').fill(password);
+        await page.locator('form[action="/login"] button[type="submit"]').click();
+        break;
+      }
+      if (navigations > 0 && (at.origin === productOrigin || await page.locator('form[action="/choose-workspace"], main h1').count().catch(() => 0))) break;
+      if (Date.now() > until) throw new SignInError('TIMEOUT', `signIn: the hosted sign-in did not open (at ${page.url()})`);
+      await sleep(100);
+    }
+  } finally {
+    page.off('framenavigated', onNavigate);
+  }
 
   // After the form post the identity service either redirects back to the product or shows a page.
   const end = Date.now() + timeout;
@@ -87,6 +105,53 @@ export async function signIn(page, { email, password, startUrl, button, tenantId
   const result = await page.evaluate(async () => ({ accessToken: await window.adsIdentity.getAccessToken(), user: window.adsIdentity.getUser() }));
   if (!result.accessToken) throw new SignInError('LOGIN_FAILED', 'signIn: returned to the product but adsIdentity has no token');
   return result;
+}
+
+// Accepts an organisation invitation on the hosted ADS pages (PLAT-ROLE-001), the way the invitee does:
+// opens the emailed link, then either signs in with the existing account, or (newAccount: true)
+// creates the account, opens the activation email and types the password, and finally clicks Accept.
+// `ads` (the harness) is needed for newAccount, to read the activation email.
+// Returns { organization } from the welcome page. Throws SignInError (INVITATION_INVALID | LOGIN_FAILED | WRONG_ACCOUNT | TIMEOUT).
+export async function acceptInvitation(page, { link, email, password, newAccount = false, name, ads, timeout = 20_000 } = {}) {
+  if (!link || !email || !password) throw new Error('acceptInvitation: link, email and password are required');
+  if (newAccount && !ads) throw new Error('acceptInvitation: pass { ads } to read the activation email');
+  await page.goto(link);
+  const accept = page.locator('form[action="/invite/accept"] button[type="submit"]');
+  if (await page.locator('a[href^="/login?next="]').count()) {
+    if (newAccount) {
+      ads.trackEmail?.(email);
+      await page.locator('a[href^="/register?next="]').click();
+      await page.waitForURL(u => u.pathname === '/register', { timeout });
+      if (name) await page.locator('input[name="name"]').fill(name);
+      await page.locator('input[name="email"]').fill(email);
+      await page.locator('input[name="password"]').fill(password);
+      await page.locator('input[name="confirm"]').fill(password);
+      await page.locator('form[action="/register"] button[type="submit"]').click();
+      if (await page.locator('[role="alert"]').count()) throw new SignInError('LOGIN_FAILED', `acceptInvitation: registration refused: ${await textOf(page, '[role="alert"]')}`);
+      const mail = await ads.waitForEmail({ to: String(email).toLowerCase(), subject: 'Activate', timeoutMs: timeout });
+      const activation = String(mail.text).match(/https?:\/\/\S+\/verify-email\?\S+/)?.[0];
+      if (!activation) throw new SignInError('LOGIN_FAILED', 'acceptInvitation: no activation link');
+      await page.goto(activation);
+      await page.locator('input[name="password"]').fill(password);
+      await page.locator('form[action="/verify-email"] button[type="submit"]').click();
+    } else {
+      await page.locator('a[href^="/login?next="]').click();
+      await page.waitForURL(u => u.pathname === '/login', { timeout });
+      await page.locator('input[name="email"]').fill(email);
+      await page.locator('input[name="password"]').fill(password);
+      await page.locator('form[action="/login"] button[type="submit"]').click();
+    }
+    await page.waitForURL(u => u.pathname === '/invite' || u.pathname === '/login' || u.pathname === '/verify-email', { timeout });
+    if (new URL(page.url()).pathname !== '/invite') throw new SignInError('LOGIN_FAILED', `acceptInvitation: ${await textOf(page, '[role="alert"]')}`);
+  } else if (!(await accept.count())) {
+    if (await page.locator('form[action="/logout"]').count()) throw new SignInError('WRONG_ACCOUNT', `acceptInvitation: ${await textOf(page, '[role="alert"]')}`);
+    throw new SignInError('INVITATION_INVALID', `acceptInvitation: ${await textOf(page, 'h1')}`);
+  }
+  if (!(await accept.count())) throw new SignInError('WRONG_ACCOUNT', `acceptInvitation: ${await textOf(page, '[role="alert"]')}`);
+  await accept.click();
+  await page.waitForLoadState('load');
+  if (await page.locator('[role="alert"]').count()) throw new SignInError('WRONG_ACCOUNT', `acceptInvitation: ${await textOf(page, '[role="alert"]')}`);
+  return { organization: await textOf(page, 'h1') };
 }
 
 // Asserts the page holds a valid ADS session; optionally checks email, tenant and roles.

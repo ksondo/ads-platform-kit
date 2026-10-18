@@ -24,6 +24,7 @@ export const test = withAds(base).extend({
 export { expect };
 
 export const CLIENT_ID = 'sample-web';
+export const ADMIN_SECRET = process.env.SAMPLE_ADMIN_CLIENT_SECRET ?? 'sample-web-e2e-only-secret';
 
 // Reads a table as the restricted runtime role for one tenant, the way the product server does.
 export async function asTenant(db, tenantId, sql, params = []) {

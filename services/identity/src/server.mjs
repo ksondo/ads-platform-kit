@@ -3,6 +3,8 @@ import crypto from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createLocalJWKSet, jwtVerify } from 'jose';
 import { createAccounts } from './accounts.mjs';
+import { TOKEN_EXCHANGE, createAdmin } from './admin.mjs';
+import { renderAdminPage } from './admin-page.mjs';
 import { createLegacyApi } from './legacy.mjs';
 import { createOAuth } from './oauth.mjs';
 import { pickLocale, renderPage } from './pages.mjs';
@@ -20,8 +22,11 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
   const oauth = createOAuth({ pool, config, keys, audit });
   const legacy = createLegacyApi({ pool, config, accounts, audit });
   const localJwks = createLocalJWKSet(keys.jwks);
+  const admin = createAdmin({ pool, config, keys, jwks: localJwks, audit, mailer, log });
 
   // ---------- helpers ----------
+  // Where to go after signing in without a product: only our own admin and invitation pages.
+  const safeNext = v => (typeof v === 'string' && (/^\/admin(\?[A-Za-z0-9=&%._-]{0,300})?$/.test(v) || /^\/invite\?token=[A-Za-z0-9_-]{20,100}$/.test(v)) ? v : null);
   // Behind a proxy, only the address appended by our own proxy is trustworthy: the right-most
   // entry (or N-th from the right with several proxies). Left-most entries are client-controlled.
   const clientIp = req => {
@@ -135,15 +140,18 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     const body = renderPage(view, {
       locale, nonce, client: ctx.authRequest?.client ?? ctx.client ?? null, req: ctx.authRequest?.id ?? ctx.req ?? null,
       csrf: csrfToken(req, res), error: ctx.error, values: ctx.values, googleEnabled: config.google.enabled,
-      minPassword: config.passwordMinLength, path: ctx.path ?? safePath(new URL(req.url, 'http://x').pathname),
+      minPassword: config.passwordMinLength, path: ctx.path ?? safePath(new URL(req.url, 'http://x').pathname), next: safeNext(ctx.next),
     });
     res.writeHead(status, { 'content-type': 'text/html; charset=utf-8' });
     res.end(body);
   }
 
   // After a successful sign-in: pick the workspace and send the user back to the product.
-  async function finishSignIn(req, res, authRequest, sso, chosenTenant) {
-    if (!authRequest) return page(req, res, 'signed_in', { values: { email: sso.user.email } });
+  async function finishSignIn(req, res, authRequest, sso, chosenTenant, next) {
+    if (!authRequest) {
+      if (safeNext(next)) return redirect(res, safeNext(next));
+      return page(req, res, 'signed_in', { values: { email: sso.user.email } });
+    }
     const result = await oauth.resolveWorkspace(sso.user, authRequest, chosenTenant);
     if (result.choose) return page(req, res, 'choose_workspace', { authRequest, values: { workspaces: result.choose } });
     if (result.noAccess) {
@@ -179,6 +187,34 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
   const KNOWN_PAGES = new Set(['/login', '/register', '/forgot-password', '/logout']);
   const safePath = p => (KNOWN_PAGES.has(p) ? p : '/login');
 
+  const invitePageValues = (invitation, token, sso) => ({
+    token, invitation: { organizationName: invitation.organization_name, productName: invitation.product_name, email: invitation.email, roles: invitation.roles },
+    signedInEmail: sso?.user.email ?? null, matches: Boolean(sso && normalizeEmail(sso.user.email) === invitation.email),
+  });
+
+  async function adminPage(req, res, sso, q) {
+    const workspaces = await admin.adminWorkspaces(sso.user.id);
+    const ws = workspaces.find(w => w.tenantId === q.tenant) ?? workspaces[0];
+    const locale = pickLocale(q.lang, req.headers['accept-language']);
+    const nonce = randomToken(12);
+    baseHeaders(res, nonce);
+    const csrf = csrfToken(req, res);
+    let ctx = { locale, nonce, csrf, user: sso.user, workspaces, products: [], done: q.done, error: q.error };
+    if (ws) {
+      const all = (await pool.query("SELECT client_id, display_name, assignable_roles, admin_roles FROM platform.oauth_clients WHERE status='active' ORDER BY display_name")).rows;
+      const products = ws.orgAdmin ? all : all.filter(p => ws.productAdmin.includes(p.client_id));
+      const client = products.find(p => p.client_id === q.product) ?? products[0];
+      ctx = { ...ctx, products, client, current: { tenantId: ws.tenantId, clientId: client?.client_id ?? '', orgAdmin: ws.orgAdmin } };
+      if (client) {
+        const actx = { actorId: sso.user.id, tenantId: ws.tenantId, clientId: client.client_id, via: 'page', ip: clientIp(req) };
+        ctx.members = await admin.listMembers(actx);
+        ctx.invitations = await admin.listInvitations(actx);
+      }
+    }
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+    res.end(renderAdminPage(ctx));
+  }
+
   let sdkCache = null;
 
   // ---------- routes ----------
@@ -200,8 +236,8 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       return json(res, 200, {
         issuer: config.issuer, authorization_endpoint: `${config.publicUrl}/authorize`, token_endpoint: `${config.publicUrl}/token`,
         jwks_uri: `${config.publicUrl}/.well-known/jwks.json`, userinfo_endpoint: `${config.publicUrl}/userinfo`, revocation_endpoint: `${config.publicUrl}/revoke`,
-        end_session_endpoint: `${config.publicUrl}/logout`, response_types_supported: ['code'], grant_types_supported: ['authorization_code', 'refresh_token'],
-        code_challenge_methods_supported: ['S256'], token_endpoint_auth_methods_supported: ['none'],
+        end_session_endpoint: `${config.publicUrl}/logout`, response_types_supported: ['code'], grant_types_supported: ['authorization_code', 'refresh_token', TOKEN_EXCHANGE],
+        code_challenge_methods_supported: ['S256'], token_endpoint_auth_methods_supported: ['none', 'client_secret_basic', 'client_secret_post'],
         access_token_signing_alg_values_supported: ['RS256'], claims_supported: ['sub', 'tenant_id', 'roles', 'email', 'email_verified', 'name'],
       }, { 'cache-control': 'public, max-age=300', 'access-control-allow-origin': '*' });
     }
@@ -239,12 +275,13 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     const boundRequest = async id => (isBound(req, id) ? oauth.loadAuthRequest(id) : null);
 
     if (method === 'GET' && (path === '/login' || path === '/' )) {
-      return page(req, res, 'login', { authRequest: await authRequestFrom(q), lang: q.lang });
+      return page(req, res, 'login', { authRequest: await authRequestFrom(q), lang: q.lang, next: q.next });
     }
     if (method === 'POST' && path === '/login') {
       const form = await readBody(req);
       const authRequest = await authRequestFrom(form);
-      const ctx = { authRequest, lang: form.lang, values: { email: form.email } };
+      const next = safeNext(form.next);
+      const ctx = { authRequest, lang: form.lang, values: { email: form.email }, next };
       try {
         checkCsrf(req, form);
         const email = normalizeEmail(form.email);
@@ -257,14 +294,14 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
           // Right password but email not yet confirmed: send a fresh activation link for that registration.
           if (error instanceof HttpError && error.code === 'EMAIL_NOT_VERIFIED' && error.details?.user
             && limiter.hit(`email:${emailKey(email)}`, config.limits.emailPerAddress, 60 * MINUTE).allowed) {
-            await accounts.sendVerification(error.details.user, { passwordHash: error.details.passwordHash, req: authRequest?.id, product: authRequest?.client?.display_name });
+            await accounts.sendVerification(error.details.user, { passwordHash: error.details.passwordHash, req: authRequest?.id, product: authRequest?.client?.display_name, next });
           }
           throw error;
         }
         limiter.reset(`login-email:${emailKey(email)}`);
         const sso = await startSso(req, res, user, 'password');
         await audit('login', { userId: user.id, outcome: 'allowed', reason: 'password', ip, clientId: authRequest?.client_id });
-        return finishSignIn(req, res, authRequest, sso);
+        return finishSignIn(req, res, authRequest, sso, undefined, next);
       } catch (error) {
         if (error instanceof HttpError) return page(req, res, 'login', { ...ctx, error: error.code }, error.status === 429 ? 429 : 400);
         throw error;
@@ -272,21 +309,26 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     }
 
     if (method === 'GET' && path === '/register') {
-      return page(req, res, 'register', { authRequest: await authRequestFrom(q), lang: q.lang });
+      // Coming from an invitation: start with the invited email address.
+      const next = safeNext(q.next);
+      const invited = next?.startsWith('/invite?') ? await admin.findInvitation(new URL(next, 'http://x').searchParams.get('token')) : null;
+      return page(req, res, 'register', { authRequest: await authRequestFrom(q), lang: q.lang ?? invited?.locale, next, values: { email: invited?.email } });
     }
     if (method === 'POST' && path === '/register') {
       const form = await readBody(req);
       const authRequest = await authRequestFrom(form);
       const locale = pickLocale(form.lang, req.headers['accept-language'], authRequest?.locale);
-      const ctx = { authRequest, lang: form.lang, values: { email: form.email, name: form.name } };
+      const next = safeNext(form.next);
+      const ctx = { authRequest, lang: form.lang, values: { email: form.email, name: form.name }, next };
       try {
         checkCsrf(req, form);
         limiter.enforce(`register-ip:${ip}`, config.limits.registerPerIp, 60 * MINUTE);
         if (String(form.password ?? '') !== String(form.confirm ?? '')) fail(400, 'PASSWORDS_DO_NOT_MATCH');
         limiter.enforce(`email:${emailKey(form.email)}`, config.limits.emailPerAddress, 60 * MINUTE);
-        const { user } = await accounts.register({ email: form.email, password: form.password, name: form.name, locale, product: authRequest?.client?.display_name, req: authRequest?.id, ip, clientId: authRequest?.client_id });
+        const { user } = await accounts.register({ email: form.email, password: form.password, name: form.name, locale, product: authRequest?.client?.display_name, req: authRequest?.id, ip, clientId: authRequest?.client_id, next });
         if (user.status === 'active' && !config.requireEmailVerification) {
-          return redirect(res, `/login${authRequest ? `?req=${encodeURIComponent(authRequest.id)}` : ''}`);
+          const back = new URLSearchParams({ ...(authRequest ? { req: authRequest.id } : {}), ...(next ? { next } : {}) }).toString();
+          return redirect(res, `/login${back ? `?${back}` : ''}`);
         }
         return page(req, res, 'check_email', { ...ctx, values: { email: normalizeEmail(form.email) } });
       } catch (error) {
@@ -298,19 +340,20 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       // Opening the link does not activate anything by itself (mail scanners open links too).
       const authRequest = await boundRequest(q.req);
       if (!(await accounts.checkVerifyToken(q.token))) return page(req, res, 'link_invalid', { authRequest, lang: q.lang, values: { retry: '/login' } }, 400);
-      return page(req, res, 'activate', { authRequest, lang: q.lang, values: { token: q.token } });
+      return page(req, res, 'activate', { authRequest, lang: q.lang, values: { token: q.token }, next: q.next });
     }
     if (method === 'POST' && path === '/verify-email') {
       const form = await readBody(req);
       const authRequest = await boundRequest(form.req);
-      const ctx = { authRequest, lang: form.lang, values: { token: form.token } };
+      const next = safeNext(form.next);
+      const ctx = { authRequest, lang: form.lang, values: { token: form.token }, next };
       try {
         checkCsrf(req, form);
         limiter.enforce(`activate-ip:${ip}`, config.limits.loginPerIp, 15 * MINUTE);
         limiter.enforce(`activate-token:${sha256(String(form.token ?? ''))}`, 10, 15 * MINUTE);
         const user = await accounts.activate({ token: String(form.token ?? ''), password: form.password, ip });
         const sso = await startSso(req, res, user, 'password');
-        return finishSignIn(req, res, authRequest, sso);
+        return finishSignIn(req, res, authRequest, sso, undefined, next);
       } catch (error) {
         if (error instanceof HttpError && error.code === 'LINK_INVALID') return page(req, res, 'link_invalid', { ...ctx, values: { retry: '/login' } }, 400);
         if (error instanceof HttpError) return page(req, res, 'activate', { ...ctx, error: error.code }, error.status === 429 ? 429 : 400);
@@ -379,8 +422,8 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       const state = randomToken(24);
       const nonce = randomToken(24);
       const codeVerifier = randomToken(48);
-      await pool.query('INSERT INTO platform.google_states(state_hash,auth_request_id,code_verifier,nonce,expires_at) VALUES ($1,$2,$3,$4,now()+interval \'10 minutes\')',
-        [sha256(state), authRequest?.id ?? null, codeVerifier, nonce]);
+      await pool.query('INSERT INTO platform.google_states(state_hash,auth_request_id,code_verifier,nonce,next,expires_at) VALUES ($1,$2,$3,$4,$5,now()+interval \'10 minutes\')',
+        [sha256(state), authRequest?.id ?? null, codeVerifier, nonce, safeNext(q.next)]);
       addCookie(res, cookie(C.gstate, signValue(state, config.cookieSecret), { secure: config.secureCookies, maxAge: 600 }));
       return redirect(res, google.authorizationUrl({ state, nonce, codeVerifier, locale: authRequest?.locale ?? 'en' }));
     }
@@ -400,7 +443,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
         const profile = await google.exchange({ code: q.code, codeVerifier: row.code_verifier, nonce: row.nonce });
         const user = await accounts.googleUser({ ...profile, ip, locale: authRequest?.locale ?? 'en' });
         const sso = await startSso(req, res, user, 'google');
-        return finishSignIn(req, res, authRequest, sso);
+        return finishSignIn(req, res, authRequest, sso, undefined, row.next);
       } catch (error) {
         const code = error instanceof HttpError ? error.code : 'GOOGLE_SIGN_IN_FAILED';
         if (!(error instanceof HttpError)) log.warn?.(`google sign-in failed: ${error.message}`);
@@ -422,8 +465,13 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       try {
         if (body.grant_type === 'authorization_code') return json(res, 200, await oauth.exchangeCode(body, ip), { 'cache-control': 'no-store', pragma: 'no-cache' });
         if (body.grant_type === 'refresh_token') return json(res, 200, await oauth.refresh(body, ip), { 'cache-control': 'no-store', pragma: 'no-cache' });
+        // Product SERVER only (needs the client secret): an org admin's product token -> admin API token.
+        if (body.grant_type === TOKEN_EXCHANGE) return json(res, 200, await admin.exchange(req, body, ip), { 'cache-control': 'no-store', pragma: 'no-cache' });
         fail(400, 'unsupported_grant_type');
       } catch (error) {
+        if (error instanceof HttpError && error.code === 'invalid_client' && body.grant_type === TOKEN_EXCHANGE) {
+          return json(res, 401, { error: 'invalid_client' }, { 'cache-control': 'no-store', 'www-authenticate': 'Basic realm="ads-identity"' });
+        }
         if (error instanceof HttpError) return json(res, 400, { error: error.code }, { 'cache-control': 'no-store' });
         throw error;
       }
@@ -462,12 +510,106 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
         }
       }
       addCookie(res, cookie(C.sso, '', { secure: config.secureCookies, maxAge: 0 }));
+      if (!back && method === 'POST' && safeNext(form.next)) return redirect(res, safeNext(form.next));
       if (back) {
         const url = new URL(back);
         if (form.state) url.searchParams.set('state', String(form.state).slice(0, 512));
         return redirect(res, url.toString());
       }
       return page(req, res, 'signed_out', { client, lang: form.lang });
+    }
+
+    // ----- invitations (hosted pages) -----
+    if (method === 'GET' && path === '/invite') {
+      const invitation = await admin.findInvitation(q.token);
+      const ctx = { lang: q.lang ?? invitation?.locale, path: `/invite?token=${encodeURIComponent(String(q.token ?? ''))}` };
+      if (!invitation) return page(req, res, 'invite_invalid', ctx, 400);
+      const sso = await currentSso(req);
+      return page(req, res, 'invite', { ...ctx, values: invitePageValues(invitation, q.token, sso) });
+    }
+    if (method === 'POST' && path === '/invite/accept') {
+      const form = await readBody(req);
+      checkCsrf(req, form);
+      const sso = await currentSso(req);
+      const token = String(form.token ?? '');
+      if (!sso) return redirect(res, `/login?next=${encodeURIComponent(`/invite?token=${token}`)}`);
+      limiter.enforce(`invite-accept-ip:${ip}`, 30, 15 * MINUTE);
+      try {
+        const done = await admin.acceptInvitation(token, sso.user, ip);
+        return page(req, res, 'invite_accepted', { lang: form.lang, values: done });
+      } catch (error) {
+        if (!(error instanceof HttpError)) throw error;
+        const invitation = await admin.findInvitation(token);
+        if (!invitation) return page(req, res, 'invite_invalid', { lang: form.lang }, 400);
+        return page(req, res, 'invite', { lang: form.lang, path: `/invite?token=${token}`, error: error.code, values: invitePageValues(invitation, token, sso) }, 403);
+      }
+    }
+
+    // ----- organisation admin: hosted page (session cookie + CSRF) -----
+    if (method === 'GET' && path === '/admin') {
+      const sso = await currentSso(req);
+      if (!sso) return redirect(res, `/login?next=${encodeURIComponent(safeNext(`/admin${url.search.replace(/[^A-Za-z0-9=&%._?-]/g, '')}`) ?? '/admin')}`);
+      return adminPage(req, res, sso, q);
+    }
+    if (method === 'POST' && path === '/admin') {
+      const form = await readBody(req);
+      checkCsrf(req, form);
+      const sso = await currentSso(req);
+      if (!sso) return redirect(res, '/login?next=%2Fadmin');
+      const ctx = { actorId: sso.user.id, tenantId: String(form.tenant ?? ''), clientId: String(form.product ?? ''), via: 'page', ip };
+      const back = extra => redirect(res, `/admin?${new URLSearchParams({ tenant: ctx.tenantId, product: ctx.clientId, lang: form.lang === 'fr' ? 'fr' : 'en', ...extra })}`);
+      try {
+        const target = String(form.user_id ?? '');
+        switch (form.action) {
+          case 'grant': await admin.grantRoles(ctx, target, form.roles); return back({ done: 'granted' });
+          case 'revoke': await admin.revokeRoles(ctx, target, form.roles); return back({ done: 'revoked' });
+          case 'deactivate': await admin.setActive(ctx, target, false); return back({ done: 'deactivated' });
+          case 'reactivate': await admin.setActive(ctx, target, true); return back({ done: 'reactivated' });
+          case 'make_admin': await admin.setOrgAdmin(ctx, target, true); return back({ done: 'admin' });
+          case 'remove_admin': await admin.setOrgAdmin(ctx, target, false); return back({ done: 'admin' });
+          case 'invite':
+            limiter.enforce(`invite:${ctx.actorId}`, 100, 60 * MINUTE);
+            await admin.createInvitation(ctx, { email: form.email, roles: form.roles, phone: form.phone, locale: form.locale, orgAdmin: form.org_admin === 'true' });
+            return back({ done: 'invited' });
+          case 'revoke_invitation': await admin.revokeInvitation(ctx, String(form.invitation_id ?? '')); return back({ done: 'invite_revoked' });
+          default: fail(400, 'FORBIDDEN');
+        }
+      } catch (error) {
+        if (error instanceof HttpError) return back({ error: error.code });
+        throw error;
+      }
+    }
+
+    // ----- organisation admin API (product servers, admin token from token exchange) -----
+    if (path.startsWith('/admin/v1/')) {
+      limiter.enforce(`admin-api-ip:${ip}`, config.limits.tokenPerIp, MINUTE);
+      const ctx = await admin.apiContext(req, ip);
+      const m = path.match(/^\/admin\/v1\/(members|invitations)(?:\/([0-9a-f-]{36})(?:\/([a-z-]+(?:\/[a-z]+)?))?)?$/);
+      if (method === 'GET' && path === '/admin/v1/me') {
+        const auth = await admin.authority(ctx.actorId, ctx.tenantId);
+        return json(res, 200, { userId: ctx.actorId, tenantId: ctx.tenantId, product: ctx.clientId, scopes: [...ctx.scopes].filter(Boolean),
+          orgAdmin: Boolean(auth?.orgAdmin), organization: auth?.workspace.organizationName ?? null });
+      }
+      if (!m) fail(404, 'NOT_FOUND');
+      const [, kind, id, sub] = m;
+      const body = method === 'POST' ? await readBody(req) : {};
+      if (kind === 'members') {
+        if (method === 'GET' && !id) return json(res, 200, { items: await admin.listMembers(ctx) });
+        if (method === 'POST' && id && sub === 'roles/grant') return json(res, 200, await admin.grantRoles(ctx, id, body.roles));
+        if (method === 'POST' && id && sub === 'roles/revoke') return json(res, 200, await admin.revokeRoles(ctx, id, body.roles));
+        if (method === 'POST' && id && sub === 'deactivate') return json(res, 200, await admin.setActive(ctx, id, false));
+        if (method === 'POST' && id && sub === 'reactivate') return json(res, 200, await admin.setActive(ctx, id, true));
+        if (method === 'POST' && id && sub === 'org-admin') return json(res, 200, await admin.setOrgAdmin(ctx, id, body.admin === true));
+      }
+      if (kind === 'invitations') {
+        if (method === 'GET' && !id) return json(res, 200, { items: await admin.listInvitations(ctx) });
+        if (method === 'POST' && !id) {
+          limiter.enforce(`invite:${ctx.actorId}`, 100, 60 * MINUTE);
+          return json(res, 201, await admin.createInvitation(ctx, { email: body.email, roles: body.roles, phone: body.phone, locale: body.locale, orgAdmin: body.orgAdmin === true, ttlSeconds: body.ttlSeconds }));
+        }
+        if (method === 'POST' && id && sub === 'revoke') return json(res, 200, await admin.revokeInvitation(ctx, id));
+      }
+      fail(404, 'NOT_FOUND');
     }
 
     // ----- legacy JSON API used by Software Factory -----
@@ -523,5 +665,5 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     await pool.query("DELETE FROM platform.sessions WHERE expires_at < now() - interval '30 days'");
   }
 
-  return { handler, server: http.createServer(handler), accounts, oauth, audit, purgeExpired };
+  return { handler, server: http.createServer(handler), accounts, oauth, admin, audit, purgeExpired };
 }

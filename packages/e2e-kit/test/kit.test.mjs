@@ -76,6 +76,34 @@ describe('startIdentity in-process + startMocks', () => {
     assert.deepEqual(roles, ['approver', 'clerk']);
   });
 
+  it('grantRoleViaApi, adminApi and inviteViaApi go through the real admin API (token exchange + /admin/v1)', async () => {
+    const { clientSecret } = await h.registerClient({ clientId: 'kit-admin-web', redirectUris: [REDIRECT], name: 'Kit Admin', clientSecret: true, assignableRoles: ['clerk', 'approver'] });
+    assert.ok(clientSecret);
+    const owner = await h.seedTenant({ product: 'kit-admin-web', roles: ['approver'] });
+    const staff = await h.createUser();
+    const granted = await h.grantRoleViaApi({ admin: owner.user, org: owner.org, product: 'kit-admin-web', clientSecret, user: staff, role: 'clerk' });
+    assert.deepEqual(granted.roles, ['clerk']);
+    const token = await codeFlow(h, 'kit-admin-web', staff);
+    const { payload } = await jwtVerify(token, createRemoteJWKSet(new URL(h.jwksUrl)), { issuer: h.issuer, audience: 'kit-admin-web' });
+    assert.deepEqual([payload.tenant_id, payload.roles], [owner.tenantId, ['clerk']]);
+
+    await assert.rejects(h.grantRoleViaApi({ admin: staff, org: owner.org, product: 'kit-admin-web', clientSecret, user: staff, role: 'approver' }), e => e.code === 'access_denied', 'members are not admins');
+    await assert.rejects(h.adminToken({ admin: owner.user, org: owner.org, product: 'kit-admin-web', clientSecret: 'wrong' }), e => e.status === 401);
+
+    const api = await h.adminApi({ admin: owner.user, org: owner.org, product: 'kit-admin-web', clientSecret });
+    assert.deepEqual((await api.members()).map(m => m.email).sort(), [owner.email, staff.email].sort());
+    const phone = `+2376${crypto.randomInt(10000000, 99999999)}`;
+    const inv = await h.inviteViaApi({ admin: owner.user, org: owner.org, product: 'kit-admin-web', clientSecret, role: 'clerk', phone });
+    assert.match(inv.link, /\/invite\?token=/);
+    assert.equal(inv.invitation.status, 'pending');
+    const sms = await h.mocks.waitForMessage({ channel: 'sms', to: phone, includes: '/invite?token=' });
+    assert.ok(sms, 'the SMS hook goes to the mock SMS capture');
+    const landing = await (await fetch(inv.link, { headers: { accept: 'text/html' } })).text();
+    assert.match(landing, /Create my ADS account/);
+    assert.equal((await api.revokeInvitation(inv.invitation.id)).status, 'revoked');
+    await assert.rejects(api.grant(staff, ['nope']), e => e.status === 400 && e.code === 'ROLE_NOT_ASSIGNABLE');
+  });
+
   it('mintAccessToken is signed by the running service key (verifies via its JWKS)', async () => {
     const token = await h.mintAccessToken({ sub: 'user-1', tenant_id: crypto.randomUUID(), roles: ['r'], audience: 'kit-test-web' });
     const { payload } = await jwtVerify(token, createRemoteJWKSet(new URL(h.jwksUrl)), { issuer: h.issuer, audience: 'kit-test-web' });

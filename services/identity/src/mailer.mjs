@@ -30,6 +30,19 @@ const templates = {
       "Si ce n'était pas vous, ignorez cet e-mail ; votre mot de passe reste inchangé.",
     ],
   }),
+  invitation: ({ link, days, product, organization, inviter, roles }) => ({
+    subject: `${organization} invited you to ${product} / Invitation à ${product}`,
+    intro: [
+      `${inviter} invited you to join ${organization} in ${product} as ${roles.join(', ')}. Sign in with this email address, or create your ADS account with it, to accept. The invitation works once and expires in ${days} days.`,
+      `${inviter} vous invite à rejoindre ${organization} dans ${product} en tant que ${roles.join(', ')}. Connectez-vous avec cette adresse e-mail, ou créez votre compte ADS avec elle, pour accepter. L'invitation ne fonctionne qu'une fois et expire dans ${days} jours.`,
+    ],
+    button: ['Accept invitation', "Accepter l'invitation"],
+    link,
+    outro: [
+      'If you do not know this organisation, ignore this email.',
+      'Si vous ne connaissez pas cette organisation, ignorez cet e-mail.',
+    ],
+  }),
   password_changed: () => ({
     subject: 'Your password was changed / Votre mot de passe a été modifié',
     intro: [

@@ -189,6 +189,12 @@ The workflow sets `DATABASE_URL` and `PRODUCT_DATABASE_URL` (product test databa
 | `ads.createUser({ email?, password?, verified = true, name? })` | Active account with a known password (unique email by default) |
 | `ads.createOrganization({ name?, owner? })` | `{ organizationId, tenantId }` |
 | `ads.grantRole({ user, org, product, role \| roles })` | Adds product roles in that workspace |
+| `ads.makeOrgAdmin({ user, org })` | Makes a member an organisation admin (setup) |
+| `ads.registerClient({ ..., clientSecret: true, adminRoles?, assignableRoles?, adminScopes? })` | Also enables the admin API for the product; returns `{ clientSecret }` |
+| `ads.grantRoleViaApi({ admin, org, product, clientSecret, user, role \| roles })` | Grants roles through the **real admin API** (token exchange + `/admin/v1`), as an org admin's product server does |
+| `ads.adminApi({ admin, org, product, clientSecret, scope? })` | Client for `/admin/v1` as that admin: `members`, `grant`, `revoke`, `deactivate`, `reactivate`, `setOrgAdmin`, `invite`, `invitations`, `revokeInvitation`, `me`. Refusals throw with `.status` and `.code` |
+| `ads.inviteViaApi({ admin, org, product, clientSecret, email?, role \| roles, phone?, locale? })` | Creates an invitation through the API and returns `{ invitation, email, link }` from the email (SMS goes to the mock SMS capture) |
+| `ads.invitationLink({ to })` / `ads.trackEmail(email)` | The latest invitation link sent to an address / have `cleanup()` delete an account created through the hosted pages |
 | `ads.seedTenant({ product, roles })` | User + new organisation + roles in one call: `{ user, tenantId, email, password }` |
 | `ads.mintAccessToken({ sub, tenant_id, roles, audience, email?, expiresIn? })` | RS256 token signed by the running service's key |
 | `ads.waitForEmail({ to, subject? })` | An email the identity service sent (activation, reset) |
@@ -201,10 +207,15 @@ Playwright helpers (`@ads/e2e-kit/playwright`, no Playwright import of their own
 
 | Helper | Does |
 | --- | --- |
-| `signIn(page, { email, password, startUrl?, button?, tenantId? })` | Triggers `adsIdentity.signIn()` (or clicks your button), fills the hosted login page, picks the workspace if asked, waits until the product page holds a token. Returns `{ accessToken, user }`. Throws `SignInError` with `code` `NO_ACCESS`, `LOGIN_FAILED` or `TIMEOUT`, so unhappy paths are testable |
+| `signIn(page, { email, password, startUrl?, button?, tenantId? })` | Triggers `adsIdentity.signIn()` (or clicks your button), fills the hosted login page (skipped when the browser already has an ADS session), picks the workspace if asked, waits until the product page holds a token. Returns `{ accessToken, user }`. Throws `SignInError` with `code` `NO_ACCESS`, `LOGIN_FAILED` or `TIMEOUT`, so unhappy paths are testable |
 | `expectSignedIn(page, { email?, tenantId?, roles? })` | Asserts a valid session and its claims |
 | `signOut(page)` / `expectSignedOut(page)` | Real sign-out (refresh token revoked, ADS session ended) |
+| `acceptInvitation(page, { link, email, password, newAccount?, ads? })` | Opens the invitation, signs in (or with `newAccount: true` registers, activates from the email and comes back), clicks Accept. Throws `SignInError` `INVITATION_INVALID`, `WRONG_ACCOUNT` or `LOGIN_FAILED` |
 | `withAds(test)` | Adds the `ads` fixture (connected harness, cleaned up after each test) |
+
+Admin journeys: the worked example [`examples/sample-product/e2e/admin-invitations.spec.mjs`](../examples/sample-product/e2e/admin-invitations.spec.mjs) invites a new and an existing user, refuses a forwarded invitation, grants/removes roles and deactivates through the API, and drives the hosted admin page in EN/FR. Prefer `grantRoleViaApi` over `grantRole` when the test is about who may grant access; `grantRole`/`seedTenant` stay for plain setup.
+
+On a shared build machine, set `ADS_TEST_PORT_RANGE=from-to` so the kit's own tests and `freePort()` only use your ports.
 
 ## Test data conventions
 

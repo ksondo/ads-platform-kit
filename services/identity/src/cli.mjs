@@ -1,4 +1,5 @@
-// Operator commands until the admin panel exists. Run inside the identity container:
+// Operator commands. Organisation admins manage members, roles and invitations themselves on
+// /admin or through the admin API; these commands are for ADS operators. Run inside the identity container:
 //   node src/cli.mjs <command> [--flag value ...]
 import crypto from 'node:crypto';
 import pg from 'pg';
@@ -14,8 +15,11 @@ const usage = `Commands:
   migrate
   generate-key                         print a new RS256 private key for IDENTITY_SIGNING_KEY_PEM
   register-client --id health-web --name "ADS Health" --redirect https://health.example/,https://... [--logout https://...] [--logo https://...] [--accent #146D91] [--self-roles patient] [--personal true|false]
+                  [--admin-scopes members:read,roles:write,members:write,invitations:write] [--admin-roles facility_admin] [--assignable-roles nurse,receptionist]
+  set-client-secret --id health-web    print a new client secret for the product SERVER (admin API token exchange); shown once
   create-organization --name "Ecole Les Pins" --owner owner@example.com
   grant-role --email user@example.com --client health-web --tenant <tenant uuid> --roles facility_admin,reviewer
+  make-org-admin --email user@example.com --tenant <tenant uuid>
   disable-user --email user@example.com`;
 
 if (command === 'generate-key') {
@@ -45,12 +49,17 @@ try {
         const parsed = new URL(u);
         if (parsed.protocol !== 'https:' && parsed.hostname !== 'localhost') throw new Error(`redirect must be https: ${u}`);
       }
-      await pool.query(`INSERT INTO platform.oauth_clients(client_id,display_name,logo_url,accent_color,redirect_uris,post_logout_redirect_uris,self_service_roles,allow_personal_workspace)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      const scopes = list(args['admin-scopes']);
+      const known = ['members:read', 'roles:write', 'members:write', 'invitations:write'];
+      for (const sc of scopes) if (!known.includes(sc)) throw new Error(`unknown admin scope ${sc} (known: ${known.join(', ')})`);
+      await pool.query(`INSERT INTO platform.oauth_clients(client_id,display_name,logo_url,accent_color,redirect_uris,post_logout_redirect_uris,self_service_roles,allow_personal_workspace,admin_scopes,admin_roles,assignable_roles)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
         ON CONFLICT (client_id) DO UPDATE SET display_name=EXCLUDED.display_name, logo_url=EXCLUDED.logo_url, accent_color=EXCLUDED.accent_color,
           redirect_uris=EXCLUDED.redirect_uris, post_logout_redirect_uris=EXCLUDED.post_logout_redirect_uris,
-          self_service_roles=EXCLUDED.self_service_roles, allow_personal_workspace=EXCLUDED.allow_personal_workspace`,
-      [args.id, args.name, args.logo ?? null, args.accent ?? null, list(args.redirect), list(args.logout), list(args['self-roles']), args.personal !== 'false']);
+          self_service_roles=EXCLUDED.self_service_roles, allow_personal_workspace=EXCLUDED.allow_personal_workspace,
+          admin_scopes=EXCLUDED.admin_scopes, admin_roles=EXCLUDED.admin_roles, assignable_roles=EXCLUDED.assignable_roles`,
+      [args.id, args.name, args.logo ?? null, args.accent ?? null, list(args.redirect), list(args.logout), list(args['self-roles']), args.personal !== 'false',
+        scopes, list(args['admin-roles']), list(args['assignable-roles'])]);
       await audit('client_registered', { clientId: args.id });
       console.log(`client ${args.id} saved`);
       break;
@@ -86,6 +95,24 @@ try {
         ON CONFLICT (user_id,tenant_id,client_id) DO UPDATE SET roles=EXCLUDED.roles, updated_at=now()`, [uid, args.tenant, args.client, list(args.roles)]);
       await audit('roles_granted', { userId: uid, tenantId: args.tenant, clientId: args.client });
       console.log(`roles for ${args.email} in ${args.client}: ${list(args.roles).join(', ') || '(none)'}`);
+      break;
+    }
+    case 'set-client-secret': {
+      need('id');
+      const secret = crypto.randomBytes(32).toString('base64url');
+      const r = await pool.query("UPDATE platform.oauth_clients SET client_secret_hash=encode(sha256(convert_to($2,'UTF8')),'hex') WHERE client_id=$1", [args.id, secret]);
+      if (!r.rowCount) throw new Error(`no client ${args.id}`);
+      await audit('client_secret_set', { clientId: args.id });
+      console.log(`client secret for ${args.id} (store it in the product server's secrets; it is not shown again):\n${secret}`);
+      break;
+    }
+    case 'make-org-admin': {
+      need('email', 'tenant');
+      const uid = await userId(args.email);
+      const r = await pool.query("UPDATE platform.memberships SET role='admin' WHERE user_id=$1 AND tenant_id=$2 AND role<>'owner'", [uid, args.tenant]);
+      if (!r.rowCount) throw new Error('not a member of that workspace (or already the owner)');
+      await audit('org_admin_set', { userId: uid, tenantId: args.tenant });
+      console.log(`${args.email} is an organisation admin`);
       break;
     }
     case 'disable-user': {

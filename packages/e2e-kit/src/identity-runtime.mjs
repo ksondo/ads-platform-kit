@@ -37,7 +37,7 @@ export async function runIdentityInProcess({ databaseUrl, host = '127.0.0.1', po
     IDENTITY_PUBLIC_URL: publicUrl, IDENTITY_DEV_MODE: 'true', DATABASE_URL: databaseUrl, MAIL_TRANSPORT: 'memory',
     IDENTITY_SIGNING_KEY_PEM: signingKeyPem, IDENTITY_SIGNING_KEY_ID: kid,
     IDENTITY_COOKIE_SECRET: crypto.randomBytes(32).toString('hex'), IDENTITY_DB_POOL_MAX: '5',
-    ...E2E_LIMITS, ...env,
+    ...E2E_LIMITS, ...(mocksUrl ? { IDENTITY_SMS_URL: `${mocksUrl}/sms/v1/messages` } : {}), ...env,
   });
   const pool = new pg.Pool({ connectionString: databaseUrl, max: config.dbPoolMax });
   await migrate(pool, log);
