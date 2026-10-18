@@ -9,7 +9,7 @@ Status key: **Available** = the shared service exists; **Planned** = to be built
 | PLAT-ID-001 | One ADS account: every product signs users in through the shared ADS sign-in | ads-platform-kit `services/identity` + `ads-identity.js` | **Available** (18 Oct 2026); no product connected yet |
 | PLAT-ID-002 | Registration with email activation; sign-in with Google; password reset by email | identity service | Available |
 | PLAT-ID-003 | Phone-number sign-up with SMS code | identity service | Planned |
-| PLAT-ROLE-001 | Roles and services managed by admins, enforced on the server | admin service + panel | Planned |
+| PLAT-ROLE-001 | Roles and services managed by admins, enforced on the server | identity `/admin/v1` API + `/admin` page; invitations into an organisation | **Available** (18 Oct 2026); per-product menu filtering (AC-1) is each product's job |
 | PLAT-AUD-001 | Audit trail of security and business events, viewable by admins | audit service | Partly (sign-in events) |
 | PLAT-OBS-001 | Structured logs, error tracking, health checks, alerts | operations kit | Planned |
 | PLAT-NOT-001 | Notifications by email, SMS, push and USSD, with a notifications centre | notification service | Planned |
