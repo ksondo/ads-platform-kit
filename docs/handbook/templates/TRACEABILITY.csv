@@ -1,0 +1,2 @@
+fr_id,story_id,ac_id,journey,screen,api,table,sequence_diagram,test,status
+FR-001,US-001,AC-001-1,J-01,docs/uiux/...,POST /api/...,schema.table,docs/design/sequence/J-01.md,tests/e2e/j01.spec.ts,not_started

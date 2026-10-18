@@ -14,13 +14,11 @@ Shared building blocks for every Africa Digital Synergy (ADS) product, built onc
 
 ## Standards and requirements
 
-This repo implements the shared services; the rules live in one place, Software Factory's [ADS Handbook](https://github.com/ksondo/Software-Factory/tree/main/docs/handbook):
+The ADS Handbook is the standard for building every ADS app. It is hosted in both places: the source is in [Software Factory `docs/handbook/`](https://github.com/ksondo/Software-Factory/tree/main/docs/handbook), and a copy sits here in [`docs/handbook/`](docs/handbook/) next to the services that implement it ([how the copy is kept in step](docs/handbook/MIRROR.md)).
 
-- [ADS Software Delivery Handbook](https://github.com/ksondo/Software-Factory/blob/main/docs/handbook/ADS_SOFTWARE_DELIVERY_HANDBOOK_v1.md): how every ADS product is specified, built, tested and released.
-- [ADS Platform Requirements](https://github.com/ksondo/Software-Factory/blob/main/docs/handbook/PLATFORM_REQUIREMENTS.md): what every product must meet. This kit delivers them: PLAT-ID-001/002 (sign-in) today; PLAT-ROLE, PLAT-AUD, PLAT-NOT, PLAT-PAY, PLAT-I18N/UX/A11Y and PLAT-CH next.
-- [UI/UX register](https://github.com/ksondo/Software-Factory/blob/main/docs/handbook/UIUX_REGISTER.md): the master design system the kit's shared screens use.
-
-They are linked, not copied, so there is never a second version to drift.
+- [ADS Software Delivery Handbook](docs/handbook/ADS_SOFTWARE_DELIVERY_HANDBOOK_v1.md): how every ADS product is specified, built, tested and released.
+- [ADS Platform Requirements](docs/handbook/PLATFORM_REQUIREMENTS.md): what every product must meet. This kit delivers them: PLAT-ID-001/002 (sign-in) today; PLAT-ROLE, PLAT-AUD, PLAT-NOT, PLAT-PAY, PLAT-I18N/UX/A11Y, PLAT-CH and the shared sandbox/mock providers for PLAT-EXT-001 (mock bank, MoMo/Orange Money, regulator, insurer, KYC) next.
+- [UI/UX register](docs/handbook/UIUX_REGISTER.md): the master design system the kit's shared screens use.
 
 ## How products use it
 
@@ -30,6 +28,10 @@ Two ways, both shown in [docs/INTEGRATING_A_PRODUCT.md](docs/INTEGRATING_A_PRODU
 2. **A small library inside each product**: today, `ads-identity.js`, which provides the `window.adsIdentity` helper that the product screens already expect.
 
 The tokens carry exactly the claims ADS product servers already check: `sub` (user), `tenant_id` (organisation workspace) and `roles`, signed with RS256 and published at `/.well-known/jwks.json`. Because this is standard OAuth 2.0 / OpenID Connect, a later move to Keycloak or another provider changes configuration, not product code.
+
+### Building a standalone app
+
+A standalone app (one that is not part of a larger ADS product) uses the kit the same way: it keeps its own screens, server and database, and **calls the kit's services** over HTTPS for what every app needs — sign-in today, then roles, audit, notifications and payments. It never copies the kit's code or stores passwords. Running the kit once means every app shares one account, one admin panel and one audit trail.
 
 ## Sign-in service at a glance
 
