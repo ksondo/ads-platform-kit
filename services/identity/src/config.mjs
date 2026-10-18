@@ -48,6 +48,15 @@ export function loadConfig(env = process.env) {
     resetPasswordTtl: num(env.IDENTITY_RESET_PASSWORD_TTL_SECONDS, 3600),
     authRequestTtl: num(env.IDENTITY_AUTH_REQUEST_TTL_SECONDS, 1800),
     authCodeTtl: num(env.IDENTITY_AUTH_CODE_TTL_SECONDS, 60),
+    // A refresh token presented again within this many seconds of its rotation returns the same
+    // successor (a reload cut off the first response). Later reuse, or reuse of an older token,
+    // is treated as theft and ends the sign-in. 0 turns the grace window off.
+    refreshReuseGrace: Math.min(120, Math.max(0, num(env.IDENTITY_REFRESH_REUSE_GRACE_SECONDS, 30))),
+    // Short-lived admin tokens a product server gets for an organisation admin (token exchange).
+    adminTokenTtl: num(env.IDENTITY_ADMIN_TOKEN_TTL_SECONDS, 300),
+    invitationTtl: num(env.IDENTITY_INVITATION_TTL_SECONDS, 7 * 86400),
+    // Optional SMS hook for invitations: POST {to, text} (the shared mocks' /sms/v1/messages in tests).
+    smsUrl: env.IDENTITY_SMS_URL ?? '',
 
     mail: {
       transport: env.MAIL_TRANSPORT ?? (devMode ? 'log' : 'smtp'),

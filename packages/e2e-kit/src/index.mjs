@@ -16,12 +16,28 @@ export { SIGNATURE_HEADER, signPayload, verifySignature as verifyWebhookSignatur
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_STATE_FILE = () => path.resolve(process.env.ADS_E2E_STATE ?? '.ads-e2e/state.json');
 
-export function freePort(host = '127.0.0.1') {
+// A free port: random, or (with ADS_TEST_PORT_RANGE=from-to, for shared build machines) the next
+// free one in that range that this process has not handed out yet.
+const handedOut = new Set();
+function probe(port, host) {
   return new Promise((resolve, reject) => {
     const s = net.createServer();
     s.once('error', reject);
-    s.listen(0, host, () => { const { port } = s.address(); s.close(() => resolve(port)); });
+    s.listen(port, host, () => { const { port: p } = s.address(); s.close(() => resolve(p)); });
   });
+}
+export async function freePort(host = '127.0.0.1') {
+  const range = String(process.env.ADS_TEST_PORT_RANGE ?? '').match(/^(\d+)-(\d+)$/);
+  if (!range) return probe(0, host);
+  const [from, to] = [Number(range[1]), Number(range[2])];
+  for (let pass = 0; pass < 2; pass += 1) {
+    for (let port = from; port <= to; port += 1) {
+      if (handedOut.has(port)) continue;
+      try { await probe(port, host); handedOut.add(port); return port; } catch (error) { if (error.code !== 'EADDRINUSE') throw error; }
+    }
+    handedOut.clear(); // every port was handed out once: allow reuse of ones that are free again
+  }
+  throw new Error(`e2e-kit: no free port in ADS_TEST_PORT_RANGE ${range[0]}`);
 }
 
 async function waitForHealth(url, timeoutMs = 30_000) {
@@ -40,10 +56,11 @@ async function dropIdentitySchema(databaseUrl) {
 }
 
 // Starts the mock providers in this process.
-export async function startMocks({ port = 0, host = '127.0.0.1', webhookSecret = crypto.randomBytes(24).toString('hex'), defaultDelayMs } = {}) {
+export async function startMocks({ port, host = '127.0.0.1', webhookSecret = crypto.randomBytes(24).toString('hex'), defaultDelayMs } = {}) {
   const { createMocks } = await import(path.join(KIT_ROOT, 'services/mocks/src/server.mjs'));
   const mocks = createMocks({ webhookSecret, defaultDelayMs, log: { info() {}, warn() {}, error: m => console.error(m) } });
-  await new Promise((resolve, reject) => { mocks.server.once('error', reject); mocks.server.listen(port, host, resolve); });
+  const listenPort = port ?? (process.env.ADS_TEST_PORT_RANGE ? await freePort(host) : 0);
+  await new Promise((resolve, reject) => { mocks.server.once('error', reject); mocks.server.listen(listenPort, host, resolve); });
   const url = `http://${host}:${mocks.server.address().port}`;
   return {
     url, webhookSecret, mocks, client: createMocksClient(url, { webhookSecret }),

@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { withTransaction } from './db.mjs';
-import { HttpError, fail, isPkceChallenge, isPkceVerifier, pkceChallenge, randomToken, safeEqual, sha256 } from './security.mjs';
+import { HttpError, fail, isPkceChallenge, isPkceVerifier, pkceChallenge, randomToken, safeEqual, seal, sha256, unseal } from './security.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -106,7 +106,8 @@ export function createOAuth({ pool, config, keys, audit }) {
     return url.toString();
   }
 
-  async function tokensFor(client, userId, tenantId, ssoSessionId, familyId = crypto.randomUUID(), db = pool) {
+  // A signed access token for this user, workspace and product, after re-checking that access still holds.
+  async function accessTokenFor(client, userId, tenantId, ssoSessionId, db = pool) {
     const user = (await db.query('SELECT id,email,display_name,status,email_verified_at FROM platform.users WHERE id=$1', [userId])).rows[0];
     if (!user || user.status !== 'active') fail(400, 'invalid_grant');
     const member = (await db.query(`SELECT 1 FROM platform.memberships m JOIN platform.tenants t ON t.id=m.tenant_id AND t.status='active'
@@ -114,15 +115,21 @@ export function createOAuth({ pool, config, keys, audit }) {
     if (!member) fail(400, 'invalid_grant');
     const roles = await rolesFor(userId, tenantId, client, db);
     if (!roles.length) fail(400, 'invalid_grant');
-    const accessToken = await keys.sign(
+    return keys.sign(
       { tenant_id: tenantId, roles, email: user.email, email_verified: Boolean(user.email_verified_at), name: user.display_name ?? undefined, client_id: client.client_id, sid: ssoSessionId ?? undefined },
       { audience: client.client_id, issuer: config.issuer, subject: userId, expiresIn: config.accessTokenTtl },
     );
+  }
+  const tokenResponse = (accessToken, refreshToken) => ({ access_token: accessToken, token_type: 'Bearer', expires_in: config.accessTokenTtl, refresh_token: refreshToken, scope: 'openid' });
+
+  async function tokensFor(client, userId, tenantId, ssoSessionId, familyId = crypto.randomUUID(), db = pool) {
+    const accessToken = await accessTokenFor(client, userId, tenantId, ssoSessionId, db);
     const refreshToken = randomToken(32);
+    const id = crypto.randomUUID();
     await db.query(`INSERT INTO platform.refresh_tokens(id,family_id,token_hash,client_id,user_id,tenant_id,sso_session_id,expires_at)
       VALUES ($1,$2,$3,$4,$5,$6,$7,now()+make_interval(secs => $8))`,
-    [crypto.randomUUID(), familyId, sha256(refreshToken), client.client_id, userId, tenantId, ssoSessionId, config.refreshTokenTtl]);
-    return { access_token: accessToken, token_type: 'Bearer', expires_in: config.accessTokenTtl, refresh_token: refreshToken, scope: 'openid' };
+    [id, familyId, sha256(refreshToken), client.client_id, userId, tenantId, ssoSessionId, config.refreshTokenTtl]);
+    return { ...tokenResponse(accessToken, refreshToken), id };
   }
 
   async function exchangeCode({ code, code_verifier: verifier, client_id: clientId, redirect_uri: redirectUri }, ip) {
@@ -137,7 +144,7 @@ export function createOAuth({ pool, config, keys, audit }) {
       }
       await c.query('UPDATE platform.auth_codes SET used_at=now() WHERE code_hash=$1', [row.code_hash]);
       try {
-        const tokens = await tokensFor(client, row.user_id, row.tenant_id, row.sso_session_id, undefined, c);
+        const { id: _id, ...tokens } = await tokensFor(client, row.user_id, row.tenant_id, row.sso_session_id, undefined, c);
         await audit('token', { userId: row.user_id, tenantId: row.tenant_id, outcome: 'allowed', reason: 'authorization_code', ip, clientId }, c);
         return { tokens };
       } catch (error) {
@@ -160,21 +167,35 @@ export function createOAuth({ pool, config, keys, audit }) {
     throw new HttpError(400, 'invalid_grant');
   }
 
+  // Rotating refresh (RFC 6749 §10.4, OAuth 2.0 Security BCP §4.14). Each use returns a new
+  // refresh token; presenting a rotated one again means it was copied, so the whole family (that
+  // sign-in) is revoked. One exception keeps reloads from looking like theft: within a short grace
+  // window, the IMMEDIATELY previous token of a family whose successor has not been used yet returns
+  // that same successor (idempotent rotation). Older tokens, reuse after the window, or reuse once the
+  // successor has itself been rotated still revoke the family.
   async function refresh({ refresh_token: token, client_id: clientId }, ip) {
     const client = await getClient(clientId);
     if (!client) fail(400, 'invalid_client');
     if (typeof token !== 'string' || !token) fail(400, 'invalid_request');
     const result = await withTransaction(pool, async c => {
-      const row = (await c.query('SELECT * FROM platform.refresh_tokens WHERE token_hash=$1 FOR UPDATE', [sha256(token)])).rows[0];
+      const row = (await c.query(`SELECT *, (rotated_at IS NOT NULL AND rotated_at > now() - make_interval(secs => $2)) AS in_grace
+        FROM platform.refresh_tokens WHERE token_hash=$1 FOR UPDATE`, [sha256(token), config.refreshReuseGrace])).rows[0];
       if (!row || row.client_id !== client.client_id) return { denied: 'invalid_grant', row: null };
-      if (row.rotated_at || row.revoked_at) return { denied: row.revoked_at ? 'refresh_revoked' : 'refresh_reuse_detected', row };
-      if (row.expires_at <= new Date()) return { denied: 'refresh_expired', row: null };
-      if (row.sso_session_id) {
-        const sso = (await c.query('SELECT 1 FROM platform.sso_sessions WHERE id=$1 AND revoked_at IS NULL', [row.sso_session_id])).rowCount;
-        if (!sso) return { denied: 'signed_out', row: null };
+      if (row.revoked_at) return { denied: 'refresh_revoked', row };
+      if (row.rotated_at) {
+        const replay = row.in_grace && row.successor_id && row.successor_sealed ? await graceReplay(c, client, row, token) : null;
+        if (replay?.tokens) {
+          await audit('token', { userId: row.user_id, tenantId: row.tenant_id, outcome: 'allowed', reason: 'refresh_token_grace_replay', ip, clientId }, c);
+          return replay;
+        }
+        if (replay?.denied) return replay;
+        return { denied: 'refresh_reuse_detected', row };
       }
-      await c.query('UPDATE platform.refresh_tokens SET rotated_at=now() WHERE id=$1', [row.id]);
-      const tokens = await tokensFor(client, row.user_id, row.tenant_id, row.sso_session_id, row.family_id, c);
+      if (row.expires_at <= new Date()) return { denied: 'refresh_expired', row: null };
+      if (!(await ssoActive(c, row.sso_session_id))) return { denied: 'signed_out', row: null };
+      const { id: successorId, ...tokens } = await tokensFor(client, row.user_id, row.tenant_id, row.sso_session_id, row.family_id, c);
+      await c.query('UPDATE platform.refresh_tokens SET rotated_at=now(), successor_id=$2, successor_sealed=$3 WHERE id=$1',
+        [row.id, successorId, config.refreshReuseGrace > 0 ? seal(tokens.refresh_token, token) : null]);
       await audit('token', { userId: row.user_id, tenantId: row.tenant_id, outcome: 'allowed', reason: 'refresh_token', ip, clientId }, c);
       return { tokens };
     });
@@ -185,6 +206,28 @@ export function createOAuth({ pool, config, keys, audit }) {
     }
     await audit('token', { userId: result.row?.user_id ?? null, outcome: 'denied', reason: result.denied, ip, clientId });
     throw new HttpError(400, 'invalid_grant');
+  }
+
+  async function ssoActive(db, ssoSessionId) {
+    if (!ssoSessionId) return true;
+    return (await db.query('SELECT 1 FROM platform.sso_sessions WHERE id=$1 AND revoked_at IS NULL', [ssoSessionId])).rowCount > 0;
+  }
+
+  // The previous token came back within the grace window: hand out the same successor if it is
+  // still the live head of the family. Returns { tokens } | { denied } | null (treat as reuse).
+  async function graceReplay(c, client, row, token) {
+    const next = (await c.query('SELECT * FROM platform.refresh_tokens WHERE id=$1 AND family_id=$2 FOR UPDATE', [row.successor_id, row.family_id])).rows[0];
+    if (!next || next.rotated_at || next.revoked_at) return null;
+    if (next.expires_at <= new Date()) return { denied: 'refresh_expired', row: null };
+    const successor = unseal(row.successor_sealed, token);
+    if (!successor || sha256(successor) !== next.token_hash) return null;
+    if (!(await ssoActive(c, next.sso_session_id))) return { denied: 'signed_out', row: null };
+    try {
+      return { tokens: tokenResponse(await accessTokenFor(client, next.user_id, next.tenant_id, next.sso_session_id, c), successor) };
+    } catch (error) {
+      if (error instanceof HttpError) return { denied: 'access_removed', row: null };
+      throw error;
+    }
   }
 
   async function revokeRefresh(token) {

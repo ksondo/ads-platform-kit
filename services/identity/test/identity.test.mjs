@@ -152,9 +152,12 @@ describe('ADS identity service', () => {
     const second = await refresh(first.refresh_token);
     assert.equal(second.status, 200);
     assert.notEqual(second.body.refresh_token, first.refresh_token);
+    const third = await refresh(second.body.refresh_token);
+    assert.equal(third.status, 200);
+    // The first token is two generations old: no grace window applies to it.
     const stolen = await refresh(first.refresh_token);
     assert.equal(stolen.status, 400, 'old refresh token rejected');
-    const afterTheft = await refresh(second.body.refresh_token);
+    const afterTheft = await refresh(third.body.refresh_token);
     assert.equal(afterTheft.status, 400, 'whole family revoked after reuse');
     const audit = (await svc.pool.query("SELECT count(*)::int AS n FROM platform.identity_audit WHERE reason='refresh_reuse_detected'")).rows[0].n;
     assert.ok(audit >= 1, 'reuse is audited even though the request failed');

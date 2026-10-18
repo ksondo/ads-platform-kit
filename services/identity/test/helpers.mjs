@@ -12,6 +12,24 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 export const DATABASE_URL = process.env.TEST_DATABASE_URL ?? 'postgres://kit:kit@127.0.0.1:5432/kit_test';
 const quiet = { info() {}, warn() {}, error(m) { if (process.env.DEBUG) console.error(m); } };
 
+// Test servers listen on a random free port, or, when ADS_TEST_PORT_RANGE=from-to is set (shared
+// build machines), on the first free port in that range.
+export async function listenForTest(server, host = '127.0.0.1') {
+  const range = String(process.env.ADS_TEST_PORT_RANGE ?? '').match(/^(\d+)-(\d+)$/);
+  const tryPort = port => new Promise((resolve, reject) => {
+    const onError = error => { server.off('listening', onListening); reject(error); };
+    const onListening = () => { server.off('error', onError); resolve(); };
+    server.once('error', onError);
+    server.once('listening', onListening);
+    server.listen(port, host);
+  });
+  if (!range) return tryPort(0);
+  for (let port = Number(range[1]); port <= Number(range[2]); port += 1) {
+    try { return await tryPort(port); } catch (error) { if (error.code !== 'EADDRINUSE') throw error; }
+  }
+  throw new Error(`no free port in ADS_TEST_PORT_RANGE ${range[0]}`);
+}
+
 // Starts a fresh identity service against a clean database. Google is replaced by a stub.
 export async function startService({ env = {}, google } = {}) {
   const admin = new pg.Pool({ connectionString: DATABASE_URL, max: 2 });
@@ -26,7 +44,7 @@ export async function startService({ env = {}, google } = {}) {
   const keys = await loadSigningKey(config, quiet);
   const mailer = createMailer(config, quiet);
   const app = createApp({ config, pool, keys, mailer, google, log: quiet, sdkPath: path.resolve(here, '../../../packages/identity-client/ads-identity.js') });
-  await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
+  await listenForTest(app.server);
   const base = `http://127.0.0.1:${app.server.address().port}`;
   // The issuer must match the address tokens are fetched from in tests.
   config.publicUrl = base;
@@ -111,4 +129,35 @@ export async function activate(b, link, password) {
   const page = await b.get(link);
   const token = new URL(link).searchParams.get('token');
   return b.post('/verify-email', { csrf: csrfFrom(page.text), token, password, req: new URL(link).searchParams.get('req') ?? '' });
+}
+
+// Signs a user in through the hosted pages and exchanges the code: { access_token, refresh_token, ... }.
+export async function signInTokens(svc, client, { email, password, b = browser(svc.base), extra = {} }) {
+  const { verifier, challenge } = pkce();
+  const q = new URLSearchParams({ response_type: 'code', client_id: client.id, redirect_uri: client.redirect, state: 'st', code_challenge: challenge, code_challenge_method: 'S256', ...extra });
+  const auth = await b.get(`/authorize?${q}`);
+  let location = auth.location;
+  if (location.startsWith('/login')) {
+    const page = await b.get(location);
+    location = (await b.post('/login', { csrf: csrfFrom(page.text), req: reqFrom(location), email, password })).location;
+  }
+  if (!location?.startsWith(client.redirect)) throw new Error(`signInTokens: not redirected back (${location})`);
+  const res = await fetch(`${svc.base}/token`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'authorization_code', code: new URL(location).searchParams.get('code'), code_verifier: verifier, client_id: client.id, redirect_uri: client.redirect }) });
+  if (res.status !== 200) throw new Error(`signInTokens: token exchange ${res.status}`);
+  return res.json();
+}
+
+export async function refreshWith(svc, clientId, token) {
+  const res = await fetch(`${svc.base}/token`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: token, client_id: clientId }) });
+  return { status: res.status, body: await res.json() };
+}
+
+// An active user with a known password, created directly (test setup only).
+export async function createActiveUser(pool, email, password) {
+  const { hashPassword } = await import('../src/security.mjs');
+  const id = crypto.randomUUID();
+  await pool.query("INSERT INTO platform.users(id,email,password_hash,status,email_verified_at) VALUES ($1,$2,$3,'active',now())", [id, email, await hashPassword(password)]);
+  return { id, email, password };
 }

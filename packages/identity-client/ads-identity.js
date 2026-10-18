@@ -14,6 +14,12 @@
  * memory; the rotating refresh token lives in sessionStorage (this tab only) so a reload does not
  * force a new sign-in. Closing the tab ends it; the login domain's own session then signs the user
  * back in without a password.
+ *
+ * Refresh is single-flight: one request per page, and across tabs of the same product (a
+ * duplicated tab starts with a copy of the same refresh token) a Web Lock serialises renewals and a
+ * BroadcastChannel hands the new tokens to every tab that held the old one, so tabs never present a
+ * refresh token another tab already rotated. A renewal cut short by a reload is covered by the
+ * identity service's short grace window (the previous token returns the same successor once).
  */
 (function () {
   'use strict';
@@ -33,6 +39,11 @@
   var accessExp = 0;
   var refreshPromise = null;
   var listeners = [];
+  // Rotations announced by other tabs: sha256(old refresh token) -> { tokens, at }.
+  var rotated = {};
+  var ROTATED_TTL = 120000;
+  var channel = null;
+  try { if (typeof BroadcastChannel === 'function') channel = new BroadcastChannel(KEY); } catch (e) { channel = null; }
 
   function configured() { return Boolean(issuer && clientId); }
   function ss(name, value) {
@@ -85,13 +96,76 @@
     }).then(function (r) { return r.json().then(function (b) { if (!r.ok) throw new Error(b.error || ('http_' + r.status)); return b; }); });
   }
 
-  function refresh() {
-    var rt = ss('refresh');
-    if (!rt) return Promise.resolve(null);
+  function hashOf(value) {
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)).then(function (h) { return b64url(new Uint8Array(h)); });
+  }
+  function forgetOldRotations() {
+    var now = Date.now();
+    Object.keys(rotated).forEach(function (k) { if (now - rotated[k].at > ROTATED_TTL) delete rotated[k]; });
+  }
+  // Another tab of this product rotated a refresh token. If it is the one this tab holds, take the
+  // successor instead of presenting the old one (which the server would treat as stolen).
+  if (channel) {
+    channel.onmessage = function (event) {
+      var m = event && event.data;
+      if (!m || m.type !== 'rotated' || typeof m.from !== 'string' || !m.tokens || typeof m.tokens.refresh_token !== 'string') return;
+      forgetOldRotations();
+      rotated[m.from] = { tokens: m.tokens, at: Date.now() };
+      var mine = ss('refresh');
+      if (!mine) return;
+      hashOf(mine).then(function (h) { if (h === m.from && ss('refresh') === mine) store(m.tokens); });
+    };
+  }
+  // Runs fn while holding a lock shared by every tab of this product (when the browser has Web Locks).
+  // If another tab held the lock, its "rotated" broadcast was sent before it let go but may not
+  // have been delivered yet: give it a moment before reading this tab's refresh token.
+  function withLock(fn) {
+    try {
+      if (navigator.locks && typeof navigator.locks.request === 'function') {
+        var asked = Date.now();
+        return navigator.locks.request('ads-identity-refresh:' + clientId, { mode: 'exclusive' }, function () {
+          if (!channel || Date.now() - asked < 5) return fn();
+          return new Promise(function (r) { setTimeout(r, 50); }).then(fn);
+        });
+      }
+    } catch (e) { /* fall through */ }
+    return fn();
+  }
+  // Only a definite answer from the identity service ends the session. A network failure (offline,
+  // or the request cut off) keeps the refresh token so the next call can try again.
+  var FATAL = { invalid_grant: true, invalid_client: true, invalid_request: true, unsupported_grant_type: true };
+  function renew(force) {
+    var startedWith = ss('refresh');
+    return withLock(function () {
+      var rt = ss('refresh');
+      if (!rt) return null;
+      // While this tab waited for the lock, another tab renewed and handed us its tokens.
+      if (rt !== startedWith && accessToken && accessExp - 30000 > Date.now()) return accessToken;
+      if (!force && accessToken && accessExp - 30000 > Date.now()) return accessToken;
+      return hashOf(rt).then(function (from) {
+        forgetOldRotations();
+        var known = rotated[from];
+        if (known) { store(known.tokens); return accessToken; }
+        return postForm('/token', { grant_type: 'refresh_token', refresh_token: rt, client_id: clientId })
+          .then(function (tokens) {
+            // Another tab may have handed us a newer token while this request was running.
+            if (ss('refresh') === rt) store(tokens);
+            rotated[from] = { tokens: tokens, at: Date.now() };
+            try { if (channel) channel.postMessage({ type: 'rotated', from: from, tokens: tokens }); } catch (e) { /* ignore */ }
+            return accessToken;
+          }, function (error) {
+            if (error && FATAL[error.message] && ss('refresh') === rt) clear();
+            return null;
+          });
+      });
+    });
+  }
+  function refresh(force) {
+    if (!ss('refresh')) return Promise.resolve(null);
     if (!refreshPromise) {
-      refreshPromise = postForm('/token', { grant_type: 'refresh_token', refresh_token: rt, client_id: clientId })
-        .then(function (tokens) { store(tokens); return accessToken; })
-        .catch(function () { clear(); return null; })
+      refreshPromise = Promise.resolve()
+        .then(function () { return renew(force); })
+        .catch(function () { return null; })
         .then(function (v) { refreshPromise = null; return v; });
     }
     return refreshPromise;
@@ -123,11 +197,13 @@
     __ads: true,
     ready: null,
     isConfigured: configured,
-    getAccessToken: function () {
+    // options.forceRefresh: get a new token now, e.g. after an administrator changed your roles.
+    getAccessToken: function (options) {
       if (!configured()) return Promise.resolve(null);
+      var force = Boolean(options && options.forceRefresh);
       return api.ready.then(function () {
-        if (accessToken && accessExp - 30000 > Date.now()) return accessToken;
-        return refresh();
+        if (!force && accessToken && accessExp - 30000 > Date.now()) return accessToken;
+        return refresh(force);
       });
     },
     getUser: function () {

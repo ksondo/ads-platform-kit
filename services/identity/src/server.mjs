@@ -517,6 +517,8 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     await pool.query("DELETE FROM platform.auth_codes WHERE expires_at < now() - interval '1 day'");
     await pool.query("DELETE FROM platform.email_tokens WHERE expires_at < now() - interval '7 days'");
     await pool.query("DELETE FROM platform.refresh_tokens WHERE expires_at < now() - interval '7 days'");
+    // Sealed successors are only needed during the reuse grace window.
+    await pool.query("UPDATE platform.refresh_tokens SET successor_sealed=NULL WHERE successor_sealed IS NOT NULL AND rotated_at < now() - make_interval(secs => $1)", [config.refreshReuseGrace + 60]);
     await pool.query("DELETE FROM platform.sso_sessions WHERE expires_at < now() - interval '7 days'");
     await pool.query("DELETE FROM platform.sessions WHERE expires_at < now() - interval '30 days'");
   }

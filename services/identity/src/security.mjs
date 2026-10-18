@@ -121,3 +121,24 @@ export function cookie(name, value, { maxAge, secure, httpOnly = true, sameSite 
   if (maxAge !== undefined) parts.push(`Max-Age=${Math.max(0, Math.floor(maxAge))}`);
   return parts.join('; ');
 }
+
+// Seals a value with AES-256-GCM under a key derived from a secret the caller holds (for example
+// a refresh token): only someone presenting that secret again can open it.
+const sealKey = secret => crypto.createHmac('sha256', String(secret)).update('ads-identity-seal-v1').digest();
+export function seal(value, secret) {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', sealKey(secret), iv);
+  const body = Buffer.concat([cipher.update(String(value), 'utf8'), cipher.final()]);
+  return Buffer.concat([iv, cipher.getAuthTag(), body]).toString('base64url');
+}
+export function unseal(sealed, secret) {
+  try {
+    const raw = Buffer.from(String(sealed ?? ''), 'base64url');
+    if (raw.length < 29) return null;
+    const decipher = crypto.createDecipheriv('aes-256-gcm', sealKey(secret), raw.subarray(0, 12));
+    decipher.setAuthTag(raw.subarray(12, 28));
+    return Buffer.concat([decipher.update(raw.subarray(28)), decipher.final()]).toString('utf8');
+  } catch {
+    return null;
+  }
+}
