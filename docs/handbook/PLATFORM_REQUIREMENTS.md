@@ -20,7 +20,7 @@ Status key: **Available** = the shared service exists; **Planned** = to be built
 | PLAT-CH-001 | Channels: responsive web and PWA for all; Android/iOS apps and USSD/SMS where the product needs them | app templates | Planned |
 | PLAT-DATA-001 | Consent, data export and deletion requests | identity + audit | Planned |
 | PLAT-SEC-001 | OWASP ASVS Level 2 baseline | handbook §6 | Applies now |
-| PLAT-EXT-001 | External parties (regulators, licences, banks, insurers, payment/settlement/KYC providers, legal/clinical sign-off) never block development: build against sandbox or mock adapters; real approval is a go-live gate only | mock providers in ads-platform-kit + handbook §12.1 | Applies now; shared mocks Planned |
+| PLAT-EXT-001 | External parties (regulators, licences, banks, insurers, payment/settlement/KYC providers, legal/clinical sign-off) never block development: build against sandbox or mock adapters; real approval is a go-live gate only | mock providers in ads-platform-kit (`services/mocks`) + E2E kit (`packages/e2e-kit`) + handbook §12.1 | Applies now; shared mocks **Available** (18 Oct 2026) |
 
 ---
 
