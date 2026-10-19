@@ -75,3 +75,25 @@
 - [ ] Merge approved document changes, build remaining journeys, test, deploy and certify separately.
 
 **Claude review:** Validate all source authorities and owner decisions, confirm RCK parity and cross-sector data boundaries, inspect code/test evidence, and identify conflicts before merging. This register is a discovery baseline, not a final approved replacement BRS.
+
+
+## Owner direction, 19 October — Progress Agentic RAG integration (binding for reconciliation)
+- `ksondo/Progress-Education-training` is the developer education reference: `docs/START-HERE.md`, `docs/TRAINING-GUIDE.md`, `docs/builds/00..13`, and `labs/build-XX`. Learn and implement the taught integration pattern; do not assume placeholder/simulated labs prove live connectivity. The Progress training corpus is already in the external Progress knowledge base; do not re-ingest a duplicate.
+- `ksondo/RAG-Intelligence-AI-Platform` is ADS's shared **integration/governance** repository and Application Gateway contract layer, not a mandate to rebuild Progress's Agentic RAG engine. Resolve overlaps with Progress first.
+- Every vertical's Agentic/Intelligent BRS requirement must map to: **business decision and human authority**, app-side trigger/UI/API, shared gateway adapter, Progress API/knowledge-base contract (when provided), tenant and role authorization, consent/data minimization, grounded response/evidence, fallback/error path, audit/observability, mock contract tests, live integration test pending partner access.
+- Application implementation proceeds now using documented interfaces and mocks, while Progress live integration is labeled **EXTERNAL INTEGRATION PENDING** until contract, credentials, authorization, connectivity and E2E evidence are verified. Never report mock success as live.
+- Do not silently drop later implemented or approved requirements because a Library BRS is older. Library documents are **source candidates** for additive reconciliation, not an automatic replacement of GitHub's current authoritative baseline. Preserve newer GitHub code, owner decisions, PRs and accepted journeys. Disposition per finding: ALREADY COVERED / ADD TO BRS / SUPERSEDED / CONFLICT FOR OWNER / FUTURE / PARTNER INTEGRATION.
+
+## Repository creation shortlist (not yet created)
+| Candidate | Library/RCK evidence | Current GitHub repo? | Recommendation |
+|---|---|---|---|
+| Tourism Intelligence | `TourismCorestack_BRS_v1.docx`; RCK Tourism sector | No dedicated Tourism repo in 37-repo listing | **Create after checking Tourism journeys and standalone data/API ownership** |
+| Diaspora Gateway | RCK Diaspora module | No dedicated Diaspora repo | **Conditional**: create if separate deployable onboarding/remittance/partner product; otherwise ADS Hub/shared |
+| AfriBanking / Banking Services | RCK Banking module, bank dashboard, funding/verification designs | No dedicated Banking repo | **Conditional**: regulatory and shared-finance boundary review first; do not imply bank license |
+| Role & Recruitment Intelligence | `BRS_Role_Interview_Recruitment_Intelligence_v1.0.docx` | No dedicated recruitment repo; `career-path-platform` exists | **Conditional**: standalone if employer/panel and recruitment data authority distinct from Career Path |
+| Process / Value Addition | RCK Process sector | No dedicated Process repo | **Default shared capability**, create only if separately deployable product justified |
+
+**Already exist — do not create duplicates:** `construction-realestate-intelligence-platform`, `career-path-platform`, `betting-pronostics-platform`, `transport-booking-platform`, `car-dealer-marketplace-platform`, `family-ancestry-platform`, `Personal-Life-Financial-Intelligence`, `Progress-Education-training`, `RAG-Intelligence-AI-Platform`. Check original POC transfers independently.
+
+## BRS consolidation rule
+For each identified Library BRS and RCK module: find destination repository; read canonical BRS/FRS and latest implementation/PRs; compare source requirements and later changes; add **only missing, non-superseded** requirements through reviewed GitHub PR; preserve traceability back to filename, internal version/date and specific requirement; never regress working code. Newly discovered Library material is tagged `CANDIDATE FOR BRS CONSOLIDATION`, not automatically labeled final. The register's original source index above is the initial candidate list, not an exhaustive content diff.
