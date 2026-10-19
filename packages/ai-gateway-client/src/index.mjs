@@ -31,6 +31,19 @@ export class AiGatewayError extends Error {
   }
 }
 
+/** Retry-After in seconds (delta-seconds or HTTP-date); null when absent or unreadable. */
+function parseRetryAfter(value) {
+  if (value === null || value === undefined || value === '') return null;
+  if (/^\d+$/.test(String(value).trim())) return Number(value);
+  const at = Date.parse(value);
+  return Number.isFinite(at) ? Math.max(0, Math.ceil((at - Date.now()) / 1000)) : null;
+}
+
+function transportError(error) {
+  const timeout = error?.name === 'TimeoutError';
+  return new AiGatewayError({ status: 0, code: timeout ? 'PROVIDER_TIMEOUT' : 'PROVIDER_UNAVAILABLE', retryable: true });
+}
+
 const isUuid = v => typeof v === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 
 /** Never show an uncited answer, even if a faulty gateway sent one (defence in depth). */
@@ -64,9 +77,12 @@ export function createAiGatewayClient({ apiBase, serviceToken, fetchImpl = globa
     let body = null;
     try { body = await res.json(); } catch { /* not JSON */ }
     const e = body?.error;
-    const retryAfter = res.headers.get('retry-after');
-    if (e && ERROR_CODES.has(e.code)) throw new AiGatewayError({ status: res.status, code: e.code, retryable: e.retryable, retryAfterSec: retryAfter ? Number(retryAfter) : null, requestId: e.requestId ?? res.headers.get('x-request-id') });
-    throw new AiGatewayError({ status: res.status, code: res.status >= 500 ? 'PROVIDER_UNAVAILABLE' : 'REQUEST_INVALID', retryable: res.status >= 500, requestId: res.headers.get('x-request-id') });
+    const retryAfterSec = parseRetryAfter(res.headers.get('retry-after'));
+    if (e && ERROR_CODES.has(e.code)) throw new AiGatewayError({ status: res.status, code: e.code, retryable: e.retryable, retryAfterSec, requestId: e.requestId ?? res.headers.get('x-request-id') });
+    // A body that is not the gateway's error shape (proxy page, load balancer): classify by status.
+    if (res.status === 429) throw new AiGatewayError({ status: 429, code: 'RATE_LIMITED', retryable: true, retryAfterSec, requestId: res.headers.get('x-request-id') });
+    if (res.status === 401) throw new AiGatewayError({ status: 401, code: 'UNAUTHENTICATED', retryable: false, requestId: res.headers.get('x-request-id') });
+    throw new AiGatewayError({ status: res.status, code: res.status === 504 ? 'PROVIDER_TIMEOUT' : res.status >= 500 ? 'PROVIDER_UNAVAILABLE' : 'REQUEST_INVALID', retryable: res.status >= 500, retryAfterSec, requestId: res.headers.get('x-request-id') });
   }
 
   async function call(method, path, { body, ...opts } = {}) {
@@ -74,12 +90,20 @@ export function createAiGatewayClient({ apiBase, serviceToken, fetchImpl = globa
     try {
       res = await fetchImpl(`${base}${path}`, { method, headers: headers({ ...opts, json: body !== undefined }), body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(opts.timeoutMs ?? timeoutMs) });
     } catch (error) {
-      throw new AiGatewayError({ status: 0, code: error?.name === 'TimeoutError' ? 'PROVIDER_TIMEOUT' : 'PROVIDER_UNAVAILABLE', retryable: true });
+      throw transportError(error);
     }
     if (!res.ok) await raise(res);
     return res;
   }
-  const json = async (method, path, opts) => (await call(method, path, opts)).json();
+  // A 2xx body that cannot be read or parsed (cut connection, timeout, proxy HTML) is a
+  // PROVIDER_RESPONSE_INVALID / PROVIDER_TIMEOUT AiGatewayError, never a raw SyntaxError.
+  const json = async (method, path, opts) => {
+    const res = await call(method, path, opts);
+    try { return await res.json(); } catch (error) {
+      if (error?.name === 'TimeoutError' || error?.name === 'AbortError') throw transportError(error);
+      throw new AiGatewayError({ status: res.status, code: 'PROVIDER_RESPONSE_INVALID', retryable: true, requestId: res.headers.get('x-request-id') });
+    }
+  };
 
   return {
     /** POST /v1/ai/ask (sync). Returns the §5.4 body; status GROUNDED or INSUFFICIENT_EVIDENCE. */
@@ -95,7 +119,15 @@ export function createAiGatewayClient({ apiBase, serviceToken, fetchImpl = globa
       let pending = '';
       const parse = line => { if (!line.trim()) return null; try { return JSON.parse(line); } catch { return { type: 'error', code: 'PROVIDER_RESPONSE_INVALID', retryable: true }; } };
       for (;;) {
-        const { done, value } = await reader.read();
+        let chunk;
+        // A stream cut mid-way (timeout, reset) ends with an error event, not a thrown raw error,
+        // so collectStream discards any text already shown.
+        try { chunk = await reader.read(); } catch (error) {
+          const e = transportError(error);
+          yield { type: 'error', code: e.code, retryable: true };
+          return;
+        }
+        const { done, value } = chunk;
         if (done) break;
         pending += decoder.decode(value, { stream: true });
         let i;
@@ -112,7 +144,7 @@ export function createAiGatewayClient({ apiBase, serviceToken, fetchImpl = globa
     ingest: (input, opts = {}) => json('POST', '/ingest', { ...opts, idempotencyKey: opts.idempotencyKey ?? randomUUID(), body: clean(input) }),
     ingestStatus: (jobId, opts = {}) => json('GET', `/ingest/${encodeURIComponent(jobId)}`, opts),
     withdraw: (input, opts = {}) => json('POST', '/withdraw', { ...opts, idempotencyKey: opts.idempotencyKey ?? randomUUID(), body: clean(input) }),
-    health: () => fetchImpl(`${base}/health`).then(r => r.json()),
+    health: (opts = {}) => json('GET', '/health', opts),
   };
 }
 
@@ -138,8 +170,9 @@ export async function collectStream(events, onChunk = () => {}) {
 export async function withOneRetry(fn, { maxWaitSec = 5, sleep = ms => new Promise(r => setTimeout(r, ms)) } = {}) {
   try { return await fn(); } catch (error) {
     if (!(error instanceof AiGatewayError) || !error.retryable) throw error;
-    const wait = Math.min(maxWaitSec, Math.max(0.2, error.retryAfterSec ?? 0.5));
-    if ((error.retryAfterSec ?? 0) > maxWaitSec) throw error;
+    const after = Number.isFinite(error.retryAfterSec) ? error.retryAfterSec : null;
+    if ((after ?? 0) > maxWaitSec) throw error;
+    const wait = Math.min(maxWaitSec, Math.max(0.2, after ?? 0.5));
     await sleep(wait * 1000);
     return fn();
   }

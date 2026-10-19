@@ -73,6 +73,61 @@ describe('client against the in-process test double', () => {
   });
 });
 
+describe('client error handling for non-gateway replies and broken transports', () => {
+  const input = { useCase: 'u.c', collection: 'c', query: 'abc' };
+  const reply = (status, body, headers = {}) => async () => new Response(body, { status, headers });
+
+  it('a 429 without the gateway error body is RATE_LIMITED, retryable, with Retry-After as seconds or HTTP-date', async () => {
+    let ai = createAiGatewayClient({ apiBase: 'http://gw.test/v1/ai', serviceToken: 's', fetchImpl: reply(429, '<html>slow down</html>', { 'retry-after': '3' }) });
+    let e = await ai.ask(input, { subjectToken: 't' }).catch(x => x);
+    assert.ok(e instanceof AiGatewayError);
+    assert.equal(e.code, 'RATE_LIMITED');
+    assert.equal(e.retryable, true);
+    assert.equal(e.retryAfterSec, 3);
+    const date = new Date(Date.now() + 2500).toUTCString();
+    ai = createAiGatewayClient({ apiBase: 'http://gw.test/v1/ai', serviceToken: 's', fetchImpl: reply(429, '', { 'retry-after': date }) });
+    e = await ai.ask(input, { subjectToken: 't' }).catch(x => x);
+    assert.ok(Number.isFinite(e.retryAfterSec) && e.retryAfterSec >= 0 && e.retryAfterSec <= 3);
+    ai = createAiGatewayClient({ apiBase: 'http://gw.test/v1/ai', serviceToken: 's', fetchImpl: reply(429, '', { 'retry-after': 'soon' }) });
+    e = await ai.ask(input, { subjectToken: 't' }).catch(x => x);
+    assert.equal(e.retryAfterSec, null);
+    // withOneRetry never sleeps NaN: an unreadable Retry-After waits the default.
+    const waits = [];
+    await withOneRetry(() => Promise.reject(e), { sleep: async ms => { waits.push(ms); } }).catch(() => {});
+    assert.deepEqual(waits, [500]);
+  });
+
+  it('a 2xx body that is not JSON is PROVIDER_RESPONSE_INVALID, a 504 page is PROVIDER_TIMEOUT', async () => {
+    let ai = createAiGatewayClient({ apiBase: 'http://gw.test/v1/ai', serviceToken: 's', fetchImpl: reply(200, '<html>proxy</html>', { 'content-type': 'text/html' }) });
+    let e = await ai.ask(input, { subjectToken: 't' }).catch(x => x);
+    assert.ok(e instanceof AiGatewayError);
+    assert.equal(e.code, 'PROVIDER_RESPONSE_INVALID');
+    assert.equal(e.retryable, true);
+    assert.equal(userMessage(e).kind, 'unavailable');
+    ai = createAiGatewayClient({ apiBase: 'http://gw.test/v1/ai', serviceToken: 's', fetchImpl: reply(504, 'gateway timeout') });
+    e = await ai.ask(input, { subjectToken: 't' }).catch(x => x);
+    assert.equal(e.code, 'PROVIDER_TIMEOUT');
+    e = await createAiGatewayClient({ apiBase: 'http://gw.test/v1/ai', serviceToken: 's', fetchImpl: reply(200, 'nope') }).health().catch(x => x);
+    assert.equal(e.code, 'PROVIDER_RESPONSE_INVALID');
+  });
+
+  it('a stream cut mid-way ends in an error event, and collectStream discards the shown text', async () => {
+    const enc = new TextEncoder();
+    const body = new ReadableStream({
+      start(c) { c.enqueue(enc.encode('{"type":"citations","citations":[{"ref":"1","resourceId":"r","title":"t","sourceUri":null,"score":0.9}]}\n{"type":"answer-chunk","text":"partial "}\n')); },
+      pull(c) { c.error(new TypeError('terminated')); },
+    });
+    const ai = createAiGatewayClient({ apiBase: 'http://gw.test/v1/ai', serviceToken: 's', fetchImpl: async () => new Response(body, { status: 200, headers: { 'content-type': 'application/x-ndjson' } }) });
+    const shown = [];
+    const r = await collectStream(ai.askStream(input, { subjectToken: 't' }), t => shown.push(t));
+    assert.deepEqual(shown, ['partial ']);
+    assert.equal(r.status, 'ERROR');
+    assert.equal(r.error.code, 'PROVIDER_UNAVAILABLE');
+    assert.equal(r.answer, null);
+    assert.equal(r.discardShownText, true);
+  });
+});
+
 describe('client against the kit mock facade (/ai/v1) with signed E2E-style tokens', () => {
   let mocks, base, signer, ai;
   before(async () => {

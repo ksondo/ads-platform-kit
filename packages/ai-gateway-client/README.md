@@ -34,6 +34,10 @@ else render(userMessage(result, 'fr').text); // « Je ne peux pas répondre de f
   `done`). `collectStream` keeps the text only for `GROUNDED` and sets `discardShownText` otherwise,
   so the product removes anything it already showed.
 - `withOneRetry` retries a retryable error once after `Retry-After` (bounded), never a refusal.
+- Every failure is an `AiGatewayError`, never a raw exception: a non-gateway 429 page is
+  `RATE_LIMITED` (Retry-After read as seconds or an HTTP date), a 2xx body that is not JSON is
+  `PROVIDER_RESPONSE_INVALID`, a 504 page is `PROVIDER_TIMEOUT`, and a stream cut mid-way ends with
+  an `error` event so `collectStream` discards the text already shown.
 - `userMessage(resultOrError, 'en' | 'fr')` gives the standard's states and messages; `MESSAGES`
   has the AI and Test-mode labels.
 - `ingest` (with an Idempotency-Key) sends only content that passed the product's maker-checker

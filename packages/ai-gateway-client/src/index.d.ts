@@ -16,7 +16,7 @@ export interface AiGatewayClient {
   ingest(input: { useCase: string; collection: string; sourceId: string; sourceVersion: string; title: string; contentType: 'text/markdown' | 'text/plain' | 'application/pdf'; content?: string; fileRef?: string; labels?: string[]; approvedBy: string; approvedAt: string }, opts?: CallOptions): Promise<{ requestId: string; jobId: string; state: 'PROCESSING' }>;
   ingestStatus(jobId: string, opts?: CallOptions): Promise<any>;
   withdraw(input: { useCase: string; collection: string; sourceId: string }, opts?: CallOptions): Promise<any>;
-  health(): Promise<any>;
+  health(opts?: CallOptions): Promise<any>;
 }
 export function createAiGatewayClient(options: { apiBase: string; serviceToken: string; fetchImpl?: typeof fetch; timeoutMs?: number }): AiGatewayClient;
 export function collectStream(events: AsyncIterable<StreamEvent>, onChunk?: (text: string) => void): Promise<{ status: Status | 'ERROR'; answer: string | null; citations: StreamEvent[]; error: { code: string; retryable: boolean } | null; runId: string | null; discardShownText: boolean }>;
