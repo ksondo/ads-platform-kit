@@ -1,0 +1,35 @@
+{
+  "$id": "https://contracts.africadigitalsynergy.com/ai-gateway-v1/health.schema.json",
+  "title": "health",
+  "type": "object",
+  "required": [
+    "status",
+    "service",
+    "contract",
+    "progress"
+  ],
+  "properties": {
+    "status": {
+      "const": "ok",
+      "type": "string"
+    },
+    "service": {
+      "type": "string"
+    },
+    "contract": {
+      "const": "ai-gateway-v1",
+      "type": "string"
+    },
+    "progress": {
+      "type": "string",
+      "enum": [
+        "live",
+        "mock",
+        "unconfigured"
+      ]
+    },
+    "liveIntegration": {
+      "type": "string"
+    }
+  }
+}

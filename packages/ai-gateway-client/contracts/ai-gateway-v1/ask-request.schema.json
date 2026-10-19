@@ -1,0 +1,79 @@
+{
+  "$id": "https://contracts.africadigitalsynergy.com/ai-gateway-v1/ask-request.schema.json",
+  "title": "ask-request",
+  "type": "object",
+  "required": [
+    "useCase",
+    "collection",
+    "query"
+  ],
+  "properties": {
+    "useCase": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*\\.[a-z0-9][a-z0-9-]*$"
+    },
+    "collection": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "query": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 4000
+    },
+    "language": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "audience": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "context": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        ]
+      }
+    },
+    "consentRef": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "answerSchemaId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "stream": {
+      "type": "boolean"
+    }
+  }
+}

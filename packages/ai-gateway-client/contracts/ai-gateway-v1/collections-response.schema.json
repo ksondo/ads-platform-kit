@@ -1,0 +1,49 @@
+{
+  "$id": "https://contracts.africadigitalsynergy.com/ai-gateway-v1/collections-response.schema.json",
+  "title": "collections-response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "requestId",
+    "collections",
+    "testMode"
+  ],
+  "properties": {
+    "requestId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "collections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "collection",
+          "labels",
+          "contentTypes"
+        ],
+        "properties": {
+          "collection": {
+            "type": "string"
+          },
+          "labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "contentTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "testMode": {
+      "type": "boolean"
+    }
+  }
+}

@@ -52,6 +52,22 @@ jobs:
         with:
           node-version: 22
       - run: npm test
+        env:
+          ADS_TEST_PORT_RANGE: 31060-31079
+
+  ai-gateway-client:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/ai-gateway-client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm test
+        env:
+          ADS_TEST_PORT_RANGE: 31060-31079
 
   e2e-kit:
     runs-on: ubuntu-latest
