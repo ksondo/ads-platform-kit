@@ -84,6 +84,18 @@
 - Application implementation proceeds now using documented interfaces and mocks, while Progress live integration is labeled **EXTERNAL INTEGRATION PENDING** until contract, credentials, authorization, connectivity and E2E evidence are verified. Never report mock success as live.
 - Do not silently drop later implemented or approved requirements because a Library BRS is older. Library documents are **source candidates** for additive reconciliation, not an automatic replacement of GitHub's current authoritative baseline. Preserve newer GitHub code, owner decisions, PRs and accepted journeys. Disposition per finding: ALREADY COVERED / ADD TO BRS / SUPERSEDED / CONFLICT FOR OWNER / FUTURE / PARTNER INTEGRATION.
 
+## Owner-prioritized missing sector repository coverage — Transport, Banking, Tourism (2026-10-19)
+
+The owner explicitly requests **Transport, Banking and Tourism** to be listed together as the three priority missing ADS sector repository workstreams for Claude's reconciliation. **Distinguish missing repository from an existing but empty repository:**
+
+| Priority sector | RCK registered sector/source | GitHub status verified | Action for Claude |
+|---|---|---|---|
+| **Transport / Mobility** | `mobility`; `src/modules/mobi`; `services/mobility` | **`ksondo/transport-booking-platform` already exists but is empty** (GitHub contents API reports repository empty). It is missing a populated/operational codebase, **not missing a GitHub repository**. | Recover and audit Mobility BRS/FRS, code and journeys from RCK and other POCs; populate the existing Transport repository only after extraction/certification gates and owner approval; distinguish passenger booking, operators, routes and tickets from Fleet Guard's maintenance/asset scope. **Do not create a duplicate transport repository.** |
+| **Banking / AfriBanking** | `banking`; `src/pages/BankDashboard.tsx`; `services/banking` | No dedicated Banking repository identified in the 37-repo inventory | Audit existing finance, payments, ledger, funding, verification and regulatory boundaries; propose a standalone Banking repository only if ownership/deployability justify it. |
+| **Tourism Intelligence** | `tourism`; `src/modules/tour`; `services/tourism`; Library `TourismCorestack_BRS_v1.docx` | No dedicated Tourism repository identified in the 37-repo inventory | Reconcile Tourism BRS and RCK journeys; propose dedicated Tourism repository, preserving original code and current direction. |
+
+**Status:** These are **three priority sector gaps**, not three absent GitHub repositories: **two absent dedicated repos (Banking and Tourism) plus one existing empty repo (Transport)**. Do not claim creation, transfer, implementation or certification has happened. All Agentic/Intelligent features must use the Progress-Education-training learning path and prepare application-side integration with external Progress Agentic RAG, not create a competing RAG engine.
+
 ## Repository creation shortlist (not yet created)
 | Candidate | Library/RCK evidence | Current GitHub repo? | Recommendation |
 |---|---|---|---|
