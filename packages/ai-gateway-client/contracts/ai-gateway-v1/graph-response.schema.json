@@ -1,0 +1,147 @@
+{
+  "$id": "https://contracts.africadigitalsynergy.com/ai-gateway-v1/graph-response.schema.json",
+  "title": "graph-response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "requestId",
+    "runId",
+    "useCase",
+    "status",
+    "paths",
+    "testMode",
+    "provider",
+    "timing"
+  ],
+  "properties": {
+    "requestId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "useCase": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "GROUNDED",
+        "INSUFFICIENT_EVIDENCE"
+      ]
+    },
+    "paths": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "source",
+          "relation",
+          "destination",
+          "resourceIds"
+        ],
+        "properties": {
+          "source": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "group"
+            ],
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "group": {
+                "type": "string"
+              }
+            }
+          },
+          "relation": {
+            "type": "string"
+          },
+          "destination": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "value",
+              "group"
+            ],
+            "properties": {
+              "value": {
+                "type": "string"
+              },
+              "group": {
+                "type": "string"
+              }
+            }
+          },
+          "resourceIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "testMode": {
+      "type": "boolean"
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "mode",
+        "collection"
+      ],
+      "properties": {
+        "name": {
+          "const": "progress-agentic-rag",
+          "type": "string"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "live",
+            "mock"
+          ]
+        },
+        "collection": {
+          "type": "string"
+        }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "totalMs",
+        "upstreamMs",
+        "retries",
+        "coalesced"
+      ],
+      "properties": {
+        "totalMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "upstreamMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coalesced": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

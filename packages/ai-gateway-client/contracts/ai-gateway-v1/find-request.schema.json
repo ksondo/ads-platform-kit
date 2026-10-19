@@ -1,0 +1,48 @@
+{
+  "$id": "https://contracts.africadigitalsynergy.com/ai-gateway-v1/find-request.schema.json",
+  "title": "find-request",
+  "type": "object",
+  "required": [
+    "useCase",
+    "collection",
+    "query"
+  ],
+  "properties": {
+    "useCase": {
+      "type": "string"
+    },
+    "collection": {
+      "type": "string"
+    },
+    "query": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 4000
+    },
+    "labels": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "string"
+      }
+    },
+    "contentTypes": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "string"
+      }
+    },
+    "pageSize": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 20
+    },
+    "consentRef": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

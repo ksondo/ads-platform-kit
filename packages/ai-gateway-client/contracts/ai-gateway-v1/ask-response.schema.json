@@ -1,0 +1,188 @@
+{
+  "$id": "https://contracts.africadigitalsynergy.com/ai-gateway-v1/ask-response.schema.json",
+  "title": "ask-response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "requestId",
+    "runId",
+    "useCase",
+    "status",
+    "answer",
+    "answerJson",
+    "citations",
+    "evidence",
+    "testMode",
+    "provider",
+    "timing"
+  ],
+  "properties": {
+    "requestId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "useCase": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "GROUNDED",
+        "INSUFFICIENT_EVIDENCE"
+      ]
+    },
+    "answer": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "answerJson": {
+      "type": [
+        "object",
+        "array",
+        "null"
+      ]
+    },
+    "citations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ref",
+          "resourceId",
+          "paragraphRef",
+          "title",
+          "sourceUri",
+          "score",
+          "sourceVersion"
+        ],
+        "properties": {
+          "ref": {
+            "type": "string"
+          },
+          "resourceId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,128}$"
+          },
+          "paragraphRef": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "sourceUri": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "score": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "sourceVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "citationCount",
+        "topScore",
+        "policy",
+        "compositeRetry"
+      ],
+      "properties": {
+        "citationCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "topScore": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "policy": {
+          "type": "string",
+          "enum": [
+            "kb",
+            "registry"
+          ]
+        },
+        "compositeRetry": {
+          "type": "boolean"
+        }
+      }
+    },
+    "testMode": {
+      "type": "boolean"
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "mode",
+        "collection"
+      ],
+      "properties": {
+        "name": {
+          "const": "progress-agentic-rag",
+          "type": "string"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "live",
+            "mock"
+          ]
+        },
+        "collection": {
+          "type": "string"
+        }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "totalMs",
+        "upstreamMs",
+        "retries",
+        "coalesced"
+      ],
+      "properties": {
+        "totalMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "upstreamMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coalesced": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

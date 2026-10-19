@@ -1,0 +1,48 @@
+{
+  "$id": "https://contracts.africadigitalsynergy.com/ai-gateway-v1/error.schema.json",
+  "title": "error",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "error"
+  ],
+  "properties": {
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "retryable",
+        "requestId"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "QUERY_INVALID",
+            "REQUEST_INVALID",
+            "UNAUTHENTICATED",
+            "USE_CASE_FORBIDDEN",
+            "COLLECTION_NOT_AUTHORIZED",
+            "CONSENT_REQUIRED",
+            "RESOURCE_NOT_FOUND",
+            "CONTEXT_FIELD_NOT_ALLOWED",
+            "CONTENT_NOT_APPROVED",
+            "SCHEMA_OUTPUT_INVALID",
+            "RATE_LIMITED",
+            "PROVIDER_RESPONSE_INVALID",
+            "PROVIDER_UNAVAILABLE",
+            "NOT_CONFIGURED",
+            "PROVIDER_TIMEOUT"
+          ]
+        },
+        "retryable": {
+          "type": "boolean"
+        },
+        "requestId": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "$id": "https://contracts.africadigitalsynergy.com/ai-gateway-v1/find-response.schema.json",
+  "title": "find-response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "requestId",
+    "runId",
+    "useCase",
+    "status",
+    "results",
+    "nextPage",
+    "testMode",
+    "provider",
+    "timing"
+  ],
+  "properties": {
+    "requestId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "runId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "useCase": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "GROUNDED",
+        "INSUFFICIENT_EVIDENCE"
+      ]
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rank",
+          "resourceId",
+          "paragraphRef",
+          "title",
+          "text",
+          "score",
+          "sourceUri"
+        ],
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "resourceId": {
+            "type": "string"
+          },
+          "paragraphRef": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "score": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "sourceUri": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "nextPage": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "testMode": {
+      "type": "boolean"
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "mode",
+        "collection"
+      ],
+      "properties": {
+        "name": {
+          "const": "progress-agentic-rag",
+          "type": "string"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "live",
+            "mock"
+          ]
+        },
+        "collection": {
+          "type": "string"
+        }
+      }
+    },
+    "timing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "totalMs",
+        "upstreamMs",
+        "retries",
+        "coalesced"
+      ],
+      "properties": {
+        "totalMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "upstreamMs": {
+          "type": "number",
+          "minimum": 0
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "coalesced": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

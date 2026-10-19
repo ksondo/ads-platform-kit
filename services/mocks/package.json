@@ -2,7 +2,7 @@
   "name": "@ads/mocks",
   "version": "0.1.0",
   "private": true,
-  "description": "ADS shared mock providers (PLAT-EXT-001): mobile money, bank, SMS/email capture, KYC, insurer, registry, dispatch, RAG. Test mode only.",
+  "description": "ADS shared mock providers (PLAT-EXT-001): mobile money, bank, SMS/email capture, KYC, insurer, registry, dispatch, Progress Agentic RAG (Progress-shaped API and ADS AI Gateway facade). Test mode only.",
   "type": "module",
   "engines": {
     "node": ">=22"

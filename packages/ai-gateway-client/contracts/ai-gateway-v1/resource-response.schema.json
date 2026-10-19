@@ -1,0 +1,78 @@
+{
+  "$id": "https://contracts.africadigitalsynergy.com/ai-gateway-v1/resource-response.schema.json",
+  "title": "resource-response",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "requestId",
+    "resourceId",
+    "title",
+    "summary",
+    "sourceUri",
+    "labels",
+    "fields",
+    "testMode",
+    "provider"
+  ],
+  "properties": {
+    "requestId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "resourceId": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "summary": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "sourceUri": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "labels": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "fields": {
+      "type": "object"
+    },
+    "testMode": {
+      "type": "boolean"
+    },
+    "provider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "mode",
+        "collection"
+      ],
+      "properties": {
+        "name": {
+          "const": "progress-agentic-rag",
+          "type": "string"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "live",
+            "mock"
+          ]
+        },
+        "collection": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

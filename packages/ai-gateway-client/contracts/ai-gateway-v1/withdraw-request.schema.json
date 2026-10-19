@@ -1,0 +1,21 @@
+{
+  "$id": "https://contracts.africadigitalsynergy.com/ai-gateway-v1/withdraw-request.schema.json",
+  "title": "withdraw-request",
+  "type": "object",
+  "required": [
+    "useCase",
+    "collection",
+    "sourceId"
+  ],
+  "properties": {
+    "useCase": {
+      "type": "string"
+    },
+    "collection": {
+      "type": "string"
+    },
+    "sourceId": {
+      "type": "string"
+    }
+  }
+}
