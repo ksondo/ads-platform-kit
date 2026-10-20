@@ -69,7 +69,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     req.on('error', reject);
   });
 
-  function baseHeaders(res, nonce) {
+  function baseHeaders(res, nonce, { demo = false } = {}) {
     res.setHeader('cache-control', 'no-store');
     res.setHeader('x-content-type-options', 'nosniff');
     res.setHeader('referrer-policy', 'no-referrer');
@@ -77,7 +77,10 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     res.setHeader('cross-origin-opener-policy', 'same-origin');
     if (config.secureCookies) res.setHeader('strict-transport-security', 'max-age=31536000; includeSubDomains');
     // form-action also governs the redirect back to the product after a form post, so allow https targets.
-    res.setHeader('content-security-policy', `default-src 'none'; style-src 'nonce-${nonce}'; img-src https: data:; form-action 'self' https:${config.devMode ? ' http:' : ''}; frame-ancestors 'none'; base-uri 'none'`);
+    // The demo sign-in panel adds its one nonce'd script ("Use demo account") and the landing fonts.
+    const demoCsp = demo ? `; script-src 'nonce-${nonce}'; font-src https://fonts.gstatic.com` : '';
+    const styles = demo ? `'nonce-${nonce}' https://fonts.googleapis.com` : `'nonce-${nonce}'`;
+    res.setHeader('content-security-policy', `default-src 'none'; style-src ${styles}; img-src https: data:; form-action 'self' https:${config.devMode ? ' http:' : ''}; frame-ancestors 'none'; base-uri 'none'${demoCsp}`);
   }
   const json = (res, status, body, extra = {}) => {
     res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', ...extra });
@@ -134,14 +137,18 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     return Boolean(id) && current.includes(id);
   }
 
+  // Demo credentials on the sign-in page: demo mode + DEMO_SHOW_CREDENTIALS=1, demo USER only.
+  const demoShown = config.demo.showCredentials ? { email: config.demo.accounts.user.email, password: config.demo.shownPassword } : null;
+
   function page(req, res, view, ctx = {}, status = 200) {
     const nonce = randomToken(12);
-    baseHeaders(res, nonce);
+    const demo = view === 'login' ? demoShown : null;
+    baseHeaders(res, nonce, { demo: Boolean(demo) });
     const locale = ctx.locale ?? pickLocale(ctx.lang, req.headers['accept-language'], ctx.authRequest?.locale);
     const body = renderPage(view, {
       locale, nonce, client: ctx.authRequest?.client ?? ctx.client ?? null, req: ctx.authRequest?.id ?? ctx.req ?? null,
       csrf: csrfToken(req, res), error: ctx.error, values: ctx.values, googleEnabled: config.google.enabled,
-      minPassword: config.passwordMinLength, path: ctx.path ?? safePath(new URL(req.url, 'http://x').pathname), next: safeNext(ctx.next),
+      minPassword: config.passwordMinLength, path: ctx.path ?? safePath(new URL(req.url, 'http://x').pathname), next: safeNext(ctx.next), demo,
     });
     res.writeHead(status, { 'content-type': 'text/html; charset=utf-8' });
     res.end(body);
