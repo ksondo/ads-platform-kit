@@ -271,7 +271,8 @@ describe('ADS identity service', () => {
 
 describe('legacy API used by Software Factory', () => {
   let svc;
-  before(async () => { svc = await startService(); });
+  // The onboard route is off by default (ACC-03); these tests cover it when explicitly switched on.
+  before(async () => { svc = await startService({ env: { IDENTITY_LEGACY_ONBOARD_ENABLED: 'true' } }); });
   after(async () => { await svc.stop(); });
   const call = (method, path, body, token, extra = {}) => fetch(`${svc.base}${path}`, {
     method, headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}), ...extra }, body: body ? JSON.stringify(body) : undefined,

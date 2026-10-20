@@ -90,12 +90,15 @@ export function createAdmin({ pool, config, keys, jwks, audit, mailer, log = con
     return { auth, client };
   }
 
-  const cleanRoles = (roles, client, auth) => {
+  // `grant` is false for revocations: any held role may be taken away.
+  const cleanRoles = (roles, client, auth, grant = true) => {
     const list = [...new Set((Array.isArray(roles) ? roles : String(roles ?? '').split(/[\s,]+/)).map(r => String(r).trim()).filter(Boolean))];
     if (!list.length || list.length > 20) fail(400, 'ROLES_INVALID');
+    // ACC-03 (strict grants, always on in production): a product with no assignable_roles allows no grants.
+    if (grant && config.strictRoleGrants && !client.assignable_roles.length) fail(403, 'NO_ASSIGNABLE_ROLES');
     for (const r of list) {
       if (!ROLE.test(r)) fail(400, 'ROLES_INVALID', { role: r });
-      if (client.assignable_roles.length && !client.assignable_roles.includes(r)) fail(400, 'ROLE_NOT_ASSIGNABLE', { role: r });
+      if (grant && client.assignable_roles.length && !client.assignable_roles.includes(r)) fail(400, 'ROLE_NOT_ASSIGNABLE', { role: r });
       if (client.admin_roles.includes(r) && !auth.orgAdmin) fail(403, 'FORBIDDEN');
     }
     return list;
@@ -213,7 +216,7 @@ export function createAdmin({ pool, config, keys, jwks, audit, mailer, log = con
   async function revokeRoles(ctx, userId, roles) {
     return withTransaction(pool, async c => {
       const { auth, client } = await authorize(ctx, 'roles:write', c);
-      const list = cleanRoles(roles, { ...client, assignable_roles: [] }, auth);
+      const list = cleanRoles(roles, client, auth, false);
       const member = await memberRow(c, ctx.tenantId, userId, true);
       if (!member) fail(404, 'MEMBER_NOT_FOUND');
       const before = await currentRoles(c, ctx.tenantId, userId, client.client_id);

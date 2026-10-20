@@ -21,7 +21,7 @@ const T = {
       reactivated: 'Member reactivated.', admin: 'Organisation admins updated.', invited: 'Invitation sent.', invite_revoked: 'Invitation revoked.',
     },
     errors: {
-      FORBIDDEN: 'You are not allowed to do that.', ROLES_INVALID: 'Enter roles as lowercase words separated by commas.', ROLE_NOT_ASSIGNABLE: 'That role does not exist in this product.',
+      FORBIDDEN: 'You are not allowed to do that.', ROLES_INVALID: 'Enter roles as lowercase words separated by commas.', ROLE_NOT_ASSIGNABLE: 'That role does not exist in this product.', NO_ASSIGNABLE_ROLES: 'This product has no roles that can be granted here. Ask ADS.',
       EMAIL_INVALID: 'Enter a valid email address.', PHONE_INVALID: 'Enter a valid mobile number.', MEMBER_NOT_FOUND: 'That member no longer exists.',
       MEMBER_DEACTIVATED: 'Reactivate the member first.', CANNOT_CHANGE_YOURSELF: 'You cannot change your own access here.', INVITATION_NOT_FOUND: 'Invitation not found.',
       INVITATION_ALREADY_ACCEPTED: 'That invitation was already accepted.', FORM_EXPIRED: 'This form expired. Please try again.', TOO_MANY_ATTEMPTS: 'Too many invitations. Try again later.',
@@ -42,7 +42,7 @@ const T = {
       reactivated: 'Membre réactivé.', admin: "Administrateurs de l'organisation mis à jour.", invited: 'Invitation envoyée.', invite_revoked: 'Invitation annulée.',
     },
     errors: {
-      FORBIDDEN: "Vous n'êtes pas autorisé à faire cela.", ROLES_INVALID: 'Saisissez des rôles en minuscules séparés par des virgules.', ROLE_NOT_ASSIGNABLE: "Ce rôle n'existe pas dans ce produit.",
+      FORBIDDEN: "Vous n'êtes pas autorisé à faire cela.", ROLES_INVALID: 'Saisissez des rôles en minuscules séparés par des virgules.', ROLE_NOT_ASSIGNABLE: "Ce rôle n'existe pas dans ce produit.", NO_ASSIGNABLE_ROLES: "Ce produit n'a aucun rôle attribuable ici. Contactez ADS.",
       EMAIL_INVALID: 'Saisissez une adresse e-mail valide.', PHONE_INVALID: 'Saisissez un numéro mobile valide.', MEMBER_NOT_FOUND: "Ce membre n'existe plus.",
       MEMBER_DEACTIVATED: "Réactivez d'abord le membre.", CANNOT_CHANGE_YOURSELF: 'Vous ne pouvez pas modifier votre propre accès ici.', INVITATION_NOT_FOUND: 'Invitation introuvable.',
       INVITATION_ALREADY_ACCEPTED: 'Cette invitation a déjà été acceptée.', FORM_EXPIRED: 'Ce formulaire a expiré. Réessayez.', TOO_MANY_ATTEMPTS: "Trop d'invitations. Réessayez plus tard.",

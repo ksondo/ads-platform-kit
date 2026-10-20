@@ -8,6 +8,8 @@ const num = (value, fallback) => {
 };
 const bool = (value, fallback) => (value === undefined || value === '' ? fallback : ['1', 'true', 'yes'].includes(String(value).toLowerCase()));
 
+export const ENVIRONMENTS = ['production', 'demo', 'staging', 'test', 'development'];
+
 export function loadConfig(env = process.env) {
   const publicUrl = String(env.IDENTITY_PUBLIC_URL ?? '').replace(/\/$/, '');
   if (!publicUrl) throw new Error('IDENTITY_PUBLIC_URL_REQUIRED');
@@ -18,10 +20,31 @@ export function loadConfig(env = process.env) {
   const cookieSecret = env.IDENTITY_COOKIE_SECRET ?? '';
   if (cookieSecret.length < 32 && !devMode) throw new Error('IDENTITY_COOKIE_SECRET_TOO_SHORT');
 
+  // Which environment this instance is. Unset means production, unless IDENTITY_DEV_MODE is on.
+  const adsEnv = String(env.ADS_ENV ?? '').trim().toLowerCase() || (devMode ? 'development' : 'production');
+  if (!ENVIRONMENTS.includes(adsEnv)) throw new Error(`ADS_ENV_INVALID:${adsEnv}`);
+  const production = adsEnv === 'production';
+
+  // ACC-03. The old self-service "create organisation" JSON route (POST /v1/identity/onboard) is the
+  // audit's self-escalation path. It is off unless switched on, and can never be on in production or demo.
+  const legacyOnboard = bool(env.IDENTITY_LEGACY_ONBOARD_ENABLED, false);
+  if (legacyOnboard && (production || adsEnv === 'demo')) throw new Error(`IDENTITY_LEGACY_ONBOARD_NOT_ALLOWED_IN_${adsEnv.toUpperCase()}`);
+
+  // ACC-03. Strict grants: only roles listed in a product's assignable_roles may be granted or
+  // invited on /admin and /admin/v1, and products with an empty list allow no grants at all.
+  // Always on in production; on by default in demo; off by default elsewhere (tests, development).
+  const strictRaw = env.IDENTITY_STRICT_ROLE_GRANTS;
+  if (production && strictRaw !== undefined && strictRaw !== '' && !bool(strictRaw, true)) throw new Error('IDENTITY_STRICT_ROLE_GRANTS_REQUIRED_IN_PRODUCTION');
+  const strictRoleGrants = production ? true : bool(strictRaw, adsEnv === 'demo');
+
   return {
     host: env.HOST ?? '0.0.0.0',
     port: num(env.PORT, 8084),
     devMode,
+    adsEnv,
+    production,
+    legacyOnboard,
+    strictRoleGrants,
     publicUrl,
     issuer: env.IDENTITY_ISSUER ? String(env.IDENTITY_ISSUER).replace(/\/$/, '') : publicUrl,
     databaseUrl: env.DATABASE_URL,

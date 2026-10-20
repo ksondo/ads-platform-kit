@@ -625,7 +625,14 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       limiter.reset(`login-email:${emailKey(body.email)}`);
       return json(res, 200, result);
     }
-    if (method === 'POST' && path === '/v1/identity/onboard') return json(res, 201, await legacy.onboard(req, await readBody(req)));
+    // ACC-03: off unless IDENTITY_LEGACY_ONBOARD_ENABLED (never in production or demo). Answers as if it did not exist.
+    if (method === 'POST' && path === '/v1/identity/onboard') {
+      if (!config.legacyOnboard) {
+        await audit('workspace_onboard', { outcome: 'denied', reason: 'ONBOARD_DISABLED', ip });
+        fail(404, 'NOT_FOUND');
+      }
+      return json(res, 201, await legacy.onboard(req, await readBody(req)));
+    }
     if (method === 'GET' && path === '/v1/identity/session') return json(res, 200, await legacy.sessionContext(req));
     if (method === 'POST' && path === '/internal/session') return json(res, 200, await legacy.sessionContext(req));
     if (method === 'POST' && path === '/internal/verify') return json(res, 200, await legacy.verify(req));
