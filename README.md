@@ -58,6 +58,29 @@ docker compose -f deploy/docker-compose.yml exec identity node src/cli.mjs help
 
 Guides: [email setup (SPF/DKIM)](docs/EMAIL_SETUP.md) · [Google sign-in setup](docs/GOOGLE_SIGN_IN_SETUP.md) · [connect a product](docs/INTEGRATING_A_PRODUCT.md) · [Software Factory switch-over](docs/SOFTWARE_FACTORY_SWITCH_OVER.md)
 
+### Environments, and the demo environment
+
+| Setting | Meaning |
+| --- | --- |
+| `ADS_ENV` | `production` (default unless `IDENTITY_DEV_MODE`), `demo`, `staging`, `test`, `development` |
+| `IDENTITY_LEGACY_ONBOARD_ENABLED` | Old self-service `POST /v1/identity/onboard` (ACC-03). Off by default (404). The service refuses to start with it on in production or demo |
+| `IDENTITY_STRICT_ROLE_GRANTS` | Only a product's `assignable_roles` can be granted or invited; a product with none allows no grants. Always on in production, on by default in demo |
+| `DEMO_MODE=1` | Demo accounts work only when `ADS_ENV=demo` **and** `DEMO_MODE=1`. Anywhere else they are refused at sign-in and cannot be created; in production `DEMO_MODE=1` stops the start |
+| `DEMO_EMAIL_DOMAIN`, `DEMO_USER_EMAIL`, `DEMO_USER2_EMAIL`, `DEMO_ADMIN_EMAIL` | Demo addresses (default `demo.user@`, `demo.checker@`, `demo.admin@demo.africadigitalsynergy.com`). The domain is reserved: nobody can register under it |
+| `DEMO_USER_PASSWORD`, `DEMO_USER2_PASSWORD`, `DEMO_ADMIN_PASSWORD` (or `*_FILE`) | Demo passwords, from server secrets. Never printed |
+| `DEMO_SHOW_CREDENTIALS=1` | Demo mode only: the sign-in page shows the demo **user** (never the admin) with a "Use demo account" button |
+
+Demo set-up, inside the identity container (`ADS_ENV=demo DEMO_MODE=1`):
+
+```bash
+node scripts/apply-clients.mjs --secrets-out /run/secrets-out/client-secrets.json   # config/clients.demo.json; secrets only in that file (0600)
+node src/cli.mjs demo-bootstrap                          # demo user, second demo user (maker-checker), demo admin
+node src/cli.mjs demo-orgs --out /tmp/demo-tenants.json   # demo + ADS staff organisations; product -> tenant ids and settings
+node src/cli.mjs demo-reset --out /tmp/demo-tenants.json  # nightly (cron): restore accounts, sign-ins, memberships and roles
+```
+
+Tokens carry `demo: true` for demo accounts and organisations and `ads_staff: true` for organisations an operator marked as ADS staff (`cli.mjs mark-staff-org --tenant <id>`, ACC-04).
+
 ## Develop
 
 ```bash

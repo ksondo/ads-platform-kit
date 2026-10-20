@@ -1,4 +1,5 @@
 // All settings come from environment variables (twelve-factor). See deploy/.env.example.
+import { readFileSync } from 'node:fs';
 
 const num = (value, fallback) => {
   if (value === undefined || value === '') return fallback;
@@ -7,6 +8,52 @@ const num = (value, fallback) => {
   return n;
 };
 const bool = (value, fallback) => (value === undefined || value === '' ? fallback : ['1', 'true', 'yes'].includes(String(value).toLowerCase()));
+
+// A secret from NAME, or from the file named by NAME_FILE (Docker/Kubernetes secrets). Never logged.
+export function readSecret(env, name) {
+  if (env[name]) return String(env[name]);
+  const file = env[`${name}_FILE`];
+  if (!file) return '';
+  return readFileSync(String(file), 'utf8').replace(/\r?\n$/, '');
+}
+
+export const DEMO_ACCOUNTS = ['user', 'user2', 'admin'];
+
+// DE-03 demo accounts. Demo mode is on ONLY when ADS_ENV=demo AND DEMO_MODE=1. Everywhere else demo
+// accounts are refused at sign-in and cannot be created. DEMO_MODE=1 in production stops the start.
+// Shared by the server (loadConfig) and the operator CLI (which has no IDENTITY_PUBLIC_URL).
+export function demoSettings(env = process.env) {
+  const devMode = bool(env.IDENTITY_DEV_MODE, false);
+  const adsEnv = String(env.ADS_ENV ?? '').trim().toLowerCase() || (devMode ? 'development' : 'production');
+  const asked = String(env.DEMO_MODE ?? '').trim() === '1';
+  if (asked && adsEnv === 'production') throw new Error('DEMO_MODE_NOT_ALLOWED_IN_PRODUCTION');
+  const enabled = asked && adsEnv === 'demo';
+  const domain = String(env.DEMO_EMAIL_DOMAIN ?? 'demo.africadigitalsynergy.com').trim().toLowerCase();
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain)) throw new Error('DEMO_EMAIL_DOMAIN_INVALID');
+  const defaults = { user: 'demo.user', user2: 'demo.checker', admin: 'demo.admin' };
+  const names = { user: 'Demo User', user2: 'Demo Checker', admin: 'Demo Admin' };
+  const vars = { user: 'DEMO_USER', user2: 'DEMO_USER2', admin: 'DEMO_ADMIN' };
+  const accounts = {};
+  for (const key of DEMO_ACCOUNTS) {
+    const email = String(env[`${vars[key]}_EMAIL`] ?? `${defaults[key]}@${domain}`).trim().toLowerCase();
+    if (!email.endsWith(`@${domain}`)) throw new Error(`${vars[key]}_EMAIL_MUST_BE_UNDER_${domain.toUpperCase()}`);
+    accounts[key] = { key, email, name: names[key], passwordVar: `${vars[key]}_PASSWORD` };
+  }
+  const showCredentials = enabled && String(env.DEMO_SHOW_CREDENTIALS ?? '').trim() === '1';
+  return {
+    enabled, adsEnv, domain, accounts, showCredentials,
+    // Only the demo USER's password is ever shown on the sign-in page; never the admin's.
+    shownPassword: showCredentials ? readSecret(env, 'DEMO_USER_PASSWORD') : '',
+  };
+}
+
+// True for an address under the reserved demo domain (or one of its subdomains).
+export const isDemoDomain = (email, domain) => {
+  const at = String(email ?? '').toLowerCase().split('@')[1] ?? '';
+  return at === domain || at.endsWith(`.${domain}`);
+};
+
+export const ENVIRONMENTS = ['production', 'demo', 'staging', 'test', 'development'];
 
 export function loadConfig(env = process.env) {
   const publicUrl = String(env.IDENTITY_PUBLIC_URL ?? '').replace(/\/$/, '');
@@ -18,10 +65,34 @@ export function loadConfig(env = process.env) {
   const cookieSecret = env.IDENTITY_COOKIE_SECRET ?? '';
   if (cookieSecret.length < 32 && !devMode) throw new Error('IDENTITY_COOKIE_SECRET_TOO_SHORT');
 
+  // Which environment this instance is. Unset means production, unless IDENTITY_DEV_MODE is on.
+  const adsEnv = String(env.ADS_ENV ?? '').trim().toLowerCase() || (devMode ? 'development' : 'production');
+  if (!ENVIRONMENTS.includes(adsEnv)) throw new Error(`ADS_ENV_INVALID:${adsEnv}`);
+  const production = adsEnv === 'production';
+
+  // ACC-03. The old self-service "create organisation" JSON route (POST /v1/identity/onboard) is the
+  // audit's self-escalation path. It is off unless switched on, and can never be on in production or demo.
+  const legacyOnboard = bool(env.IDENTITY_LEGACY_ONBOARD_ENABLED, false);
+  if (legacyOnboard && (production || adsEnv === 'demo')) throw new Error(`IDENTITY_LEGACY_ONBOARD_NOT_ALLOWED_IN_${adsEnv.toUpperCase()}`);
+
+  // ACC-03. Strict grants: only roles listed in a product's assignable_roles may be granted or
+  // invited on /admin and /admin/v1, and products with an empty list allow no grants at all.
+  // Always on in production; on by default in demo; off by default elsewhere (tests, development).
+  const strictRaw = env.IDENTITY_STRICT_ROLE_GRANTS;
+  if (production && strictRaw !== undefined && strictRaw !== '' && !bool(strictRaw, true)) throw new Error('IDENTITY_STRICT_ROLE_GRANTS_REQUIRED_IN_PRODUCTION');
+  const strictRoleGrants = production ? true : bool(strictRaw, adsEnv === 'demo');
+  const demo = demoSettings(env);
+  if (demo.showCredentials && !demo.shownPassword) throw new Error('DEMO_USER_PASSWORD_REQUIRED_TO_SHOW_CREDENTIALS');
+
   return {
     host: env.HOST ?? '0.0.0.0',
     port: num(env.PORT, 8084),
     devMode,
+    adsEnv,
+    production,
+    legacyOnboard,
+    strictRoleGrants,
+    demo,
     publicUrl,
     issuer: env.IDENTITY_ISSUER ? String(env.IDENTITY_ISSUER).replace(/\/$/, '') : publicUrl,
     databaseUrl: env.DATABASE_URL,

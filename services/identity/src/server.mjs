@@ -69,7 +69,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     req.on('error', reject);
   });
 
-  function baseHeaders(res, nonce) {
+  function baseHeaders(res, nonce, { demo = false } = {}) {
     res.setHeader('cache-control', 'no-store');
     res.setHeader('x-content-type-options', 'nosniff');
     res.setHeader('referrer-policy', 'no-referrer');
@@ -77,7 +77,10 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     res.setHeader('cross-origin-opener-policy', 'same-origin');
     if (config.secureCookies) res.setHeader('strict-transport-security', 'max-age=31536000; includeSubDomains');
     // form-action also governs the redirect back to the product after a form post, so allow https targets.
-    res.setHeader('content-security-policy', `default-src 'none'; style-src 'nonce-${nonce}'; img-src https: data:; form-action 'self' https:${config.devMode ? ' http:' : ''}; frame-ancestors 'none'; base-uri 'none'`);
+    // The demo sign-in panel adds its one nonce'd script ("Use demo account") and the landing fonts.
+    const demoCsp = demo ? `; script-src 'nonce-${nonce}'; font-src https://fonts.gstatic.com` : '';
+    const styles = demo ? `'nonce-${nonce}' https://fonts.googleapis.com` : `'nonce-${nonce}'`;
+    res.setHeader('content-security-policy', `default-src 'none'; style-src ${styles}; img-src https: data:; form-action 'self' https:${config.devMode ? ' http:' : ''}; frame-ancestors 'none'; base-uri 'none'${demoCsp}`);
   }
   const json = (res, status, body, extra = {}) => {
     res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', ...extra });
@@ -106,9 +109,10 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
   async function currentSso(req) {
     const raw = unsignValue(parseCookies(req.headers.cookie)[C.sso], config.cookieSecret);
     if (!raw) return null;
-    const row = (await pool.query(`SELECT s.id,s.user_id,u.email,u.status FROM platform.sso_sessions s JOIN platform.users u ON u.id=s.user_id
+    const row = (await pool.query(`SELECT s.id,s.user_id,u.email,u.status,u.is_demo FROM platform.sso_sessions s JOIN platform.users u ON u.id=s.user_id
       WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>now()`, [sha256(raw)])).rows[0];
     if (!row || row.status !== 'active') return null;
+    if (row.is_demo && !config.demo.enabled) return null;
     return { id: row.id, user: { id: row.user_id, email: row.email } };
   }
   async function startSso(req, res, user, method) {
@@ -133,14 +137,18 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     return Boolean(id) && current.includes(id);
   }
 
+  // Demo credentials on the sign-in page: demo mode + DEMO_SHOW_CREDENTIALS=1, demo USER only.
+  const demoShown = config.demo.showCredentials ? { email: config.demo.accounts.user.email, password: config.demo.shownPassword } : null;
+
   function page(req, res, view, ctx = {}, status = 200) {
     const nonce = randomToken(12);
-    baseHeaders(res, nonce);
+    const demo = view === 'login' ? demoShown : null;
+    baseHeaders(res, nonce, { demo: Boolean(demo) });
     const locale = ctx.locale ?? pickLocale(ctx.lang, req.headers['accept-language'], ctx.authRequest?.locale);
     const body = renderPage(view, {
       locale, nonce, client: ctx.authRequest?.client ?? ctx.client ?? null, req: ctx.authRequest?.id ?? ctx.req ?? null,
       csrf: csrfToken(req, res), error: ctx.error, values: ctx.values, googleEnabled: config.google.enabled,
-      minPassword: config.passwordMinLength, path: ctx.path ?? safePath(new URL(req.url, 'http://x').pathname), next: safeNext(ctx.next),
+      minPassword: config.passwordMinLength, path: ctx.path ?? safePath(new URL(req.url, 'http://x').pathname), next: safeNext(ctx.next), demo,
     });
     res.writeHead(status, { 'content-type': 'text/html; charset=utf-8' });
     res.end(body);
@@ -238,7 +246,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
         jwks_uri: `${config.publicUrl}/.well-known/jwks.json`, userinfo_endpoint: `${config.publicUrl}/userinfo`, revocation_endpoint: `${config.publicUrl}/revoke`,
         end_session_endpoint: `${config.publicUrl}/logout`, response_types_supported: ['code'], grant_types_supported: ['authorization_code', 'refresh_token', TOKEN_EXCHANGE],
         code_challenge_methods_supported: ['S256'], token_endpoint_auth_methods_supported: ['none', 'client_secret_basic', 'client_secret_post'],
-        access_token_signing_alg_values_supported: ['RS256'], claims_supported: ['sub', 'tenant_id', 'roles', 'email', 'email_verified', 'name'],
+        access_token_signing_alg_values_supported: ['RS256'], claims_supported: ['sub', 'tenant_id', 'roles', 'email', 'email_verified', 'name', 'demo', 'ads_staff'],
       }, { 'cache-control': 'public, max-age=300', 'access-control-allow-origin': '*' });
     }
     if (method === 'GET' && path === '/sdk/ads-identity.js') {
@@ -488,7 +496,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       const auth = String(req.headers.authorization ?? '');
       try {
         const { payload } = await jwtVerify(auth.replace(/^Bearer /, ''), localJwks, { issuer: config.issuer, algorithms: ['RS256'] });
-        return json(res, 200, { sub: payload.sub, email: payload.email, email_verified: payload.email_verified, name: payload.name, tenant_id: payload.tenant_id, roles: payload.roles });
+        return json(res, 200, { sub: payload.sub, email: payload.email, email_verified: payload.email_verified, name: payload.name, tenant_id: payload.tenant_id, roles: payload.roles, demo: payload.demo, ads_staff: payload.ads_staff });
       } catch {
         return json(res, 401, { error: 'invalid_token' });
       }
@@ -625,7 +633,14 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       limiter.reset(`login-email:${emailKey(body.email)}`);
       return json(res, 200, result);
     }
-    if (method === 'POST' && path === '/v1/identity/onboard') return json(res, 201, await legacy.onboard(req, await readBody(req)));
+    // ACC-03: off unless IDENTITY_LEGACY_ONBOARD_ENABLED (never in production or demo). Answers as if it did not exist.
+    if (method === 'POST' && path === '/v1/identity/onboard') {
+      if (!config.legacyOnboard) {
+        await audit('workspace_onboard', { outcome: 'denied', reason: 'ONBOARD_DISABLED', ip });
+        fail(404, 'NOT_FOUND');
+      }
+      return json(res, 201, await legacy.onboard(req, await readBody(req)));
+    }
     if (method === 'GET' && path === '/v1/identity/session') return json(res, 200, await legacy.sessionContext(req));
     if (method === 'POST' && path === '/internal/session') return json(res, 200, await legacy.sessionContext(req));
     if (method === 'POST' && path === '/internal/verify') return json(res, 200, await legacy.verify(req));
