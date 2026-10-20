@@ -39,8 +39,8 @@
         "knowledge_curator",
         "support_agent"
       ],
-      "needs_client_secret": true,
-      "client_secret_setting": "ADS_IDENTITY_CLIENT_SECRET",
+      "needs_client_secret": false,
+      "client_secret_setting": null,
       "demo_orgs": [
         {
           "key": "main",
@@ -259,7 +259,7 @@
         "platform_admin"
       ],
       "needs_client_secret": true,
-      "client_secret_setting": "EDU_ADS_IDENTITY_CLIENT_SECRET",
+      "client_secret_setting": "ADS_IDENTITY_CLIENT_SECRET",
       "demo_orgs": [
         {
           "key": "main",
@@ -414,7 +414,9 @@
         "commerce_buyer"
       ],
       "allow_personal_workspace": true,
-      "admin_roles": [],
+      "admin_roles": [
+        "merchant_owner"
+      ],
       "admin_scopes": [],
       "assignable_roles": [
         "merchant_owner",
@@ -465,7 +467,7 @@
       "tenant_settings": {},
       "operator_setup": [
         "node scripts/commerce-admin.mjs register-bank --tenant <bank tenant id>",
-        "node scripts/commerce-admin.mjs capability --capability BANK_COLLECTION --tenant <bank tenant id>"
+        "node scripts/commerce-admin.mjs capability --tenant <shop main tenant id> --capability BANK_COLLECTION --enabled true"
       ],
       "notes": "commerce_reviewer/commerce_support are trusted by name (audit 2.3): ADS-only until ACC-05."
     },
@@ -540,7 +542,9 @@
       ],
       "self_service_roles": [],
       "allow_personal_workspace": false,
-      "admin_roles": [],
+      "admin_roles": [
+        "facility_admin"
+      ],
       "admin_scopes": [
         "members:read",
         "roles:write",
@@ -551,14 +555,15 @@
         "maternal_user",
         "professional",
         "parent",
-        "guardian"
+        "guardian",
+        "facility_admin"
       ],
       "ads_only_roles": [
         "ads_support",
         "content_author",
         "content_steward"
       ],
-      "needs_client_secret": true,
+      "needs_client_secret": false,
       "client_secret_setting": null,
       "demo_orgs": [
         {
@@ -584,7 +589,7 @@
         }
       ],
       "tenant_settings": {},
-      "notes": "Content roles are global and ads_support is trusted by name (audit 2.3): ADS-only. Secret setting name not found on main."
+      "notes": "Content roles are global and ads_support is trusted by name (audit 2.3): ADS-only. facility_admin (src/app/journeys.ts) is the organisation admin role, so the demo admin lands on /facility instead of 'No access yet'. Browser client: no client secret."
     },
     {
       "slug": "fleetguard",
@@ -1061,7 +1066,7 @@
       ],
       "tenant_settings": {},
       "operator_setup": [
-        "INSERT INTO cover.platform_operators(tenant_id) VALUES ('<staff tenant id>')  -- as the AfriCover database owner"
+        "INSERT INTO cover.platform_operators(tenant_id,name) VALUES ('<staff tenant id>','ADS Staff – AfriCover operator')  -- as the AfriCover database owner"
       ]
     },
     {
@@ -1123,7 +1128,7 @@
       ],
       "tenant_settings": {},
       "operator_setup": [
-        "npm run admin -- add-staff-tenant <staff tenant id>"
+        "npm run admin -- add-staff-tenant <staff tenant id> \"ADS Staff – Agriculture\""
       ],
       "notes": "Secret setting name not found on main (tests use AGRI_ADMIN_CLIENT_SECRET)."
     },
@@ -1349,8 +1354,8 @@
       "ads_only_roles": [
         "tour_admin"
       ],
-      "needs_client_secret": true,
-      "client_secret_setting": "ADS_IDENTITY_CLIENT_SECRET",
+      "needs_client_secret": false,
+      "client_secret_setting": null,
       "demo_orgs": [
         {
           "key": "main",

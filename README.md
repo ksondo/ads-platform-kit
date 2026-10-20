@@ -79,6 +79,8 @@ node src/cli.mjs demo-orgs --out /tmp/demo-tenants.json   # demo + ADS staff org
 node src/cli.mjs demo-reset --out /tmp/demo-tenants.json  # nightly (cron): restore accounts, sign-ins, memberships and roles
 ```
 
+`register-client` (and `apply-clients`) accepts `https://` redirect URIs, `http://localhost:<port>/`, and, when `ADS_ENV` is not `production`, `http://127.0.0.1:<port>/`. Production refuses `127.0.0.1`.
+
 Tokens carry `demo: true` for demo accounts and organisations and `ads_staff: true` for organisations an operator marked as ADS staff (`cli.mjs mark-staff-org --tenant <id>`, ACC-04).
 
 ## Develop
