@@ -55,6 +55,22 @@ export const isDemoDomain = (email, domain) => {
 
 export const ENVIRONMENTS = ['production', 'demo', 'staging', 'test', 'development'];
 
+// Same rule as loadConfig: ADS_ENV unset means production unless IDENTITY_DEV_MODE is on.
+export function isProductionEnv(env = process.env) {
+  const adsEnv = String(env.ADS_ENV ?? '').trim().toLowerCase() || (bool(env.IDENTITY_DEV_MODE, false) ? 'development' : 'production');
+  return adsEnv === 'production';
+}
+
+// Client redirect / post-logout URIs. https always; plain http only for localhost, and, outside
+// production, also for the loopback address 127.0.0.1 (RFC 8252 §7.3). Production stays as strict as before.
+export function redirectAllowed(url, { production = true } = {}) {
+  const u = url instanceof URL ? url : new URL(url);
+  if (u.protocol === 'https:') return true;
+  if (u.protocol !== 'http:') return false;
+  if (u.hostname === 'localhost') return true;
+  return !production && u.hostname === '127.0.0.1';
+}
+
 export function loadConfig(env = process.env) {
   const publicUrl = String(env.IDENTITY_PUBLIC_URL ?? '').replace(/\/$/, '');
   if (!publicUrl) throw new Error('IDENTITY_PUBLIC_URL_REQUIRED');

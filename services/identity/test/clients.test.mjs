@@ -54,10 +54,23 @@ describe('client registration list (config/clients.demo.json)', () => {
   });
 
   it('marks the products that call the kit admin API as needing a client secret (ACC-09)', () => {
-    for (const slug of ['health', 'project-management', 'investment', 'logistics', 'tourism', 'mamacare', 'agriculture', 'hopebridge', 'software-factory']) {
+    for (const slug of ['health', 'project-management', 'investment', 'logistics', 'agriculture', 'hopebridge']) {
       assert.equal(bySlug[slug].needs_client_secret, true, slug);
     }
+    // Demo check 20 Oct 2026: these never read a client secret at run time.
+    for (const slug of ['tourism', 'mamacare', 'software-factory']) {
+      assert.equal(bySlug[slug].needs_client_secret, false, slug);
+      assert.equal(bySlug[slug].client_secret_setting, null, slug);
+    }
+    assert.equal(bySlug.education.client_secret_setting, 'ADS_IDENTITY_CLIENT_SECRET');
     assert.ok(!JSON.stringify(doc).match(/"secret"\s*:/), 'no secret values in the list');
+  });
+
+  it('gives the demo admin a product admin role where the product has one (commerce, mamacare)', () => {
+    assert.deepEqual(bySlug.commerce.admin_roles, ['merchant_owner']);
+    assert.deepEqual(bySlug.mamacare.admin_roles, ['facility_admin']);
+    assert.ok(bySlug.commerce.operator_setup.some(s => s.includes('--capability BANK_COLLECTION') && s.includes('--enabled true') && s.includes('<shop main tenant id>')));
+    assert.ok(bySlug.africover.operator_setup[0].includes('platform_operators(tenant_id,name)'));
   });
 
   it('refuses a list that makes an ADS-only role assignable', () => {

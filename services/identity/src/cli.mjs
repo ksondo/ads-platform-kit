@@ -6,7 +6,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
-import { DEMO_ACCOUNTS, demoSettings, readSecret } from './config.mjs';
+import { DEMO_ACCOUNTS, demoSettings, isProductionEnv, readSecret, redirectAllowed } from './config.mjs';
 import { migrate } from './db.mjs';
 import { bootstrapDemoAccounts, ensureDemoOrgs, resetDemo } from './demo.mjs';
 
@@ -84,7 +84,7 @@ try {
       need('id', 'name', 'redirect');
       for (const u of [...list(args.redirect), ...list(args.logout)]) {
         const parsed = new URL(u);
-        if (parsed.protocol !== 'https:' && parsed.hostname !== 'localhost') throw new Error(`redirect must be https: ${u}`);
+        if (!redirectAllowed(parsed, { production: isProductionEnv() })) throw new Error(`redirect must be https: ${u}`);
       }
       const scopes = list(args['admin-scopes']);
       const known = ['members:read', 'roles:write', 'members:write', 'invitations:write'];
