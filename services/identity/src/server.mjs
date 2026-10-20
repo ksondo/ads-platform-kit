@@ -106,9 +106,10 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
   async function currentSso(req) {
     const raw = unsignValue(parseCookies(req.headers.cookie)[C.sso], config.cookieSecret);
     if (!raw) return null;
-    const row = (await pool.query(`SELECT s.id,s.user_id,u.email,u.status FROM platform.sso_sessions s JOIN platform.users u ON u.id=s.user_id
+    const row = (await pool.query(`SELECT s.id,s.user_id,u.email,u.status,u.is_demo FROM platform.sso_sessions s JOIN platform.users u ON u.id=s.user_id
       WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>now()`, [sha256(raw)])).rows[0];
     if (!row || row.status !== 'active') return null;
+    if (row.is_demo && !config.demo.enabled) return null;
     return { id: row.id, user: { id: row.user_id, email: row.email } };
   }
   async function startSso(req, res, user, method) {
@@ -238,7 +239,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
         jwks_uri: `${config.publicUrl}/.well-known/jwks.json`, userinfo_endpoint: `${config.publicUrl}/userinfo`, revocation_endpoint: `${config.publicUrl}/revoke`,
         end_session_endpoint: `${config.publicUrl}/logout`, response_types_supported: ['code'], grant_types_supported: ['authorization_code', 'refresh_token', TOKEN_EXCHANGE],
         code_challenge_methods_supported: ['S256'], token_endpoint_auth_methods_supported: ['none', 'client_secret_basic', 'client_secret_post'],
-        access_token_signing_alg_values_supported: ['RS256'], claims_supported: ['sub', 'tenant_id', 'roles', 'email', 'email_verified', 'name'],
+        access_token_signing_alg_values_supported: ['RS256'], claims_supported: ['sub', 'tenant_id', 'roles', 'email', 'email_verified', 'name', 'demo', 'ads_staff'],
       }, { 'cache-control': 'public, max-age=300', 'access-control-allow-origin': '*' });
     }
     if (method === 'GET' && path === '/sdk/ads-identity.js') {
@@ -488,7 +489,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       const auth = String(req.headers.authorization ?? '');
       try {
         const { payload } = await jwtVerify(auth.replace(/^Bearer /, ''), localJwks, { issuer: config.issuer, algorithms: ['RS256'] });
-        return json(res, 200, { sub: payload.sub, email: payload.email, email_verified: payload.email_verified, name: payload.name, tenant_id: payload.tenant_id, roles: payload.roles });
+        return json(res, 200, { sub: payload.sub, email: payload.email, email_verified: payload.email_verified, name: payload.name, tenant_id: payload.tenant_id, roles: payload.roles, demo: payload.demo, ads_staff: payload.ads_staff });
       } catch {
         return json(res, 401, { error: 'invalid_token' });
       }

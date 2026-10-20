@@ -42,6 +42,8 @@ const T = {
       UNKNOWN_CLIENT: 'This app is not registered for ADS sign-in.', INVALID_REDIRECT_URI: 'This app sent an invalid return address.',
       INVALID_REQUEST: 'The sign-in request is not valid.',
       INVITATION_INVALID: 'This invitation is invalid or has expired.', INVITATION_EMAIL_MISMATCH: 'This invitation was sent to another email address.',
+      DEMO_ACCOUNT_REFUSED: 'Demo accounts work only in the ADS demo environment.', DEMO_ACCOUNT_LOCKED: 'The demo account cannot be changed.',
+      EMAIL_RESERVED: 'This email address is reserved. Use your own email address.',
     },
   },
   fr: {
@@ -82,6 +84,8 @@ const T = {
       UNKNOWN_CLIENT: "Cette application n'est pas enregistrée pour la connexion ADS.", INVALID_REDIRECT_URI: "Cette application a envoyé une adresse de retour invalide.",
       INVALID_REQUEST: "La demande de connexion n'est pas valide.",
       INVITATION_INVALID: 'Cette invitation est invalide ou a expiré.', INVITATION_EMAIL_MISMATCH: 'Cette invitation a été envoyée à une autre adresse e-mail.',
+      DEMO_ACCOUNT_REFUSED: "Les comptes de démonstration ne fonctionnent que dans l'environnement de démonstration ADS.", DEMO_ACCOUNT_LOCKED: 'Le compte de démonstration ne peut pas être modifié.',
+      EMAIL_RESERVED: 'Cette adresse e-mail est réservée. Utilisez votre propre adresse.',
     },
   },
 };

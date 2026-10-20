@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { withTransaction } from './db.mjs';
+import { isDemoDomain } from './config.mjs';
 import { renderEmail } from './mailer.mjs';
 import { DUMMY_HASH, checkPasswordStrength, fail, hashPassword, isEmail, normalizeEmail, randomToken, sha256, verifyPassword } from './security.mjs';
 
@@ -47,18 +48,27 @@ export function createAccounts({ pool, config, mailer, audit, log = console }) {
   async function findByEmail(email) {
     const normalized = normalizeEmail(email);
     if (!isEmail(normalized)) return null;
-    return (await pool.query('SELECT id,email,password_hash,status,email_verified_at,display_name,locale FROM platform.users WHERE email=$1', [normalized])).rows[0] ?? null;
+    return (await pool.query('SELECT id,email,password_hash,status,email_verified_at,display_name,locale,is_demo FROM platform.users WHERE email=$1', [normalized])).rows[0] ?? null;
   }
 
   // Returns { user, created }. Existing accounts are never overwritten.
   async function register({ email, password, name, locale = 'en', product, req, ip, clientId, revealExisting = false, next }) {
     const normalized = normalizeEmail(email);
     if (!isEmail(normalized)) fail(400, 'EMAIL_INVALID');
+    // Demo addresses are created only by the operator's demo-bootstrap, never by registration.
+    if (isDemoDomain(normalized, config.demo.domain)) {
+      await audit('register', { outcome: 'denied', reason: 'EMAIL_RESERVED', ip, clientId });
+      fail(400, 'EMAIL_RESERVED');
+    }
     const weak = checkPasswordStrength(password, config.passwordMinLength);
     if (weak) fail(400, weak);
     // Always hash, so timing is the same whether or not the email exists.
     const passwordHash = await hashPassword(String(password));
     const existing = await findByEmail(normalized);
+    if (existing?.is_demo) {
+      await audit('register', { userId: existing.id, outcome: 'denied', reason: 'EMAIL_RESERVED', ip, clientId });
+      fail(400, 'EMAIL_RESERVED');
+    }
     if (existing) {
       await audit('register', { userId: existing.id, outcome: 'denied', reason: 'EMAIL_ALREADY_REGISTERED', ip, clientId });
       if (existing.status === 'pending') {
@@ -98,9 +108,9 @@ export function createAccounts({ pool, config, mailer, audit, log = console }) {
   // Opening the link proves the mailbox; typing the password proves who registered.
   async function activate({ token, password, ip }) {
     if (typeof token !== 'string' || !token) fail(400, 'LINK_INVALID');
-    const row = (await pool.query(`SELECT t.id,t.user_id,t.password_hash,u.email,u.status,u.password_hash AS current_hash FROM platform.email_tokens t
+    const row = (await pool.query(`SELECT t.id,t.user_id,t.password_hash,u.email,u.status,u.is_demo,u.password_hash AS current_hash FROM platform.email_tokens t
       JOIN platform.users u ON u.id=t.user_id WHERE t.token_hash=$1 AND t.purpose='verify_email' AND t.used_at IS NULL AND t.expires_at>now()`, [sha256(token)])).rows[0];
-    if (!row) fail(400, 'LINK_INVALID');
+    if (!row || row.is_demo) fail(400, 'LINK_INVALID');
     if (row.status === 'disabled') fail(403, 'ACCOUNT_DISABLED');
     // Already-active accounts (e.g. legacy users confirming their email) prove it with their current password.
     const expected = row.status === 'pending' ? row.password_hash : row.current_hash;
@@ -145,13 +155,19 @@ export function createAccounts({ pool, config, mailer, audit, log = console }) {
       await audit('login', { userId: user.id, outcome: 'denied', reason: 'ACCOUNT_DISABLED', ip, clientId });
       fail(403, 'ACCOUNT_DISABLED');
     }
+    // Safety switch: demo accounts work only where ADS_ENV=demo AND DEMO_MODE=1.
+    if (user.is_demo && !config.demo.enabled) {
+      await audit('login', { userId: user.id, outcome: 'denied', reason: 'DEMO_ACCOUNT_REFUSED', ip, clientId });
+      fail(403, 'DEMO_ACCOUNT_REFUSED');
+    }
     return user;
   }
 
   async function requestPasswordReset({ email, req, ip }) {
     const user = await findByEmail(email);
-    await audit('password_reset_request', { userId: user?.id ?? null, outcome: user ? 'allowed' : 'ignored', ip });
-    if (user && user.status !== 'disabled') await sendReset(user, { req });
+    // Demo accounts cannot change their password (the shared password is restored by demo-reset).
+    await audit('password_reset_request', { userId: user?.id ?? null, outcome: user && !user.is_demo ? 'allowed' : 'ignored', reason: user?.is_demo ? 'DEMO_ACCOUNT_LOCKED' : null, ip });
+    if (user && user.status !== 'disabled' && !user.is_demo) await sendReset(user, { req });
   }
 
   async function checkResetToken(token) {
@@ -170,9 +186,10 @@ export function createAccounts({ pool, config, mailer, audit, log = console }) {
     if (weak) fail(400, weak);
     const passwordHash = await hashPassword(String(password));
     const user = await withTransaction(pool, async c => {
-      const row = (await c.query(`SELECT t.id,t.user_id,u.email,u.status FROM platform.email_tokens t JOIN platform.users u ON u.id=t.user_id
+      const row = (await c.query(`SELECT t.id,t.user_id,u.email,u.status,u.is_demo FROM platform.email_tokens t JOIN platform.users u ON u.id=t.user_id
         WHERE t.token_hash=$1 AND t.purpose='reset_password' AND t.used_at IS NULL AND t.expires_at>now() FOR UPDATE OF t`, [sha256(token)])).rows[0];
       if (!row) fail(400, 'LINK_INVALID');
+      if (row.is_demo) fail(403, 'DEMO_ACCOUNT_LOCKED');
       if (row.status === 'disabled') fail(403, 'ACCOUNT_DISABLED');
       await c.query('UPDATE platform.email_tokens SET used_at=now() WHERE user_id=$1 AND used_at IS NULL', [row.user_id]);
       // The reset link proves the person controls the mailbox, so a pending account becomes active.
@@ -190,16 +207,20 @@ export function createAccounts({ pool, config, mailer, audit, log = console }) {
     if (!emailVerified) fail(403, 'GOOGLE_EMAIL_NOT_VERIFIED');
     const normalized = normalizeEmail(email);
     if (!isEmail(normalized)) fail(403, 'GOOGLE_SIGN_IN_FAILED');
+    if (isDemoDomain(normalized, config.demo.domain)) fail(403, 'DEMO_ACCOUNT_LOCKED');
     return withTransaction(pool, async c => {
-      const linked = (await c.query(`SELECT u.id,u.email,u.status FROM platform.external_identities e JOIN platform.users u ON u.id=e.user_id
+      const linked = (await c.query(`SELECT u.id,u.email,u.status,u.is_demo FROM platform.external_identities e JOIN platform.users u ON u.id=e.user_id
         WHERE e.provider='google' AND e.subject=$1`, [subject])).rows[0];
       if (linked) {
         if (linked.status === 'disabled') fail(403, 'ACCOUNT_DISABLED');
+        if (linked.is_demo) fail(403, 'DEMO_ACCOUNT_LOCKED');
         await audit('login', { userId: linked.id, outcome: 'allowed', reason: 'google', ip }, c);
         return linked;
       }
-      const existing = (await c.query('SELECT id,email,status FROM platform.users WHERE email=$1 FOR UPDATE', [normalized])).rows[0];
+      const existing = (await c.query('SELECT id,email,status,is_demo FROM platform.users WHERE email=$1 FOR UPDATE', [normalized])).rows[0];
       let userId;
+      // A demo account never gets another way in (it would outlive demo-reset).
+      if (existing?.is_demo) fail(403, 'DEMO_ACCOUNT_LOCKED');
       if (existing) {
         if (existing.status === 'disabled') fail(403, 'ACCOUNT_DISABLED');
         userId = existing.id;

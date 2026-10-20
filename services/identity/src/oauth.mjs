@@ -108,15 +108,20 @@ export function createOAuth({ pool, config, keys, audit }) {
 
   // A signed access token for this user, workspace and product, after re-checking that access still holds.
   async function accessTokenFor(client, userId, tenantId, ssoSessionId, db = pool) {
-    const user = (await db.query('SELECT id,email,display_name,status,email_verified_at FROM platform.users WHERE id=$1', [userId])).rows[0];
+    const user = (await db.query('SELECT id,email,display_name,status,email_verified_at,is_demo FROM platform.users WHERE id=$1', [userId])).rows[0];
     if (!user || user.status !== 'active') fail(400, 'invalid_grant');
-    const member = (await db.query(`SELECT 1 FROM platform.memberships m JOIN platform.tenants t ON t.id=m.tenant_id AND t.status='active'
-      WHERE m.user_id=$1 AND m.tenant_id=$2 AND m.status='active'`, [userId, tenantId])).rowCount;
+    if (user.is_demo && !config.demo.enabled) fail(400, 'invalid_grant');
+    const member = (await db.query(`SELECT o.is_demo, o.is_staff FROM platform.memberships m JOIN platform.tenants t ON t.id=m.tenant_id AND t.status='active'
+      JOIN platform.organizations o ON o.id=t.organization_id
+      WHERE m.user_id=$1 AND m.tenant_id=$2 AND m.status='active'`, [userId, tenantId])).rows[0];
     if (!member) fail(400, 'invalid_grant');
     const roles = await rolesFor(userId, tenantId, client, db);
     if (!roles.length) fail(400, 'invalid_grant');
     return keys.sign(
-      { tenant_id: tenantId, roles, email: user.email, email_verified: Boolean(user.email_verified_at), name: user.display_name ?? undefined, client_id: client.client_id, sid: ssoSessionId ?? undefined },
+      { tenant_id: tenantId, roles, email: user.email, email_verified: Boolean(user.email_verified_at), name: user.display_name ?? undefined, client_id: client.client_id, sid: ssoSessionId ?? undefined,
+        // `demo`: a demo account or demo organisation (show "Demo", keep out of reports). `ads_staff`: an ADS
+        // staff organisation marked by an operator (ACC-04); products may trust staff roles only when it is true.
+        demo: user.is_demo || member.is_demo ? true : undefined, ads_staff: member.is_staff ? true : undefined },
       { audience: client.client_id, issuer: config.issuer, subject: userId, expiresIn: config.accessTokenTtl },
     );
   }

@@ -14,10 +14,11 @@ export function createLegacyApi({ pool, config, accounts, audit }) {
   async function sessionUser(req, client = pool) {
     const token = bearer(req);
     if (!token) fail(401, 'UNAUTHENTICATED');
-    const row = (await client.query(`SELECT s.id AS session_id,s.user_id,u.email,u.status,s.expires_at
+    const row = (await client.query(`SELECT s.id AS session_id,s.user_id,u.email,u.status,u.is_demo,s.expires_at
       FROM platform.sessions s JOIN platform.users u ON u.id=s.user_id
       WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>now()`, [sha256(token)])).rows[0];
     if (!row || row.status !== 'active') fail(401, 'UNAUTHENTICATED');
+    if (row.is_demo && !config.demo.enabled) fail(401, 'UNAUTHENTICATED');
     return row;
   }
 
@@ -52,6 +53,8 @@ export function createLegacyApi({ pool, config, accounts, audit }) {
     if (organizationName.length < 2 || tenantName.length < 2 || projectName.length < 2 || organizationName.length > 120) fail(400, 'ONBOARDING_VALIDATION_FAILED');
     return withTransaction(pool, async client => {
       const user = await sessionUser(req, client);
+      // Demo accounts cannot create organisations.
+      if (user.is_demo) fail(403, 'DEMO_ACCOUNT_LOCKED');
       if ((await memberships(user.user_id, client)).length) fail(409, 'WORKSPACE_ALREADY_ONBOARDED');
       const organizationId = crypto.randomUUID();
       const tenantId = crypto.randomUUID();
