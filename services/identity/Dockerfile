@@ -6,6 +6,9 @@ COPY services/identity/package.json services/identity/package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund
 COPY services/identity/src ./src
 COPY services/identity/migrations ./migrations
+COPY services/identity/scripts ./scripts
+# Reviewed client registration list (ACC-02) for apply-clients, demo-orgs and demo-reset.
+COPY config /app/config
 COPY packages/identity-client /app/packages/identity-client
 USER node
 EXPOSE 8084

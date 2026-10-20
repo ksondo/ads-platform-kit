@@ -1,0 +1,1485 @@
+{
+  "$comment": "Reviewed client registration list for the ADS demo environment (ACC-02, DE-04). Apply with services/identity/scripts/apply-clients.mjs. No secrets here: secrets are generated at apply time into a secret output file.",
+  "version": 1,
+  "environment": "demo",
+  "domain": "test.africadigitalsynergy.com",
+  "demo_grants": "demo-orgs: the demo user and second demo user get every role listed in each demo organisation (customer and staff roles); the demo admin owns every demo organisation and gets the product admin_roles there.",
+  "role_rules": "assignable_roles never contain ADS-only roles (ads_only_roles); those are granted only by the operator CLI (grant-role, demo-orgs) inside organisations flagged ADS staff.",
+  "products": [
+    {
+      "slug": "software-factory",
+      "product": "Software Factory",
+      "repo": "software-factory",
+      "client_id": "software-factory",
+      "display_name": "ADS Software Factory",
+      "accent": null,
+      "redirect_uris": [
+        "https://software-factory.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://software-factory.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "entrepreneur"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [],
+      "admin_scopes": [
+        "members:read",
+        "roles:write",
+        "members:write",
+        "invitations:write"
+      ],
+      "assignable_roles": [
+        "entrepreneur"
+      ],
+      "ads_only_roles": [
+        "ba_reviewer",
+        "code_reviewer",
+        "knowledge_curator",
+        "support_agent"
+      ],
+      "needs_client_secret": true,
+      "client_secret_setting": "ADS_IDENTITY_CLIENT_SECRET",
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Software Factory",
+          "staff": false,
+          "roles": [
+            "entrepreneur"
+          ]
+        },
+        {
+          "key": "staff",
+          "name": "ADS Staff – Software Factory",
+          "staff": true,
+          "roles": [
+            "ba_reviewer",
+            "code_reviewer",
+            "knowledge_curator",
+            "support_agent"
+          ]
+        }
+      ],
+      "tenant_settings": {},
+      "operator_setup": [
+        "npm run sf-admin -- register-staff-org <staff tenant id>"
+      ],
+      "notes": "Older department screens check PLATFORM_ADMIN/ORGANIZATION_ADMIN by name; not granted here."
+    },
+    {
+      "slug": "career-path",
+      "product": "Career Path",
+      "repo": "career-path-platform",
+      "client_id": "career-path-web",
+      "display_name": "ADS Career Path",
+      "accent": "#087E79",
+      "redirect_uris": [
+        "https://career-path.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://career-path.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "learner"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [],
+      "admin_scopes": [],
+      "assignable_roles": [
+        "learner"
+      ],
+      "ads_only_roles": [
+        "curator"
+      ],
+      "needs_client_secret": false,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Career Path",
+          "staff": false,
+          "roles": [
+            "learner"
+          ]
+        },
+        {
+          "key": "staff",
+          "name": "ADS Staff – Career Path curators",
+          "staff": true,
+          "roles": [
+            "curator"
+          ]
+        }
+      ],
+      "tenant_settings": {
+        "CAREER_STAFF_TENANT_IDS": [
+          "staff"
+        ]
+      },
+      "notes": "Second-curator approval: demo user and second demo user both hold curator."
+    },
+    {
+      "slug": "nutrition",
+      "product": "Nutrition",
+      "repo": "nutrition-intelligence-platform",
+      "client_id": "nutrition-web",
+      "display_name": "ADS Nutrition",
+      "accent": "#086958",
+      "redirect_uris": [
+        "https://nutrition.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://nutrition.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "nutrition_user"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [],
+      "admin_scopes": [],
+      "assignable_roles": [
+        "nutrition_user"
+      ],
+      "ads_only_roles": [
+        "food_data_admin"
+      ],
+      "needs_client_secret": false,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Nutrition household",
+          "staff": false,
+          "roles": [
+            "nutrition_user"
+          ]
+        },
+        {
+          "key": "staff",
+          "name": "ADS Staff – Nutrition food data",
+          "staff": true,
+          "roles": [
+            "food_data_admin"
+          ]
+        }
+      ],
+      "tenant_settings": {},
+      "notes": "food_data_admin is trusted by name (audit 2.3): ADS-only, CLI/demo-orgs only. Household roles are product-internal invitations."
+    },
+    {
+      "slug": "personal-finance",
+      "product": "Personal Finance",
+      "repo": "personal-life-financial-intelligence",
+      "client_id": "plfi-web",
+      "display_name": "ADS Personal Finance",
+      "accent": "#087E79",
+      "redirect_uris": [
+        "https://personal-finance.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://personal-finance.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "owner"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [],
+      "admin_scopes": [],
+      "assignable_roles": [
+        "owner"
+      ],
+      "ads_only_roles": [
+        "support_agent"
+      ],
+      "needs_client_secret": false,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Personal Finance household",
+          "staff": false,
+          "roles": [
+            "owner"
+          ]
+        },
+        {
+          "key": "staff",
+          "name": "ADS Staff – Personal Finance support",
+          "staff": true,
+          "roles": [
+            "support_agent"
+          ]
+        }
+      ],
+      "tenant_settings": {
+        "PLFI_SUPPORT_TENANT_ID": [
+          "staff"
+        ]
+      },
+      "notes": "editor/viewer are product-internal household invitations, not kit roles."
+    },
+    {
+      "slug": "education",
+      "product": "Education",
+      "repo": "education-and-intelligent-services",
+      "client_id": "education-web",
+      "display_name": "ADS Education",
+      "accent": "#2456A6",
+      "redirect_uris": [
+        "https://education.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://education.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "applicant"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [
+        "institution_admin"
+      ],
+      "admin_scopes": [
+        "members:read",
+        "roles:write",
+        "members:write",
+        "invitations:write"
+      ],
+      "assignable_roles": [
+        "learner",
+        "parent_guardian",
+        "teacher_trainer",
+        "academic_admin",
+        "admissions_officer",
+        "bursar_finance",
+        "institution_admin"
+      ],
+      "ads_only_roles": [
+        "platform_admin"
+      ],
+      "needs_client_secret": true,
+      "client_secret_setting": "EDU_ADS_IDENTITY_CLIENT_SECRET",
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Test School",
+          "staff": false,
+          "roles": [
+            "applicant",
+            "learner",
+            "parent_guardian",
+            "teacher_trainer",
+            "admissions_officer",
+            "academic_admin",
+            "bursar_finance"
+          ]
+        },
+        {
+          "key": "staff",
+          "name": "ADS Staff – Education platform",
+          "staff": true,
+          "roles": [
+            "platform_admin"
+          ]
+        }
+      ],
+      "tenant_settings": {
+        "EDU_PLATFORM_TENANT_ID": [
+          "staff"
+        ]
+      },
+      "notes": "The product's test registration also lists academic_admin and admissions_officer as admin roles; here only institution_admin is, so demo users can hold the other two as business roles. Revisit with ACC-11."
+    },
+    {
+      "slug": "morphoo",
+      "product": "Morphoo",
+      "repo": "go-ahead-guesser",
+      "client_id": "morphoo-web",
+      "display_name": "Morphoo",
+      "accent": null,
+      "redirect_uris": [
+        "https://morphoo.test.africadigitalsynergy.com/auth",
+        "https://morphoo.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://morphoo.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "member"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [],
+      "admin_scopes": [],
+      "assignable_roles": [
+        "member",
+        "ministry_lead",
+        "mentor",
+        "pastoral_care",
+        "church_admin"
+      ],
+      "ads_only_roles": [
+        "super_admin",
+        "pcc_admin",
+        "content_steward"
+      ],
+      "needs_client_secret": false,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Morphoo church",
+          "staff": false,
+          "roles": [
+            "member",
+            "ministry_lead",
+            "mentor",
+            "pastoral_care",
+            "church_admin"
+          ]
+        },
+        {
+          "key": "staff",
+          "name": "ADS Staff – Morphoo platform",
+          "staff": true,
+          "roles": [
+            "super_admin",
+            "pcc_admin",
+            "content_steward"
+          ]
+        }
+      ],
+      "tenant_settings": {},
+      "notes": "super_admin/pcc_admin/content_steward are trusted by name regardless of organisation (audit 2.3): ADS-only."
+    },
+    {
+      "slug": "ventureworks",
+      "product": "VentureWorks",
+      "repo": "africa-digital-synergy-ventureworks",
+      "client_id": "ventureworks-web",
+      "display_name": "ADS VentureWorks",
+      "accent": "#18764B",
+      "redirect_uris": [
+        "https://ventureworks.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://ventureworks.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [],
+      "allow_personal_workspace": false,
+      "admin_roles": [
+        "tenant_admin"
+      ],
+      "admin_scopes": [],
+      "assignable_roles": [
+        "founder",
+        "venture_manager",
+        "evidence_reviewer",
+        "regulatory_reviewer",
+        "tenant_admin"
+      ],
+      "ads_only_roles": [],
+      "needs_client_secret": false,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Venture Studio",
+          "staff": false,
+          "roles": [
+            "founder",
+            "venture_manager",
+            "evidence_reviewer",
+            "regulatory_reviewer"
+          ]
+        }
+      ],
+      "tenant_settings": {},
+      "notes": "No self role (owner decision 9). The 5 ecosystem roles are not named on main and are left out. Grants go through the kit once ACC-10 lands."
+    },
+    {
+      "slug": "commerce",
+      "product": "Commerce",
+      "repo": "ads-commerce-platform",
+      "client_id": "commerce-web",
+      "display_name": "ADS Commerce",
+      "accent": null,
+      "redirect_uris": [
+        "https://commerce.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://commerce.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "commerce_buyer"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [],
+      "admin_scopes": [],
+      "assignable_roles": [
+        "merchant_owner",
+        "commerce_manager",
+        "commerce_cashier",
+        "commerce_accountant",
+        "bank_officer",
+        "bank_agent"
+      ],
+      "ads_only_roles": [
+        "commerce_reviewer",
+        "commerce_support"
+      ],
+      "needs_client_secret": false,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Commerce shop",
+          "staff": false,
+          "roles": [
+            "commerce_buyer",
+            "merchant_owner",
+            "commerce_manager",
+            "commerce_cashier",
+            "commerce_accountant"
+          ]
+        },
+        {
+          "key": "bank",
+          "name": "ADS Demo – Commerce bank",
+          "staff": false,
+          "roles": [
+            "bank_officer",
+            "bank_agent"
+          ]
+        },
+        {
+          "key": "staff",
+          "name": "ADS Staff – Commerce review team",
+          "staff": true,
+          "roles": [
+            "commerce_reviewer",
+            "commerce_support"
+          ]
+        }
+      ],
+      "tenant_settings": {},
+      "operator_setup": [
+        "node scripts/commerce-admin.mjs register-bank --tenant <bank tenant id>",
+        "node scripts/commerce-admin.mjs capability --capability BANK_COLLECTION --tenant <bank tenant id>"
+      ],
+      "notes": "commerce_reviewer/commerce_support are trusted by name (audit 2.3): ADS-only until ACC-05."
+    },
+    {
+      "slug": "logistics",
+      "product": "Logistics",
+      "repo": "logistics",
+      "client_id": "logistics-web",
+      "display_name": "ADS Logistics",
+      "accent": "#164E80",
+      "redirect_uris": [
+        "https://logistics.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://logistics.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [],
+      "allow_personal_workspace": false,
+      "admin_roles": [
+        "operator_admin"
+      ],
+      "admin_scopes": [
+        "members:read",
+        "roles:write",
+        "members:write",
+        "invitations:write"
+      ],
+      "assignable_roles": [
+        "shipper",
+        "merchant",
+        "dispatcher",
+        "courier",
+        "operator_admin"
+      ],
+      "ads_only_roles": [],
+      "needs_client_secret": true,
+      "client_secret_setting": "ADS_IDENTITY_CLIENT_SECRET",
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Logistics operator",
+          "staff": false,
+          "roles": [
+            "dispatcher",
+            "courier"
+          ]
+        },
+        {
+          "key": "shipper",
+          "name": "ADS Demo – Logistics shipper",
+          "staff": false,
+          "roles": [
+            "shipper",
+            "merchant"
+          ]
+        }
+      ],
+      "tenant_settings": {}
+    },
+    {
+      "slug": "mamacare",
+      "product": "Mama Care",
+      "repo": "mama-care-and-intelligent-services",
+      "client_id": "mamacare-web",
+      "display_name": "ADS Mama Care",
+      "accent": "#7D3677",
+      "redirect_uris": [
+        "https://mamacare.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://mamacare.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [],
+      "allow_personal_workspace": false,
+      "admin_roles": [],
+      "admin_scopes": [
+        "members:read",
+        "roles:write",
+        "members:write",
+        "invitations:write"
+      ],
+      "assignable_roles": [
+        "maternal_user",
+        "professional",
+        "parent",
+        "guardian"
+      ],
+      "ads_only_roles": [
+        "ads_support",
+        "content_author",
+        "content_steward"
+      ],
+      "needs_client_secret": true,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Mama Care facility",
+          "staff": false,
+          "roles": [
+            "maternal_user",
+            "professional",
+            "parent",
+            "guardian"
+          ]
+        },
+        {
+          "key": "staff",
+          "name": "ADS Staff – Mama Care content",
+          "staff": true,
+          "roles": [
+            "ads_support",
+            "content_author",
+            "content_steward"
+          ]
+        }
+      ],
+      "tenant_settings": {},
+      "notes": "Content roles are global and ads_support is trusted by name (audit 2.3): ADS-only. Secret setting name not found on main."
+    },
+    {
+      "slug": "fleetguard",
+      "product": "Fleet Guard",
+      "repo": "fleet-guard-and-intelligent-services",
+      "client_id": "fleet-guard-web",
+      "display_name": "ADS Fleet Guard",
+      "accent": "#134E73",
+      "redirect_uris": [
+        "https://fleetguard.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://fleetguard.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [],
+      "allow_personal_workspace": false,
+      "admin_roles": [
+        "owner_admin"
+      ],
+      "admin_scopes": [],
+      "assignable_roles": [
+        "owner_admin",
+        "fleet_manager",
+        "workshop_manager",
+        "technician",
+        "driver",
+        "operator",
+        "finance",
+        "compliance_officer",
+        "dispatcher",
+        "site_coordinator",
+        "partner",
+        "regulator_viewer",
+        "vehicle_owner"
+      ],
+      "ads_only_roles": [
+        "ads_support"
+      ],
+      "needs_client_secret": false,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Test Fleet",
+          "staff": false,
+          "roles": [
+            "fleet_manager",
+            "workshop_manager",
+            "technician",
+            "driver",
+            "operator",
+            "finance",
+            "compliance_officer",
+            "dispatcher",
+            "site_coordinator",
+            "partner",
+            "regulator_viewer",
+            "vehicle_owner"
+          ]
+        },
+        {
+          "key": "staff",
+          "name": "ADS Staff – Fleet Guard support",
+          "staff": true,
+          "roles": [
+            "ads_support"
+          ]
+        }
+      ],
+      "tenant_settings": {},
+      "notes": "ads_support sees every fleet (audit 2.3): ADS-only until ACC-05."
+    },
+    {
+      "slug": "tontine",
+      "product": "Digital Tontine",
+      "repo": "digital-tontine-and-intelligent-services",
+      "client_id": "tontine-web",
+      "display_name": "ADS Digital Tontine",
+      "accent": "#3E46A5",
+      "redirect_uris": [
+        "https://tontine.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://tontine.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [],
+      "allow_personal_workspace": false,
+      "admin_roles": [
+        "group_admin"
+      ],
+      "admin_scopes": [],
+      "assignable_roles": [
+        "member",
+        "entrepreneur",
+        "group_admin",
+        "treasurer",
+        "payout_approver",
+        "auditor",
+        "compliance_officer",
+        "support_officer"
+      ],
+      "ads_only_roles": [],
+      "needs_client_secret": false,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Savings Group",
+          "staff": false,
+          "roles": [
+            "member",
+            "entrepreneur",
+            "treasurer",
+            "payout_approver",
+            "auditor",
+            "compliance_officer",
+            "support_officer"
+          ]
+        }
+      ],
+      "tenant_settings": {},
+      "notes": "Payout maker-checker: demo user and second demo user both hold treasurer and payout_approver."
+    },
+    {
+      "slug": "leisure-events",
+      "product": "Leisure & Events",
+      "repo": "ads-leisure-recreation-events",
+      "client_id": "leisure-web",
+      "display_name": "ADS Leisure & Events",
+      "accent": "#6D37AC",
+      "redirect_uris": [
+        "https://leisure-events.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://leisure-events.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "event_participant"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [],
+      "admin_scopes": [],
+      "assignable_roles": [
+        "event_participant",
+        "event_organizer",
+        "event_reviewer",
+        "incident_handler",
+        "support_agent"
+      ],
+      "ads_only_roles": [],
+      "needs_client_secret": false,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – City events",
+          "staff": false,
+          "roles": [
+            "event_participant",
+            "event_organizer",
+            "event_reviewer",
+            "incident_handler",
+            "support_agent"
+          ]
+        }
+      ],
+      "tenant_settings": {}
+    },
+    {
+      "slug": "soulbridge",
+      "product": "SoulBridge",
+      "repo": "soulbridge-mental-health-project",
+      "client_id": "soulbridge-web",
+      "display_name": "ADS SoulBridge",
+      "accent": "#236E73",
+      "redirect_uris": [
+        "https://soulbridge.test.africadigitalsynergy.com/signed-in",
+        "https://soulbridge.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://soulbridge.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "client"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [
+        "centre_admin"
+      ],
+      "admin_scopes": [],
+      "assignable_roles": [
+        "client",
+        "counsellor",
+        "centre_admin",
+        "case_coordinator",
+        "safeguarding_officer",
+        "content_editor",
+        "content_reviewer"
+      ],
+      "ads_only_roles": [
+        "ads_support"
+      ],
+      "needs_client_secret": false,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – SoulBridge centre",
+          "staff": false,
+          "roles": [
+            "client",
+            "counsellor",
+            "case_coordinator",
+            "safeguarding_officer",
+            "content_editor",
+            "content_reviewer"
+          ]
+        },
+        {
+          "key": "staff",
+          "name": "ADS Staff – SoulBridge support",
+          "staff": true,
+          "roles": [
+            "ads_support"
+          ]
+        }
+      ],
+      "tenant_settings": {},
+      "notes": "ads_support reads every complaint (audit 2.3): ADS-only."
+    },
+    {
+      "slug": "health",
+      "product": "Health",
+      "repo": "health",
+      "client_id": "health-web",
+      "display_name": "ADS Health",
+      "accent": null,
+      "redirect_uris": [
+        "https://health.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://health.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "patient"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [
+        "facility_admin"
+      ],
+      "admin_scopes": [
+        "members:read",
+        "roles:write",
+        "members:write",
+        "invitations:write"
+      ],
+      "assignable_roles": [
+        "reception",
+        "facility_admin"
+      ],
+      "ads_only_roles": [
+        "ads_reviewer"
+      ],
+      "needs_client_secret": true,
+      "client_secret_setting": "HEALTH_IDENTITY_CLIENT_SECRET",
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Health facility",
+          "staff": false,
+          "roles": [
+            "patient",
+            "reception"
+          ]
+        },
+        {
+          "key": "staff",
+          "name": "ADS Staff – Health listing review",
+          "staff": true,
+          "roles": [
+            "ads_reviewer"
+          ]
+        }
+      ],
+      "tenant_settings": {
+        "HEALTH_REVIEW_TENANT_ID": [
+          "staff"
+        ]
+      }
+    },
+    {
+      "slug": "home-services",
+      "product": "Home Services",
+      "repo": "home-services",
+      "client_id": "home-services",
+      "display_name": "ADS Home Services",
+      "accent": "#164940",
+      "redirect_uris": [
+        "https://home-services.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://home-services.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "service_customer"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [
+        "tenant_admin"
+      ],
+      "admin_scopes": [],
+      "assignable_roles": [
+        "service_customer",
+        "service_provider",
+        "technician",
+        "reviewer",
+        "verifier",
+        "support_agent",
+        "tenant_admin"
+      ],
+      "ads_only_roles": [],
+      "needs_client_secret": false,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Home Services marketplace",
+          "staff": false,
+          "roles": [
+            "service_customer",
+            "service_provider",
+            "technician",
+            "reviewer",
+            "verifier",
+            "support_agent"
+          ]
+        }
+      ],
+      "tenant_settings": {
+        "HOME_PUBLIC_TENANT_ID": [
+          "main"
+        ],
+        "HOME_MARKETPLACE_TENANT_IDS": [
+          "main"
+        ]
+      }
+    },
+    {
+      "slug": "project-management",
+      "product": "Project Management",
+      "repo": "project-management-platform",
+      "client_id": "pmp-web",
+      "display_name": "ADS Project Management",
+      "accent": "#283C68",
+      "redirect_uris": [
+        "https://project-management.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://project-management.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [],
+      "allow_personal_workspace": false,
+      "admin_roles": [
+        "admin"
+      ],
+      "admin_scopes": [
+        "members:read",
+        "roles:write",
+        "members:write",
+        "invitations:write"
+      ],
+      "assignable_roles": [
+        "admin",
+        "hr",
+        "manager",
+        "employee",
+        "verifier",
+        "ceo",
+        "cto",
+        "qa",
+        "developer",
+        "tester",
+        "organizer"
+      ],
+      "ads_only_roles": [],
+      "needs_client_secret": true,
+      "client_secret_setting": "ADS_IDENTITY_CLIENT_SECRET",
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Project Management",
+          "staff": false,
+          "roles": [
+            "hr",
+            "manager",
+            "employee",
+            "verifier",
+            "ceo",
+            "cto",
+            "qa",
+            "developer",
+            "tester",
+            "organizer"
+          ]
+        }
+      ],
+      "tenant_settings": {}
+    },
+    {
+      "slug": "africover",
+      "product": "AfriCover",
+      "repo": "africover-insurance-project",
+      "client_id": "africover-web",
+      "display_name": "ADS AfriCover",
+      "accent": null,
+      "redirect_uris": [
+        "https://africover.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://africover.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "insurance_customer"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [
+        "insurer_admin"
+      ],
+      "admin_scopes": [],
+      "assignable_roles": [
+        "insurance_customer",
+        "insurer_admin",
+        "product_manager",
+        "underwriter",
+        "underwriting_approver",
+        "trigger_officer",
+        "claims_approver",
+        "complaint_officer",
+        "support_officer",
+        "auditor"
+      ],
+      "ads_only_roles": [
+        "interest_reviewer",
+        "platform_admin"
+      ],
+      "needs_client_secret": false,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Insurer",
+          "staff": false,
+          "roles": [
+            "insurance_customer",
+            "product_manager",
+            "underwriter",
+            "underwriting_approver",
+            "trigger_officer",
+            "claims_approver",
+            "complaint_officer",
+            "support_officer",
+            "auditor"
+          ]
+        },
+        {
+          "key": "staff",
+          "name": "ADS Staff – AfriCover operator",
+          "staff": true,
+          "roles": [
+            "interest_reviewer",
+            "platform_admin"
+          ]
+        }
+      ],
+      "tenant_settings": {},
+      "operator_setup": [
+        "INSERT INTO cover.platform_operators(tenant_id) VALUES ('<staff tenant id>')  -- as the AfriCover database owner"
+      ]
+    },
+    {
+      "slug": "agriculture",
+      "product": "Agriculture",
+      "repo": "agriculture",
+      "client_id": "agriculture-web",
+      "display_name": "ADS Agriculture",
+      "accent": null,
+      "redirect_uris": [
+        "https://agriculture.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://agriculture.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "farmer",
+        "buyer"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [
+        "tenant_admin"
+      ],
+      "admin_scopes": [
+        "members:read",
+        "roles:write",
+        "members:write",
+        "invitations:write"
+      ],
+      "assignable_roles": [
+        "farmer",
+        "buyer",
+        "reviewer",
+        "support",
+        "tenant_admin"
+      ],
+      "ads_only_roles": [],
+      "needs_client_secret": true,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Agriculture cooperative",
+          "staff": false,
+          "roles": [
+            "farmer",
+            "buyer"
+          ]
+        },
+        {
+          "key": "staff",
+          "name": "ADS Staff – Agriculture review",
+          "staff": true,
+          "roles": [
+            "reviewer",
+            "support"
+          ]
+        }
+      ],
+      "tenant_settings": {},
+      "operator_setup": [
+        "npm run admin -- add-staff-tenant <staff tenant id>"
+      ],
+      "notes": "Secret setting name not found on main (tests use AGRI_ADMIN_CLIENT_SECRET)."
+    },
+    {
+      "slug": "investment",
+      "product": "Investment Platform",
+      "repo": "intelligent-cryptocurrency-platform",
+      "client_id": "iip-web",
+      "display_name": "ADS Investment Platform",
+      "accent": "#087E79",
+      "redirect_uris": [
+        "https://investment.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://investment.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "investor"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [
+        "iip_admin"
+      ],
+      "admin_scopes": [
+        "members:read",
+        "roles:write",
+        "invitations:write"
+      ],
+      "assignable_roles": [
+        "investor",
+        "investment_reviewer",
+        "support_agent",
+        "iip_admin"
+      ],
+      "ads_only_roles": [],
+      "needs_client_secret": true,
+      "client_secret_setting": "ADS_IDENTITY_CLIENT_SECRET",
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Investment Platform",
+          "staff": false,
+          "roles": [
+            "investor"
+          ]
+        },
+        {
+          "key": "staff",
+          "name": "ADS Staff – Investment Platform",
+          "staff": true,
+          "roles": [
+            "investment_reviewer",
+            "support_agent"
+          ]
+        }
+      ],
+      "tenant_settings": {}
+    },
+    {
+      "slug": "hub",
+      "product": "Hub",
+      "repo": "africa-digital-synergy-hub",
+      "client_id": "hub-web",
+      "display_name": "ADS Hub",
+      "accent": "#102B43",
+      "redirect_uris": [
+        "https://hub.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://hub.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "member"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [
+        "staff_admin"
+      ],
+      "admin_scopes": [],
+      "assignable_roles": [
+        "member"
+      ],
+      "ads_only_roles": [
+        "staff",
+        "staff_admin"
+      ],
+      "needs_client_secret": false,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Hub members",
+          "staff": false,
+          "roles": [
+            "member"
+          ]
+        },
+        {
+          "key": "staff",
+          "name": "ADS Staff – Hub operators",
+          "staff": true,
+          "roles": [
+            "staff"
+          ]
+        }
+      ],
+      "tenant_settings": {
+        "HUB_OPERATOR_TENANT_ID": [
+          "staff"
+        ]
+      },
+      "notes": "staff/staff_admin are ADS operator roles: CLI/demo-orgs only. Approvals write the identity database directly (ACC-13)."
+    },
+    {
+      "slug": "hopebridge",
+      "product": "HopeBridge",
+      "repo": "hopebridge",
+      "client_id": "hopebridge-web",
+      "display_name": "ADS HopeBridge",
+      "accent": null,
+      "redirect_uris": [
+        "https://hopebridge.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://hopebridge.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "community_user"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [
+        "ngo_admin"
+      ],
+      "admin_scopes": [
+        "members:read",
+        "roles:write",
+        "members:write",
+        "invitations:write"
+      ],
+      "assignable_roles": [
+        "community_user",
+        "ngo_admin",
+        "ngo_operations",
+        "case_worker",
+        "programme_officer",
+        "eligibility_officer",
+        "approver",
+        "referral_officer",
+        "finance_viewer",
+        "safeguarding_officer",
+        "me_officer",
+        "partner",
+        "donor"
+      ],
+      "ads_only_roles": [
+        "platform_admin"
+      ],
+      "needs_client_secret": true,
+      "client_secret_setting": "ADS_ADMIN_CLIENT_SECRET",
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – NGO",
+          "staff": false,
+          "roles": [
+            "community_user",
+            "ngo_operations",
+            "case_worker",
+            "programme_officer",
+            "eligibility_officer",
+            "approver",
+            "referral_officer",
+            "finance_viewer",
+            "safeguarding_officer",
+            "me_officer",
+            "partner",
+            "donor"
+          ]
+        },
+        {
+          "key": "staff",
+          "name": "ADS Staff – HopeBridge platform",
+          "staff": true,
+          "roles": [
+            "platform_admin"
+          ]
+        }
+      ],
+      "tenant_settings": {},
+      "notes": "Staff roles must also exist in HopeBridge public.user_roles (server/identity.ts); the first platform_admin needs that manual insert."
+    },
+    {
+      "slug": "tourism",
+      "product": "Tourism",
+      "repo": "tourism-platform",
+      "client_id": "tourism-web",
+      "display_name": "ADS Tourism",
+      "accent": "#0E6E6A",
+      "redirect_uris": [
+        "https://tourism.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://tourism.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "visitor"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [
+        "operator_admin"
+      ],
+      "admin_scopes": [
+        "members:read",
+        "roles:write",
+        "members:write",
+        "invitations:write"
+      ],
+      "assignable_roles": [
+        "visitor",
+        "gate_agent",
+        "operator_admin"
+      ],
+      "ads_only_roles": [
+        "tour_admin"
+      ],
+      "needs_client_secret": true,
+      "client_secret_setting": "ADS_IDENTITY_CLIENT_SECRET",
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Tour operator",
+          "staff": false,
+          "roles": [
+            "visitor",
+            "gate_agent"
+          ]
+        },
+        {
+          "key": "staff",
+          "name": "ADS Staff – Tourism platform",
+          "staff": true,
+          "roles": [
+            "tour_admin"
+          ]
+        }
+      ],
+      "tenant_settings": {
+        "TOUR_PLATFORM_TENANT_ID": [
+          "staff"
+        ]
+      }
+    },
+    {
+      "slug": "banking",
+      "product": "Banking",
+      "repo": "banking-platforms",
+      "client_id": "banking-web",
+      "display_name": "ADS Banking",
+      "accent": "#087E79",
+      "redirect_uris": [
+        "https://banking.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://banking.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "banking_customer"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [
+        "banking_admin"
+      ],
+      "admin_scopes": [],
+      "assignable_roles": [
+        "banking_customer",
+        "bank_officer",
+        "banking_admin"
+      ],
+      "ads_only_roles": [],
+      "needs_client_secret": false,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Bank",
+          "staff": false,
+          "roles": [
+            "banking_customer",
+            "bank_officer"
+          ]
+        }
+      ],
+      "tenant_settings": {
+        "BANKING_OPERATOR_TENANT_IDS": [
+          "main"
+        ]
+      },
+      "notes": "Personal workspace + banking_customer self role per owner decision 10 (DD-12); not yet proven in Banking tests."
+    },
+    {
+      "slug": "transport",
+      "product": "Transport",
+      "repo": "transport-platform",
+      "client_id": "transport-web",
+      "display_name": "ADS Transport",
+      "accent": "#0B5E73",
+      "redirect_uris": [
+        "https://transport.test.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://transport.test.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [
+        "passenger"
+      ],
+      "allow_personal_workspace": true,
+      "admin_roles": [
+        "operator_admin"
+      ],
+      "admin_scopes": [],
+      "assignable_roles": [
+        "passenger",
+        "operator_admin",
+        "station_agent",
+        "union_officer"
+      ],
+      "ads_only_roles": [],
+      "needs_client_secret": false,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Transport operator",
+          "staff": false,
+          "roles": [
+            "passenger",
+            "station_agent"
+          ]
+        },
+        {
+          "key": "union",
+          "name": "ADS Demo – Transport union",
+          "staff": false,
+          "roles": [
+            "union_officer"
+          ]
+        }
+      ],
+      "tenant_settings": {}
+    }
+  ],
+  "no_client": [
+    {
+      "slug": "rag-gateway",
+      "repo": "rag-intelligence-ai-platform",
+      "reason": "Service only: verifies the calling product's token audience (ADS_LEGACY_PLATFORM_AUDIENCES); has no sign-in of its own and needs no client."
+    }
+  ]
+}
