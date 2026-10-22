@@ -26,6 +26,8 @@ jobs:
           for file in deploy/contabo-demo/*.sh; do
             bash -n "$file"
           done
+      - name: Verify existing-demo-host Nginx cutover is conservative and reversible
+        run: python3 -m unittest discover -s deploy/contabo-demo -p 'test_*.py' -v
       - name: Validate isolated Compose without deploying anything
         run: |
           set -euo pipefail
