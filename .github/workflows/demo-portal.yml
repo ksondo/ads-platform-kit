@@ -1,0 +1,80 @@
+name: Demo Portal CI and Image Publish
+
+on:
+  pull_request:
+    paths:
+      - 'apps/demo-portal/**'
+      - '.github/workflows/demo-portal.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/demo-portal/**'
+      - '.github/workflows/demo-portal.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: demo-portal-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JS syntax
+        run: node --check apps/demo-portal/main.js
+      - name: Validate registry and commerce flows
+        run: node --test apps/demo-portal/tests/*.test.mjs
+      - name: Build deployable nginx image
+        run: docker build -f apps/demo-portal/Dockerfile -t ads-demo-portal:ci .
+      - name: Smoke test image and deep-link routes
+        run: |
+          set -euo pipefail
+          docker run -d --name ads-demo-portal-ci -p 127.0.0.1:18888:80 ads-demo-portal:ci
+          trap 'docker rm -f ads-demo-portal-ci >/dev/null 2>&1 || true' EXIT
+          for i in $(seq 1 15); do
+            if curl --fail -s http://127.0.0.1:18888/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail -s http://127.0.0.1:18888/platforms/commerce | grep -q 'ADS Digital Ecosystem'
+          curl --fail -s http://127.0.0.1:18888/opportunities/pos | grep -q 'ADS Digital Ecosystem'
+          curl --fail -s http://127.0.0.1:18888/cloud | grep -q 'ADS Digital Ecosystem'
+          curl --fail -s http://127.0.0.1:18888/catalogue.json | grep -q '"ecommerce"'
+
+  publish:
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/ads-demo-portal
+          tags: |
+            type=sha,format=long
+            type=raw,value=main
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/demo-portal/Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+      - run: echo "Published image to GHCR. No automatic Contabo deployment."

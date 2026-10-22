@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "publicSite": "https://africadigitalsynergy.com",
+  "platforms": [
+    {
+      "id": "education",
+      "name": "Education",
+      "fr": "Éducation",
+      "summary": "Learning and school management solutions",
+      "image": "photo-1503676260728-1c00da094a0b",
+      "icon": "🎓",
+      "demoUrl": null,
+      "featured": true
+    },
+    {
+      "id": "commerce",
+      "name": "Commerce",
+      "fr": "Commerce",
+      "summary": "Business and trade solutions for African markets",
+      "image": "photo-1556742049-0cfed4f6a45d",
+      "icon": "🛒",
+      "demoUrl": null,
+      "featured": true
+    },
+    {
+      "id": "healthcare",
+      "name": "Healthcare",
+      "fr": "Santé",
+      "summary": "Health services and patient management",
+      "image": "photo-1576091160399-112ba8d25d1d",
+      "icon": "♥",
+      "demoUrl": null,
+      "featured": true
+    },
+    {
+      "id": "agriculture",
+      "name": "Agriculture",
+      "fr": "Agriculture",
+      "summary": "Farming and agricultural value-chain solutions",
+      "image": "photo-1500382017468-9049fed747ef",
+      "icon": "🌱",
+      "demoUrl": null,
+      "featured": true
+    },
+    {
+      "id": "finance",
+      "name": "Finance",
+      "fr": "Finance",
+      "summary": "Financial services and digital payments",
+      "image": "photo-1611974789855-9c2a0a7236a3",
+      "icon": "◈",
+      "demoUrl": null,
+      "featured": true
+    },
+    {
+      "id": "transport",
+      "name": "Transport",
+      "fr": "Transport",
+      "summary": "Mobility and logistics solutions",
+      "image": "photo-1519003722824-194d4455a60c",
+      "icon": "🚚",
+      "demoUrl": null,
+      "featured": true
+    },
+    {
+      "id": "ventureworks",
+      "name": "VentureWorks",
+      "fr": "VentureWorks",
+      "summary": "Venture preparation, planning and execution",
+      "image": "photo-1497366811353-6870744d04b2",
+      "icon": "◇",
+      "demoUrl": null,
+      "featured": false
+    },
+    {
+      "id": "morphoo",
+      "name": "Morphoo",
+      "fr": "Morphoo",
+      "summary": "Spiritual reflection and formation",
+      "image": "photo-1490730141103-6cac27aaab94",
+      "icon": "✦",
+      "demoUrl": null,
+      "featured": false
+    }
+  ],
+  "tools": [
+    {
+      "id": "ecommerce",
+      "platformId": "commerce",
+      "name": "E-commerce",
+      "summary": "Online stores, product catalogues, orders and checkout",
+      "model": "Operate an online marketplace, a branded store, or managed merchant storefronts",
+      "image": "photo-1556742049-0cfed4f6a45d",
+      "demoUrl": null,
+      "independentDemo": true
+    },
+    {
+      "id": "pos",
+      "platformId": "commerce",
+      "name": "Point of Sale (POS)",
+      "summary": "Retail sales, cashier operations, inventory and receipts",
+      "model": "Offer POS-as-a-service to stores or manage your own retail operation",
+      "image": "photo-1556742502-ec7c0e9f34b1",
+      "demoUrl": null,
+      "independentDemo": true
+    },
+    {
+      "id": "bnpl",
+      "platformId": "commerce",
+      "name": "Buy Now, Pay Later",
+      "summary": "Installment purchase journeys with regulated financing partners",
+      "model": "Offer merchant financing through licensed financial partners, subject to regulatory approval",
+      "image": "photo-1563013544-824ae1b704d3",
+      "demoUrl": null,
+      "independentDemo": false
+    },
+    {
+      "id": "inventory",
+      "platformId": "commerce",
+      "name": "Inventory Management",
+      "summary": "Product catalogues, stock movements and replenishment",
+      "model": "Provide stock-control software to shops, wholesalers and warehouses",
+      "image": "photo-1586528116311-ad8dd3c8310d",
+      "demoUrl": null,
+      "independentDemo": false
+    },
+    {
+      "id": "storefront",
+      "platformId": "commerce",
+      "name": "White-label Storefronts",
+      "summary": "Branded digital storefronts for independent merchants",
+      "model": "Launch and operate branded stores on behalf of local businesses",
+      "image": "photo-1441986300917-64674bd600d8",
+      "demoUrl": null,
+      "independentDemo": false
+    },
+    {
+      "id": "learning",
+      "platformId": "education",
+      "name": "Digital Learning",
+      "summary": "Lessons, assessments and learner progress",
+      "model": "Offer managed digital learning services with education partners",
+      "image": "photo-1434030216411-0b793f4b4173",
+      "demoUrl": null,
+      "independentDemo": false
+    },
+    {
+      "id": "school",
+      "platformId": "education",
+      "name": "School Administration",
+      "summary": "School and academic management workflows",
+      "model": "Implement a managed school-operations service for institutions",
+      "image": "photo-1509062522246-3755977927d7",
+      "demoUrl": null,
+      "independentDemo": false
+    },
+    {
+      "id": "appointments",
+      "platformId": "healthcare",
+      "name": "Patient Appointments",
+      "summary": "Booking and patient-service coordination",
+      "model": "Offer scheduling services to participating care providers",
+      "image": "photo-1579684385127-1ef15d508118",
+      "demoUrl": null,
+      "independentDemo": false
+    },
+    {
+      "id": "fleet",
+      "platformId": "transport",
+      "name": "Fleet Operations",
+      "summary": "Vehicles, journeys and dispatch workflows",
+      "model": "Serve transport operators with fleet-management technology",
+      "image": "photo-1519003722824-194d4455a60c",
+      "demoUrl": null,
+      "independentDemo": false
+    },
+    {
+      "id": "planning",
+      "platformId": "ventureworks",
+      "name": "Business Planning",
+      "summary": "Venture plans, milestones and business readiness",
+      "model": "Support entrepreneurs with planning and operational guidance",
+      "image": "photo-1454165804606-c3d57bc86b40",
+      "demoUrl": null,
+      "independentDemo": false
+    }
+  ]
+}
