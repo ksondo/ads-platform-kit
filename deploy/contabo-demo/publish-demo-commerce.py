@@ -154,7 +154,7 @@ def check_hostname_collision(current):
     # still exits 0. Inspect the effective config before editing our exact site.
     output = cmd("nginx", "-T").stdout
     count = len(re.findall(r"\bserver_name\s+" + re.escape(HOST) + r"\s*;", output))
-    expected = 1 if current else 0
+    expected = 2 if current == https_conf() else 1 if current == http_conf() else 0
     if count != expected:
         raise Refusal(f"Conflicting Nginx Commerce server_name entries: {count}, expected {expected}")
 
