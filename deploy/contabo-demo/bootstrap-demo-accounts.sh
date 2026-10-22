@@ -36,13 +36,13 @@ docker cp "ads-demo-identity:/tmp/$tenant_name" "$output_dir/$tenant_name"
 chmod 600 "$output_dir/$tenant_name"
 docker exec -u 0 ads-demo-identity rm -f "/tmp/$tenant_name"
 source "$ENV_FILE"
-curl -fsS "http://127.0.0.1:${ADS_DEMO_IDENTITY_PORT:-18084}/login?lang=en" | grep -q 'Use demo account' || {
+curl -fsS "http://127.0.0.1:${ADS_DEMO_IDENTITY_PORT:-18085}/login?lang=en" | grep -q 'Use demo account' || {
   echo "Expected English demo login panel is not enabled"; exit 1;
 }
-curl -fsS "http://127.0.0.1:${ADS_DEMO_IDENTITY_PORT:-18084}/login?lang=fr" | grep -q 'Utiliser le compte' || {
+curl -fsS "http://127.0.0.1:${ADS_DEMO_IDENTITY_PORT:-18085}/login?lang=fr" | grep -q 'Utiliser le compte' || {
   echo "Expected French demo login panel is not enabled"; exit 1;
 }
-curl -fsS "http://127.0.0.1:${ADS_DEMO_IDENTITY_PORT:-18084}/.well-known/openid-configuration" | grep -q 'authorization_endpoint' || {
+curl -fsS "http://127.0.0.1:${ADS_DEMO_IDENTITY_PORT:-18085}/.well-known/openid-configuration" | grep -q 'authorization_endpoint' || {
   echo "OIDC discovery failed"; exit 1;
 }
 echo "ADS_DEMO_ACCOUNTS_AND_OIDC_LOCAL_SMOKE=PASS"
