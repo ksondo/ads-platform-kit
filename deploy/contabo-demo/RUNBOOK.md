@@ -5,9 +5,10 @@ The public ADS ecosystem portal, dedicated demo login server and Commerce's inte
 
 **Existing Contabo VPS**: `vmi3191089` at `161.97.128.153`. The old Software Factory identity container `africorestack-identity` and its database `africorestack-identity-postgres` must never be stopped, removed, migrated or modified by this runbook. Never run `deploy/docker-compose.yml` over the live identity server: it is NOT the isolated demo configuration.
 
-Proposed reserved loopback ports (verify available first):
+Known occupied: `18084` RAG runtime, `18085` public retail container, `18088` nginx. Preserve these services and do not reassign their ports.
+\nProposed reserved loopback ports (verify available first):
 - Portal: `127.0.0.1:18089` (independent lightweight nginx)
-- ADS demo identity: `127.0.0.1:18085` (separate Postgres 16 volume `ads-demo-identity-postgres`)
+- ADS demo identity: `127.0.0.1:18090` (separate Postgres 16 volume `ads-demo-identity-postgres`)
 - Commerce demo: `127.0.0.1:18086` (separate Postgres DB/volume, in Commerce repo)
 
 No port is publicly exposed by these Compose stacks. Existing ingress should later route approved HTTPS domain names to those loopback ports; inspect current proxy config first.
@@ -26,7 +27,7 @@ From the Windows terminal:
 On the VPS, run this **read-only** diagnostic (do NOT add `|| exit 1` on the SSH host):
     docker compose version
     docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
-    ss -ltnp | grep -E ':(80|443|18085|18086|18089)\b' || true
+    ss -ltnp | grep -E ':(80|443|18090|18086|18089)\b' || true
     df -h /
     free -h
 
@@ -93,7 +94,7 @@ Check /, /platforms, /opportunities, /cloud, /demo-access and Commerce's POS/E-c
     bash deploy/contabo-demo/deploy-identity.sh
     bash deploy/contabo-demo/bootstrap-demo-accounts.sh
 
-`deploy-identity.sh` starts its own database volume and container `ads-demo-identity`, using local port 18085; it never adopts the old identity DB. `bootstrap-demo-accounts.sh` registers the 25 reviewed OIDC demo clients, three demo accounts and their demo/staff organizations; saves generated client secrets and tenant metadata into `/var/lib/ads-demo/operator-secrets/` in files accessible only to root. It performs local EN/FR demo-login and OIDC discovery smoke tests but does not claim that TLS callbacks work until tested externally.
+`deploy-identity.sh` starts its own database volume and container `ads-demo-identity`, using local port 18090; it never adopts the old identity DB. `bootstrap-demo-accounts.sh` registers the 25 reviewed OIDC demo clients, three demo accounts and their demo/staff organizations; saves generated client secrets and tenant metadata into `/var/lib/ads-demo/operator-secrets/` in files accessible only to root. It performs local EN/FR demo-login and OIDC discovery smoke tests but does not claim that TLS callbacks work until tested externally.
 
 **Important:** In the reviewed demo manifest, the demo accounts may hold broad staff/test roles. Keep this server on wholly isolated demo databases and zero live financial/regulatory/provider integrations. Demo admin passwords are never shown on public pages.
 
