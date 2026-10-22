@@ -88,6 +88,37 @@ Then open `http://localhost:18888` on that computer while the SSH session remain
 
 Check /, /platforms, /opportunities, /cloud, /demo-access and Commerce's POS/E-commerce tool cards. About ADS and Partners must stay visible but inert; Contact must link to WhatsApp +237 654 035 075.
 
+## D2. Existing public demo hostname: ADS Digital Ecosystem pilot
+
+Operator-approved hostname: **https://demo.africadigitalsynergy.com** (not the login service).
+
+Before cutover, the existing Nginx site served /root/retail-sync-io/dist and returned HTTP 500. The existing retail files must be kept. The new ADS portal is already healthy on 127.0.0.1:18089; demo identity stays isolated at 127.0.0.1:18090.
+
+Reuse this hostname only after checking that its authoritative DNS still resolves to 161.97.128.153, and that the existing certificate is valid. DNS cannot be inferred from the existence of the Nginx site.
+
+On Contabo, run:
+
+    cd /opt/ads/demo-platform-kit
+    git pull --ff-only origin main
+    dig @ns75.domaincontrol.com +short demo.africadigitalsynergy.com A
+    dig +short demo.africadigitalsynergy.com A
+    python3 deploy/contabo-demo/promote-existing-demo-host.py --check
+
+After the preflight passes, make the controlled Nginx change:
+
+    python3 deploy/contabo-demo/promote-existing-demo-host.py --apply
+
+The script backs up the exact old Nginx site under /var/backups/ads-demo-nginx/, preserves its Certbot HTTPS settings and HTTP redirect, replaces only the old root and / handler with a loopback proxy to 127.0.0.1:18089, runs nginx -t, reloads existing host Nginx, tests the correct TLS hostname locally, and rolls back automatically on any cutover validation failure. It does not delete the existing retail project, change another Nginx site, or alter Software Factory or Commerce/identity containers.
+
+Verify locally via the real hostname/SNI even if DNS is pending:
+
+    curl --noproxy '*' -fsSI --resolve demo.africadigitalsynergy.com:443:127.0.0.1 https://demo.africadigitalsynergy.com/
+    curl --noproxy '*' -fsS --resolve demo.africadigitalsynergy.com:443:127.0.0.1 https://demo.africadigitalsynergy.com/ | grep -o 'ADS Digital Ecosystem' | head -1
+
+Then test public DNS and HTTPS via a browser on a different network. If the A record is missing, the host-local route can work but public accessibility remains blocked until DNS is repaired.
+
+For a later manual rollback, take the *exact backup path printed by the script* and restore that file to the resolved path of /etc/nginx/sites-enabled/demo.africadigitalsynergy.com, then run nginx -t and systemctl reload nginx. Do not use a guessed backup path.
+
 ## E. Isolated demo identity SECOND
 
 ### Preferred protected configuration (no secret values in chat)
