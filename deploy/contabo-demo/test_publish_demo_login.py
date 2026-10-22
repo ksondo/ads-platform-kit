@@ -34,6 +34,55 @@ class GuardedDemoLogin(unittest.TestCase):
         self.assertNotIn("africorestack-identity", conf)
         self.assertNotIn("proxy_pass http://127.0.0.1:18089;", conf)
 
+    def test_acme_webroot_world_traversable_even_with_umask_077(self):
+        import os
+        import stat
+        with tempfile.TemporaryDirectory() as tmp:
+            acme = Path(tmp) / "ads-demo-login-acme"
+            old_umask = os.umask(0o077)
+            try:
+                with patch.object(login, "ACME", acme):
+                    login.prepare_public_webroot()
+                    for part in (acme, acme / ".well-known", acme / ".well-known" / "acme-challenge"):
+                        self.assertEqual(stat.S_IMODE(part.stat().st_mode), 0o755)
+            finally:
+                os.umask(old_umask)
+
+    def test_challenge_probe_retries_404_then_serves_token_and_removes_file(self):
+        import os
+        import stat
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as tmp:
+            acme = Path(tmp) / "ads-demo-login-acme"
+            seen = []
+            def mock_curl(*args, **kwargs):
+                challenge = next((acme / ".well-known" / "acme-challenge").iterdir())
+                self.assertEqual(stat.S_IMODE(challenge.stat().st_mode), 0o644)
+                token = challenge.read_text()
+                seen.append(token)
+                if len(seen) == 1:
+                    return SimpleNamespace(stdout="Not Found\nADS_HTTP_STATUS:404")
+                return SimpleNamespace(stdout=token + "\nADS_HTTP_STATUS:200")
+            old_umask = os.umask(0o077)
+            try:
+                with patch.object(login, "ACME", acme), patch.object(login, "command", side_effect=mock_curl), patch.object(login.time, "sleep", return_value=None):
+                    login.prepare_public_webroot()
+                    login.challenge_probe()
+                self.assertEqual(len(seen), 2)
+                self.assertEqual(list((acme / ".well-known" / "acme-challenge").iterdir()), [])
+            finally:
+                os.umask(old_umask)
+
+    def test_acme_webroot_rejects_symlink(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            real = Path(tmp) / "target"
+            real.mkdir()
+            acme = Path(tmp) / "ads-demo-login-acme"
+            acme.symlink_to(real)
+            with patch.object(login, "ACME", acme):
+                with self.assertRaises(login.Refusal):
+                    login.prepare_public_webroot()
+
     def test_existing_identity_config_has_unchanged_secrets_and_modes(self):
         secret = (
             "ADS_ENV=demo\nDEMO_MODE=1\n"

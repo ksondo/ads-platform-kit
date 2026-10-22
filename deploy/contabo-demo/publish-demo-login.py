@@ -205,18 +205,50 @@ def nginx_reload():
     command("systemctl", "reload", "nginx", capture=False)
 
 
+def prepare_public_webroot():
+    """The dedicated challenge path must be readable/traversable by Nginx workers.
+
+    Root's interactive umask can be 077, which makes files/dirs inaccessible to
+    Nginx's unprivileged worker. Only modify our new, dedicated ACME directories.
+    """
+    for directory in (ACME, ACME / ".well-known", ACME / ".well-known" / "acme-challenge"):
+        if directory.is_symlink() or (directory.exists() and not directory.is_dir()):
+            raise Refusal(f"Unsafe existing ACME path: {directory}")
+        directory.mkdir(parents=True, mode=0o755, exist_ok=True)
+        directory.chmod(0o755)
+
+
 def challenge_probe():
+    """Retry hostname-specific challenge after async Nginx reload; never skip HTTP-01."""
     token = "ads-" + uuid.uuid4().hex
     challenge = ACME / ".well-known" / "acme-challenge" / token
-    challenge.write_text(token)
+    # Use exclusive creation and an explicit world-readable mode even with umask 077.
+    with challenge.open("x") as output:
+        output.write(token)
+    challenge.chmod(0o644)
     try:
-        body = command(
-            "curl", "--noproxy", "*", "-fsS", "--max-time", "8",
-            "--resolve", HOST + ":80:127.0.0.1",
-            "http://" + HOST + "/.well-known/acme-challenge/" + token
-        ).stdout
-        if body != token:
-            raise Refusal("ACME challenge path returned unexpected content")
+        last_result = "no HTTP response"
+        for attempt in range(20):
+            try:
+                result = command(
+                    "curl", "--noproxy", "*", "-sS", "--max-time", "5",
+                    "--write-out", "\\nADS_HTTP_STATUS:%{http_code}",
+                    "--resolve", HOST + ":80:127.0.0.1",
+                    "http://" + HOST + "/.well-known/acme-challenge/" + token,
+                ).stdout
+                body, separator, status = result.rpartition("\nADS_HTTP_STATUS:")
+                if separator and status.strip() == "200" and body == token:
+                    return
+                last_result = "HTTP " + status.strip() if separator else "unexpected response"
+            except subprocess.CalledProcessError as err:
+                last_result = "curl exit " + str(err.returncode)
+            if attempt < 19:
+                time.sleep(1)
+        raise Refusal(
+            "ACME HTTP-01 local validation failed after 20 attempts: "
+            + last_result + "; the staged site will be safely rolled back. "
+            "Inspect Nginx routing and worker access before retrying Certbot."
+        )
     finally:
         challenge.unlink(missing_ok=True)
 
@@ -226,7 +258,7 @@ def prepare_acme():
     check_demo()
     check_site()
     command("nginx", "-t")
-    ACME.joinpath(".well-known", "acme-challenge").mkdir(parents=True, exist_ok=True)
+    prepare_public_webroot()
     if AVAILABLE.exists():
         if AVAILABLE.read_text() != http_conf():
             raise Refusal("Existing HTTP challenge stage differs from expected contents")

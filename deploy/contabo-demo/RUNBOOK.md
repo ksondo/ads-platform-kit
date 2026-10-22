@@ -170,7 +170,7 @@ If preflight passes, create an **HTTP-only** Nginx site for Let's Encrypt HTTP-0
 
     python3 deploy/contabo-demo/publish-demo-login.py --prepare-acme
 
-The utility creates its own ACME challenge directory, refuses to modify any existing unrelated Nginx site, validates and reloads Nginx, tests the local challenge path, and rolls back on failure. Then request a certificate through the **webroot** authenticator; do not use `certbot --nginx`, which can edit other Nginx sites:
+The utility creates its own ACME challenge directory with explicit Nginx-readable 0755 directory permissions and a temporary 0644 probe file (safe even when the operator's umask is 077), refuses to modify any existing unrelated Nginx site, validates and reloads Nginx, retries the local challenge probe to accommodate asynchronous worker reloads, and rolls back on failure. **Do not run Certbot if `--prepare-acme` fails or `ADS_DEMO_LOGIN_ACME_READY=PASS` is absent:** the rollback removes the challenge route and the certificate authority will receive HTTP 404. Diagnose the challenge endpoint instead. Only after the ready marker is confirmed, request a certificate through the **webroot** authenticator; do not use `certbot --nginx`, which can edit other Nginx sites:
 
     certbot certonly --webroot -w /var/www/ads-demo-login-acme -d login.demo.africadigitalsynergy.com --cert-name login.demo.africadigitalsynergy.com
 
