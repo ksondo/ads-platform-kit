@@ -227,6 +227,49 @@ See `ksondo/ADS-Commerce-Platform/deploy/demo/DEPLOYMENT_GATE.md`. The demo API,
 
 Run persistent demo fixture seeding and scheduled cleanup/reset ONLY after accepting safe demo products, stores, counts and roles. No real payments, banks, providers, production credentials or merchant/customer records are part of this demo.
 
+### F2. Publish Commerce demo HTTPS — staged and isolated
+
+The Commerce images from the reviewed release have been started in isolated containers, with demo web bound **only** to 127.0.0.1:18086. The operator confirmed GET /commerce and GET /api/ready through the local Commerce frontend both return HTTP 200, with the API reporting ready_for_internal_checks, schema 001–023 and EXTERNAL_SIGNOFF_REQUIRED. These indicate **internal readiness**, not production certification. For NODE_ENV=demo, the API's legacy productionOperationsEnabled field reflects enabled **demo transaction writes**, not access to any live payment provider, settlement or banking operation. Keep real integrations absent and demo data isolated.
+
+Use the dedicated guarded publisher, modeled on the successfully deployed demo-login publisher. It only operates on /etc/nginx/sites-available/commerce.demo.africadigitalsynergy.com and its matching symlink; it refuses preexisting/unrecognized sites, hostname collisions, unexpected DNS/IP/IPv6, wrong Docker loopback port, failed Commerce readiness, incorrect certificate name and invalid Nginx syntax. It does not edit the Commerce database, Docker stack, identity, portal, CoreStack, Software Factory or RAG.
+
+    cd /opt/ads/demo-platform-kit
+    git pull --ff-only origin main
+    python3 deploy/contabo-demo/publish-demo-commerce.py --check
+
+After a **PASS** preflight, add a temporary HTTP-only Nginx site that serves only the Let's Encrypt challenge (everything else returns 404). It will roll back on probe or reload failure:
+
+    python3 deploy/contabo-demo/publish-demo-commerce.py --prepare-acme
+
+**Do not issue a certificate** unless the output contains ADS_COMMERCE_ACME_READY=PASS. Separately prove the challenge is reachable using public DNS, not just Nginx loopback:
+
+    root=/var/www/ads-demo-commerce-acme/.well-known/acme-challenge
+    challenge="$(mktemp "$root/ads-commerce-public-XXXXXXXX")"
+    printf 'ADS_COMMERCE_HTTP_OK' > "$challenge"
+    chmod 644 "$challenge"
+    curl --noproxy '*' -fsS --max-time 12 "http://commerce.demo.africadigitalsynergy.com/.well-known/acme-challenge/$(basename "$challenge")"
+    rm -f "$challenge"
+
+The response must be exactly ADS_COMMERCE_HTTP_OK. If curl fails, delete that temporary challenge file and diagnose DNS, firewall, Nginx and HTTP routing; do not use certbot --nginx or stop other apps.
+
+After both checks pass, issue **only** the new Commerce certificate:
+
+    certbot certonly --webroot \
+      -w /var/www/ads-demo-commerce-acme \
+      -d commerce.demo.africadigitalsynergy.com \
+      --cert-name commerce.demo.africadigitalsynergy.com
+
+After successful certificate issuance:
+
+    python3 deploy/contabo-demo/publish-demo-commerce.py --activate-https
+    curl -fsS https://commerce.demo.africadigitalsynergy.com/api/ready
+    curl -fsSI https://commerce.demo.africadigitalsynergy.com/commerce
+
+The publisher validates/reloads Nginx and tests Commerce HTTPS with real certificate verification, the exact hostname/SNI and both frontend and API routes. If the HTTPS smoke fails it restores its backed-up HTTP-only site under /var/backups/ads-demo-commerce/. Run external browser smoke after local PASS. Do **not** equate HTTP 200 with business or role acceptance.
+
+Only then run the Commerce client callback command in section E3. Do NOT rerun demo bootstrap. Verify browser PKCE sign-in/out, seller/checkout/POS roles, tenant isolation and seed/reset acceptance before activating the public portal's Commerce links.
+
+
 ## G. Cross-application acceptance and activating portal links
 
 Only after verified HTTPS links and browser E2E, set `apps/demo-portal/catalogue.json` demoUrl fields through a reviewed PR:
