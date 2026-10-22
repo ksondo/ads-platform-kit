@@ -152,6 +152,52 @@ After local health is established, HTTPS, DNS and OAuth callbacks must be config
 
 If registration/verification email is not yet configured, use the dedicated demo accounts; do not treat `MAIL_TRANSPORT=log` as a production notification service. Never copy a demo signing key or a demo database into the Software Factory identity environment.
 
+### E2. Publish shared demo sign-in at login.demo.africadigitalsynergy.com
+
+Approved hostname: **https://login.demo.africadigitalsynergy.com** (separate from the public `demo.africadigitalsynergy.com` landing page and from production `auth.africadigitalsynergy.com`). The isolated identity service is healthy on `127.0.0.1:18090`, with 25 registered OIDC clients, three demo accounts, existing organization/role records, and its own Postgres volume. **Do not re-run demo account/bootstrap scripts.**
+
+Historical identity issuer is `https://login.test.africadigitalsynergy.com`. Its change is an OIDC contract change: applications must configure the new issuer before public authentication, and existing sessions/tokens with the old issuer will not be interchangeable. Do not change the signing key, database, three passwords, or old production identity.
+
+Use the staged reviewed utility at `deploy/contabo-demo/publish-demo-login.py` only on Contabo after the corresponding PR has been merged:
+
+    cd /opt/ads/demo-platform-kit
+    git pull --ff-only origin main
+    python3 deploy/contabo-demo/publish-demo-login.py --check
+
+`--check` verifies that **both GoDaddy authoritative name servers** return `161.97.128.153` for the new A record; that no unexpected AAAA record is present; Nginx is valid; the isolated identity is healthy; and the expected protected demo config exists. If it fails, it makes **no** changes. Existing Nginx duplicate afri-corestack warning is unrelated; do not fix in this deployment.
+
+If preflight passes, create an **HTTP-only** Nginx site for Let's Encrypt HTTP-01 validation. This does not serve login pages until HTTPS exists:
+
+    python3 deploy/contabo-demo/publish-demo-login.py --prepare-acme
+
+The utility creates its own ACME challenge directory, refuses to modify any existing unrelated Nginx site, validates and reloads Nginx, tests the local challenge path, and rolls back on failure. Then request a certificate through the **webroot** authenticator; do not use `certbot --nginx`, which can edit other Nginx sites:
+
+    certbot certonly --webroot -w /var/www/ads-demo-login-acme -d login.demo.africadigitalsynergy.com --cert-name login.demo.africadigitalsynergy.com
+
+Certbot may prompt for account/contact details if they are not already configured. ACME requires public DNS and inbound port 80. Do not disable existing listeners, switch to standalone authenticator, or replace other certificates to get around a failure.
+
+After Certbot reports successful issuance, activate the separate HTTPS reverse proxy to the loopback-only identity service, keeping Certbot-managed SSL files and HTTP-01 renewal path:
+
+    python3 deploy/contabo-demo/publish-demo-login.py --activate-https
+
+This checks certificate validity and hostname, backs up the HTTP-only Nginx configuration under `/var/backups/ads-demo-login/`, validates/reloads Nginx and locally checks OIDC discovery over the new HTTPS host. On failure, the script restores its previous site configuration.
+
+Only after HTTPS routing passes, change the **demo identity issuer** in the protected existing environment file and recreate **only the identity service**, leaving its Postgres volume and all accounts untouched:
+
+    python3 deploy/contabo-demo/publish-demo-login.py --promote-issuer
+
+This backs up `/etc/ads-demo/identity.env` (permissions 0600), replaces only the exact old `IDENTITY_PUBLIC_URL` line, refuses a conflicting `IDENTITY_ISSUER` override, recreates only `ads-demo-identity` with `docker compose --no-deps`, validates health and OIDC issuer through public HTTPS, and automatically restores the prior env and recreates the demo identity on failure. Old issuer sessions will not carry across.
+
+Final operator/public tests:
+
+    curl -fsS https://login.demo.africadigitalsynergy.com/health
+    curl -fsS https://login.demo.africadigitalsynergy.com/.well-known/openid-configuration | python3 -c 'import sys,json; print(json.load(sys.stdin)["issuer"])'
+    curl -fsSI https://demo.africadigitalsynergy.com/
+
+Then test the login page in a real external browser. Product OAuth end-to-end (PKCE, redirects, role segregation, tenant isolation, logout) requires an approved, live product callback hostname and is not certified merely by making the login page reachable. The current 25-client registry still contains `.test` callbacks, so product callbacks must be updated selectively when each product is ready, not by re-running the initial bootstrap.
+
+Before considering the login public acceptance complete, confirm the demo instance has only isolated sandbox data, no live providers, and that publicly displayed `demo.user` credentials do not authorize any production systems. Keep secret backups and environment content off tickets, logs, and chat.
+
 ## F. Commerce integrated demo THIRD (in Commerce repository)
 
 See `ksondo/ADS-Commerce-Platform/deploy/demo/DEPLOYMENT_GATE.md`. The demo API, web and forward-only migrator images must come from **one reviewed Commerce commit**. Provision a dedicated commerce demo PostgreSQL instance, apply migrations as a schema owner, then run the app under `commerce_demo_app` with tenant RLS enabled. Test public e-commerce and restricted cashier/merchant POS separately.
