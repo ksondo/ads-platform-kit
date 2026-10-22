@@ -1,0 +1,47 @@
+name: Validate Contabo demo release manifests
+
+on:
+  pull_request:
+    paths:
+      - 'deploy/contabo-demo/**'
+      - '.github/workflows/demo-release-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/contabo-demo/**'
+      - '.github/workflows/demo-release-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check operator scripts syntax
+        run: |
+          set -euo pipefail
+          for file in deploy/contabo-demo/*.sh; do
+            bash -n "$file"
+          done
+      - name: Validate isolated Compose without deploying anything
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ads-demo-config
+          cp deploy/contabo-demo/images.env.example /tmp/ads-demo-config/images.env
+          sudo mkdir -p /etc/ads-demo
+          sudo cp deploy/contabo-demo/identity.env.example /etc/ads-demo/identity.env
+          docker compose --env-file /tmp/ads-demo-config/images.env \
+            -f deploy/contabo-demo/compose.portal.yml config --quiet
+          docker compose --env-file /tmp/ads-demo-config/images.env \
+            -f deploy/contabo-demo/compose.identity.yml config --quiet
+      - name: Assert safety boundaries
+        run: |
+          set -euo pipefail
+          ! grep -RE '(docker system prune|docker volume prune|docker rm -f africorestack|africorestack-identity-postgres:)' deploy/contabo-demo
+          grep -q '127.0.0.1:' deploy/contabo-demo/compose.portal.yml
+          grep -q '127.0.0.1:' deploy/contabo-demo/compose.identity.yml
+          grep -q 'ADS_ENV: demo' deploy/contabo-demo/compose.identity.yml
+          grep -q 'DEMO_MODE: "1"' deploy/contabo-demo/compose.identity.yml
