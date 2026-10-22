@@ -28,9 +28,9 @@ describe('client registration list (config/clients.demo.json)', () => {
     assert.equal(new Set(doc.products.map(p => p.client_id)).size, 25);
   });
 
-  it('uses https://<slug>.test.africadigitalsynergy.com/ addresses', () => {
+  it('uses reviewed HTTPS callback origins, including the approved public Commerce demo hostname', () => {
     for (const p of doc.products) {
-      const origin = `https://${p.slug}.test.africadigitalsynergy.com`;
+      const origin = p.slug === 'commerce' ? 'https://commerce.demo.africadigitalsynergy.com' : `https://${p.slug}.test.africadigitalsynergy.com`;
       assert.ok(p.redirect_uris.length && p.redirect_uris.every(u => u.startsWith(`${origin}/`)), p.slug);
       assert.deepEqual(p.post_logout_redirect_uris, [`${origin}/`], p.slug);
       assert.equal(typeof p.allow_personal_workspace, 'boolean');
@@ -150,8 +150,8 @@ describe('apply-clients', () => {
     assert.equal((await grant('mamacare-web', 'content_steward')).get('error'), 'ROLE_NOT_ASSIGNABLE');
     assert.equal((await grant('commerce-web', 'commerce_cashier')).get('done'), 'granted');
     // A product sign-in returns to its test address.
-    const q = new URLSearchParams({ response_type: 'code', client_id: 'commerce-web', redirect_uri: 'https://commerce.test.africadigitalsynergy.com/', state: 's', code_challenge: 'a'.repeat(43), code_challenge_method: 'S256', tenant_hint: tenantId });
+    const q = new URLSearchParams({ response_type: 'code', client_id: 'commerce-web', redirect_uri: 'https://commerce.demo.africadigitalsynergy.com/', state: 's', code_challenge: 'a'.repeat(43), code_challenge_method: 'S256', tenant_hint: tenantId });
     const auth = await b.get(`/authorize?${q}`);
-    assert.ok(auth.location.startsWith('https://commerce.test.africadigitalsynergy.com/?code='), auth.location);
+    assert.ok(auth.location.startsWith('https://commerce.demo.africadigitalsynergy.com/?code='), auth.location);
   });
 });
