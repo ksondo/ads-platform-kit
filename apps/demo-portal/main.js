@@ -1,7 +1,7 @@
 const app = document.getElementById("root");
 const i18n = {
   en: {
-    home:"Home", platforms:"Platforms", opportunities:"Business Opportunities", cloud:"Cloud Services", about:"About ADS", partners:"Partners", contact:"Contact", demos:"Explore Demos",
+    home:"Home", platforms:"Platforms", opportunities:"Business Opportunities", cloud:"Cloud Services", about:"About ADS", partners:"Partners", contact:"Contact", demos:"Explore Demos", demoHelp:"How demo sign-in works", demoGuideTitle:"How to access ADS demos", demoGuideIntro:"Choose a verified application demo. Its own sign-in screen securely connects to your ADS demo account.", demoGuideFirst:"Choose a platform", demoGuideFirstText:"Explore the available ADS platforms and select an approved working demonstration.", demoGuideSecond:"Sign in on the application", demoGuideSecondText:"The application opens the hosted ADS sign-in page. In an enabled demo environment, choose Use demo account; no password is stored on this portal.", demoGuideThird:"Explore your demo workspace", demoGuideThirdText:"The application returns you to the correct workspace based on your assigned role and organization.", demoGuideNotLive:"Demo launch links appear only after their deployed application and login flow have been verified.",
     kicker:"ADS DIGITAL ECOSYSTEM", heroA:"Real Solutions for", heroB:"a Brighter Africa", heroCopy:"Explore our platforms, discover digital business opportunities and experience working demonstrations.",
     search:"Search platforms, tools or business opportunities…", searchButton:"Search", popular:"Popular:", discover:"Explore Our Platforms", discoverCopy:"Discover integrated digital platforms built around real-world needs.", allPlatforms:"View all platforms",
     featured:"FEATURED PLATFORM", commerceCopy:"From e-commerce and point of sale to inventory, payments and customer management, Commerce connects tools that help businesses grow.",
@@ -13,7 +13,7 @@ const i18n = {
     footer:"Real platforms. Practical opportunities. Shared progress.", external:"Opens the Africa Digital Synergy company website", companyUpdating:"Company website being updated — link temporarily unavailable", statusNote:"Demo buttons become active only when a verified deployment URL is registered.", featuredSubtitle:"Integrated business solutions for modern trade"
   },
   fr: {
-    home:"Accueil", platforms:"Plateformes", opportunities:"Opportunités d'affaires", cloud:"Services Cloud", about:"À propos d'ADS", partners:"Partenaires", contact:"Contact", demos:"Explorer les démos",
+    home:"Accueil", platforms:"Plateformes", opportunities:"Opportunités d'affaires", cloud:"Services Cloud", about:"À propos d'ADS", partners:"Partenaires", contact:"Contact", demos:"Explorer les démos", demoHelp:"Comment accéder aux démos", demoGuideTitle:"Comment accéder aux démos ADS", demoGuideIntro:"Choisissez une application de démonstration vérifiée. Sa page de connexion vous connecte à votre compte démo ADS.", demoGuideFirst:"Choisir une plateforme", demoGuideFirstText:"Explorez les plateformes ADS et sélectionnez une démonstration opérationnelle.", demoGuideSecond:"Se connecter dans l’application", demoGuideSecondText:"L’application ouvre la page de connexion ADS. Dans un environnement démo activé, choisissez Utiliser le compte démo ; aucun mot de passe n’est stocké sur ce portail.", demoGuideThird:"Explorer votre espace démo", demoGuideThirdText:"L’application vous redirige vers votre espace selon votre rôle et votre organisation.", demoGuideNotLive:"Les liens des démos ne sont activés qu’après vérification de l’application et de son authentification.",
     kicker:"ÉCOSYSTÈME NUMÉRIQUE ADS", heroA:"Des solutions concrètes pour", heroB:"une Afrique meilleure", heroCopy:"Découvrez nos plateformes, les opportunités d'affaires numériques et les démonstrations disponibles.",
     search:"Rechercher plateformes, outils ou opportunités…", searchButton:"Rechercher", popular:"Populaire :", discover:"Explorez nos plateformes", discoverCopy:"Découvrez des plateformes numériques intégrées qui répondent à des besoins réels.", allPlatforms:"Toutes les plateformes",
     featured:"PLATEFORME À LA UNE", commerceCopy:"Du commerce en ligne et de la caisse à la gestion des stocks, aux paiements et aux clients, Commerce rassemble des outils pour faire grandir les entreprises.",
@@ -98,8 +98,19 @@ function landing(){
   return hero()+'<section class="section section-platforms"><div class="container">'+sectionTitle(t("discover"),"/platforms",t("allPlatforms"))+'<div class="platform-grid">'+cards+'</div></div></section>'+
   '<section class="featured-commerce"><div class="featured-left" style="background-image:linear-gradient(90deg,rgba(3,12,25,.95),rgba(3,12,25,.45)),url('+s(photo("photo-1556740738-b6a63e27c4df",1300))+')"><div><span class="eyebrow">◈ &nbsp;'+s(t("featured"))+'</span><h2>'+s(title(commerce))+' Platform</h2><h3>'+s(t("featuredSubtitle"))+'</h3><p>'+s(t("commerceCopy"))+'</p>'+link(platformUrl(commerce),s(t("experience"))+' ↗',"btn btn-gold")+'</div></div>'+
   '<div class="featured-tools"><div class="section-head"><h2>'+s(t("commerceTools"))+'</h2>'+link("/opportunities?platform=commerce",s(t("allTools"))+' →',"text-link")+'</div><div class="tool-grid">'+topTools.map(toolCard).join("")+'</div></div></section>'+
-  '<section class="section why-section"><div class="container why-wrap"><div><span class="kicker-dark">DIGITAL BUSINESS</span><h2>'+s(t("businessTitle"))+'</h2><p>'+s(t("businessCopy"))+'</p>'+link("/opportunities",s(t("browseOpportunities"))+' →',"btn btn-navy")+'</div><div class="opportunity-deco"><span>01</span><span>02</span><span>03</span><small>PLATFORMS → TOOLS → BUSINESSES</small></div></div></section>'+
+  '<section class="section why-section"><div class="container why-wrap"><div><span class="kicker-dark">DIGITAL BUSINESS</span><h2>'+s(t("businessTitle"))+'</h2><p>'+s(t("businessCopy"))+'</p>'+link("/opportunities",s(t("browseOpportunities"))+' →',"btn btn-navy")+link("/demo-access",s(t("demoHelp"))+" →","btn btn-ghost")+'</div><div class="opportunity-deco"><span>01</span><span>02</span><span>03</span><small>PLATFORMS → TOOLS → BUSINESSES</small></div></div></section>'+
   partnerBanner();
+}
+function demoAccessGuide() {
+ const steps = [
+   ["01",t("demoGuideFirst"),t("demoGuideFirstText")],
+   ["02",t("demoGuideSecond"),t("demoGuideSecondText")],
+   ["03",t("demoGuideThird"),t("demoGuideThirdText")]
+ ];
+ return '<section class="directory-intro"><div class="container"><span class="eyebrow">ADS DEMO ACCESS</span><h1>'+s(t("demoGuideTitle"))+'</h1><p>'+s(t("demoGuideIntro"))+'</p>'+link("/platforms",s(t("demos"))+' →',"btn btn-gold")+'</div></section>'+
+ '<section class="section"><div class="container"><div class="cloud-grid">'+steps.map(([num,name,explain])=>
+   '<article class="cloud-card"><span class="demo-step">'+s(num)+'</span><h2>'+s(name)+'</h2><p>'+s(explain)+'</p></article>'
+ ).join("")+'</div><p class="detail-note">'+s(t("demoGuideNotLive"))+'</p></div></section>';
 }
 function partnerBanner(){return '<section class="partner-banner"><div class="container"><div><span class="eyebrow">ADS PARTNERSHIPS</span><h2>'+s(t("partnerTitle"))+'</h2><p>'+s(t("partnerCopy"))+'</p></div>'+companyAction("/partners",t("becomePartner"),"btn btn-gold")+'</div></section>';}
 function chip(href,text,active){return link(href,s(text),"filter-chip"+(active?" selected":""));}
@@ -121,7 +132,7 @@ function toolDirectory(){
 }
 function platformDetail(p){
   const items=catalogue.tools.filter(x=>x.platformId===p.id);
-  return '<section class="detail-hero" style="background-image:linear-gradient(90deg,rgba(3,18,35,.98),rgba(3,18,35,.72)),url('+s(photo(p.image,1300))+')"><div class="container">'+link("/platforms","← "+s(t("back")),"back-link")+'<div class="eyebrow">'+s(t("platforms"))+'</div><h1>'+s(title(p))+'</h1><p>'+s(p.summary)+'</p><div class="detail-actions">'+launch(p.demoUrl,t("visitPlatform"))+companyAction("/partners",t("becomePartner"),"btn btn-outline-light")+'</div></div></section>'+
+  return '<section class="detail-hero" style="background-image:linear-gradient(90deg,rgba(3,18,35,.98),rgba(3,18,35,.72)),url('+s(photo(p.image,1300))+')"><div class="container">'+link("/platforms","← "+s(t("back")),"back-link")+'<div class="eyebrow">'+s(t("platforms"))+'</div><h1>'+s(title(p))+'</h1><p>'+s(p.summary)+'</p><div class="detail-actions">'+launch(p.demoUrl,t("visitPlatform"))+companyAction("/partners",t("becomePartner"),"btn btn-outline-light")+link("/demo-access",s(t("demoHelp"))+" →","btn btn-outline-light")+'</div></div></section>'+
   '<section class="section"><div class="container">'+sectionTitle(t("toolsInside"),"/opportunities?platform="+encodeURIComponent(p.id),t("allTools"))+
   (items.length?'<div class="tool-grid directory-tools">'+items.map(toolCard).join("")+'</div>':'<p class="empty">'+s(t("noResults"))+'</p>')+
   '<p class="detail-note">'+s(t("statusNote"))+'</p></div></section>'+partnerBanner();
@@ -148,6 +159,7 @@ function render(){
  else if(path.startsWith("/platforms/")) {const p=catalogue.platforms.find(x=>x.id===path.split("/")[2]);main=p?platformDetail(p):platformDirectory();}
  else if(path==="/opportunities") main=toolDirectory();
  else if(path.startsWith("/opportunities/")) {const x=catalogue.tools.find(y=>y.id===path.split("/")[2]);main=x?toolDetail(x):toolDirectory();}
+ else if(path==="/demo-access") main=demoAccessGuide();
  else if(path==="/cloud") main=cloud();
  else main=platformDirectory();
  app.innerHTML=header()+'<main id="main">'+main+'</main>'+footer();

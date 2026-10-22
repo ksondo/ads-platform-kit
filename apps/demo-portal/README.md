@@ -8,6 +8,7 @@ Independent, lightweight, public portal in `apps/demo-portal`, using the ADS nav
 - `/platforms`: platform directory; `/platforms/:id`: integrated platform detail, its tools and optional verified demo.
 - `/opportunities`: business opportunity directory with platform filters; `/opportunities/:id`: tool description, business model and related platform.
 - `/cloud`: cloud hosting, application operations and infrastructure partnership overview.
+- `/demo-access`: explains the existing hosted ADS demo login flow without duplicating passwords or authentication forms; links back to the approved platform demos.
 - **Temporary company website upgrade:** About ADS and Partners stay visible but are intentionally inactive. Partnership calls-to-action also remain visible without navigation. **Contact** is active and opens WhatsApp at `https://wa.me/237654035075` (+237 654 035 075) in a new tab. Reactivation of the company-site links requires an explicit reviewed change once that website relaunches.
 
 ## Product semantics and safety
