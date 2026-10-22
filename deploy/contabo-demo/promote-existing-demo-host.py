@@ -15,6 +15,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 
 HOST = "demo.africadigitalsynergy.com"
 SITE = Path("/etc/nginx/sites-enabled/demo.africadigitalsynergy.com")
@@ -77,13 +78,23 @@ def verify_portal() -> None:
 
 
 def verify_https() -> None:
-    result = run(
-        "curl", "--noproxy", "*", "-fsS", "--max-time", "12",
-        "--resolve", HOST + ":443:127.0.0.1", "https://" + HOST + "/",
-        capture=True,
-    )
-    if LANDING_MARKER not in result.stdout:
-        raise SafetyError("HTTPS route did not serve the ADS portal content")
+    # Nginx reloads workers asynchronously; allow the new configuration to become active.
+    last_error = None
+    for attempt in range(10):
+        try:
+            result = run(
+                "curl", "--noproxy", "*", "-fsS", "--max-time", "12",
+                "--resolve", HOST + ":443:127.0.0.1", "https://" + HOST + "/",
+                capture=True,
+            )
+            if LANDING_MARKER in result.stdout:
+                return
+            last_error = "HTTPS returned unexpected content"
+        except subprocess.CalledProcessError as error:
+            last_error = str(error)
+        if attempt < 9:
+            time.sleep(1)
+    raise SafetyError("HTTPS route did not serve the ADS portal after reload: " + str(last_error))
 
 
 def checks() -> tuple[Path, str, str]:
