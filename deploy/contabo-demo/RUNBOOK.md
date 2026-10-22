@@ -6,8 +6,8 @@ The public ADS ecosystem portal, dedicated demo login server and Commerce's inte
 **Existing Contabo VPS**: `vmi3191089` at `161.97.128.153`. The old Software Factory identity container `africorestack-identity` and its database `africorestack-identity-postgres` must never be stopped, removed, migrated or modified by this runbook. Never run `deploy/docker-compose.yml` over the live identity server: it is NOT the isolated demo configuration.
 
 Proposed reserved loopback ports (verify available first):
-- Portal: `127.0.0.1:18088` (independent lightweight nginx)
-- ADS demo identity: `127.0.0.1:18084` (separate Postgres 16 volume `ads-demo-identity-postgres`)
+- Portal: `127.0.0.1:18089` (independent lightweight nginx)
+- ADS demo identity: `127.0.0.1:18085` (separate Postgres 16 volume `ads-demo-identity-postgres`)
 - Commerce demo: `127.0.0.1:18086` (separate Postgres DB/volume, in Commerce repo)
 
 No port is publicly exposed by these Compose stacks. Existing ingress should later route approved HTTPS domain names to those loopback ports; inspect current proxy config first.
@@ -26,7 +26,7 @@ From the Windows terminal:
 On the VPS, run this **read-only** diagnostic (do NOT add `|| exit 1` on the SSH host):
     docker compose version
     docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
-    ss -ltnp | grep -E ':(80|443|18084|18086|18088)\b' || true
+    ss -ltnp | grep -E ':(80|443|18085|18086|18089)\b' || true
     df -h /
     free -h
 
@@ -78,10 +78,10 @@ Use the SHA-tagged image actually published by GitHub, entered into `/etc/ads-de
     bash deploy/contabo-demo/preflight.sh
     bash deploy/contabo-demo/deploy-portal.sh
 
-This script pulls the image, tests a temporary canary, then starts only `ads-demo-portal`, bound to 127.0.0.1:18088. It records the previous Docker image and attempts rollback on a failed health check. It does NOT touch Software Factory.
+This script pulls the image, tests a temporary canary, then starts only `ads-demo-portal`, bound to 127.0.0.1:18089. It records the previous Docker image and attempts rollback on a failed health check. It does NOT touch Software Factory.
 
 Without configuring public DNS, the operator can already inspect the actual portal in a browser through an SSH tunnel from their Windows computer:
-    ssh -L 18888:127.0.0.1:18088 root@161.97.128.153
+    ssh -L 18888:127.0.0.1:18089 root@161.97.128.153
 Then open `http://localhost:18888` on that computer while the SSH session remains open.
 
 Check /, /platforms, /opportunities, /cloud, /demo-access and Commerce's POS/E-commerce tool cards. About ADS and Partners must stay visible but inert; Contact must link to WhatsApp +237 654 035 075.
@@ -93,7 +93,7 @@ Check /, /platforms, /opportunities, /cloud, /demo-access and Commerce's POS/E-c
     bash deploy/contabo-demo/deploy-identity.sh
     bash deploy/contabo-demo/bootstrap-demo-accounts.sh
 
-`deploy-identity.sh` starts its own database volume and container `ads-demo-identity`, using local port 18084; it never adopts the old identity DB. `bootstrap-demo-accounts.sh` registers the 25 reviewed OIDC demo clients, three demo accounts and their demo/staff organizations; saves generated client secrets and tenant metadata into `/var/lib/ads-demo/operator-secrets/` in files accessible only to root. It performs local EN/FR demo-login and OIDC discovery smoke tests but does not claim that TLS callbacks work until tested externally.
+`deploy-identity.sh` starts its own database volume and container `ads-demo-identity`, using local port 18085; it never adopts the old identity DB. `bootstrap-demo-accounts.sh` registers the 25 reviewed OIDC demo clients, three demo accounts and their demo/staff organizations; saves generated client secrets and tenant metadata into `/var/lib/ads-demo/operator-secrets/` in files accessible only to root. It performs local EN/FR demo-login and OIDC discovery smoke tests but does not claim that TLS callbacks work until tested externally.
 
 **Important:** In the reviewed demo manifest, the demo accounts may hold broad staff/test roles. Keep this server on wholly isolated demo databases and zero live financial/regulatory/provider integrations. Demo admin passwords are never shown on public pages.
 

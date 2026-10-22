@@ -13,7 +13,7 @@ esac
 for cmd in docker curl; do command -v "$cmd" >/dev/null || { echo "Missing $cmd"; exit 1; }; done
 if [[ -n "${ADS_PORTAL_PORT:-}" ]] && ! [[ "$ADS_PORTAL_PORT" =~ ^[0-9]{4,5}$ ]]; then echo "Invalid port"; exit 1; fi
 if ! docker ps -a --format '{{.Names}}' | grep -qx ads-demo-portal; then
-  if ss -ltnH | awk '{print $4}' | grep -Eq ":(${ADS_PORTAL_PORT:-18088})$"; then
+  if ss -ltnH | awk '{print $4}' | grep -Eq ":(${ADS_PORTAL_PORT:-18089})$"; then
     echo "Desired port already allocated; refusing to affect unknown service."; exit 1
   fi
 fi
@@ -33,7 +33,7 @@ previous="$(docker inspect ads-demo-portal --format '{{.Config.Image}}' 2>/dev/n
 docker compose --project-name ads-demo-portal --env-file "$ENV_FILE" -f "$SCRIPT_DIR/compose.portal.yml" up -d --no-deps --force-recreate portal
 ok=0
 for i in $(seq 1 30); do
-  if curl -fsS --max-time 2 "http://127.0.0.1:${ADS_PORTAL_PORT:-18088}/" | grep -q 'ADS Digital Ecosystem'; then ok=1; break; fi
+  if curl -fsS --max-time 2 "http://127.0.0.1:${ADS_PORTAL_PORT:-18089}/" | grep -q 'ADS Digital Ecosystem'; then ok=1; break; fi
   sleep 1
 done
 if [[ "$ok" != 1 ]]; then
@@ -45,5 +45,5 @@ if [[ "$ok" != 1 ]]; then
   fi
   exit 1
 fi
-echo "ADS_PORTAL_LOCAL_HTTP=PASS on 127.0.0.1:${ADS_PORTAL_PORT:-18088}"
+echo "ADS_PORTAL_LOCAL_HTTP=PASS on 127.0.0.1:${ADS_PORTAL_PORT:-18089}"
 echo "Live public HTTPS/DNS and visual acceptance remain independent gates."

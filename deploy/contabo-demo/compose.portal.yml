@@ -6,7 +6,7 @@ services:
     container_name: ads-demo-portal
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${ADS_PORTAL_PORT:-18088}:80"
+      - "127.0.0.1:${ADS_PORTAL_PORT:-18089}:80"
     security_opt:
       - no-new-privileges:true
     healthcheck:

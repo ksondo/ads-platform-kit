@@ -45,3 +45,9 @@ jobs:
           grep -q '127.0.0.1:' deploy/contabo-demo/compose.identity.yml
           grep -q 'ADS_ENV: demo' deploy/contabo-demo/compose.identity.yml
           grep -q 'DEMO_MODE: "1"' deploy/contabo-demo/compose.identity.yml
+          # Site-specific reserved ports identified on Contabo on 2026-10-22:
+          # 18084 hosts corestack-rag-runtime-testbed; 18088 belongs to nginx.
+          ! grep -Eq '18084|18088' deploy/contabo-demo/compose.portal.yml
+          ! grep -Eq '18084|18088' deploy/contabo-demo/compose.identity.yml
+          grep -q '18089' deploy/contabo-demo/compose.portal.yml
+          grep -q '18085' deploy/contabo-demo/compose.identity.yml

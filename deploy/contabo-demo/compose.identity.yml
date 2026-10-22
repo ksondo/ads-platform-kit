@@ -36,7 +36,7 @@ services:
       IDENTITY_TRUST_PROXY: "true"
       DATABASE_URL: postgres://ads_demo_identity:${ADS_DEMO_DB_PASSWORD}@db:5432/ads_demo_identity
     ports:
-      - "127.0.0.1:${ADS_DEMO_IDENTITY_PORT:-18084}:8084"
+      - "127.0.0.1:${ADS_DEMO_IDENTITY_PORT:-18085}:8084"
     security_opt:
       - no-new-privileges:true
     networks: [demo-private]
