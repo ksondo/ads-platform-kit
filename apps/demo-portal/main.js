@@ -42,6 +42,7 @@ const companyNav = (path,label) => catalogue.companySiteLinksEnabled === true
 const companyAction = (path,label,className) => catalogue.companySiteLinksEnabled === true
   ? link(site(path),s(label),className,'rel="noopener noreferrer"')
   : '<span class="'+s(className)+' company-action-disabled" aria-disabled="true" title="'+s(t("companyUpdating"))+'">'+s(label)+'</span>';
+const whatsAppContact = (label, className="contact-link") => link("https://wa.me/237654035075",s(label),className,'target="_blank" rel="noopener noreferrer" aria-label="'+s(label)+" — WhatsApp"+'"');
 const platformUrl = p => "/platforms/" + encodeURIComponent(p.id);
 const toolUrl = p => "/opportunities/" + encodeURIComponent(p.id);
 const matches = (v,q) => [v.name,v.fr,v.summary,v.model,v.sector].join(" ").toLowerCase().includes(q);
@@ -56,7 +57,7 @@ function header() {
   return '<header class="site-header"><div class="container head-inner">'+
     '<a class="brand" href="/" aria-label="Africa Digital Synergy Digital Ecosystem"><span class="brand-mark">✺</span><span class="brand-text">AFRICA DIGITAL SYNERGY<small>PEOPLE · PLATFORMS · PROSPERITY</small></span></a>'+
     '<button class="menu-toggle" aria-label="Toggle navigation" aria-expanded="false" type="button">☰</button>'+
-    '<nav class="nav-links" aria-label="Primary navigation">'+nav("/",t("home"))+nav("/platforms",t("platforms"))+nav("/opportunities",t("opportunities"))+nav("/cloud",t("cloud"))+companyNav("/about",t("about"))+companyNav("/partners",t("partners"))+companyNav("/contact",t("contact"))+'</nav>'+
+    '<nav class="nav-links" aria-label="Primary navigation">'+nav("/",t("home"))+nav("/platforms",t("platforms"))+nav("/opportunities",t("opportunities"))+nav("/cloud",t("cloud"))+companyNav("/about",t("about"))+companyNav("/partners",t("partners"))+whatsAppContact(t("contact"))+'</nav>'+
     '<div class="head-actions"><div class="langs"><button data-lang="en" '+(lang==="en"?'aria-current="true"':'')+'>EN</button><span>|</span><button data-lang="fr" '+(lang==="fr"?'aria-current="true"':'')+'>FR</button></div>'+link("/platforms",s(t("demos"))+' →',"btn btn-gold header-cta")+'</div>'+
     '</div></header>';
 }
@@ -136,7 +137,7 @@ function cloud(){
   '<section class="section"><div class="container"><div class="cloud-grid">'+parts.map(x=>'<article class="cloud-card"><span>'+x[0]+'</span><h2>'+s(x[1])+'</h2><p>'+s(x[2])+'</p></article>').join("")+'</div><p class="detail-note">'+s(t("cloudNote"))+'</p></div></section>'+partnerBanner();
 }
 function footer(){
- return '<footer class="footer"><div class="container footer-inner"><div><a class="brand" href="/"><span class="brand-mark">✺</span><span class="brand-text">AFRICA DIGITAL SYNERGY<small>PEOPLE · PLATFORMS · PROSPERITY</small></span></a><p>'+s(t("footer"))+'</p></div><div class="footer-links">'+link("/platforms",s(t("platforms")),"footer-link")+link("/opportunities",s(t("opportunities")),"footer-link")+link("/cloud",s(t("cloud")),"footer-link")+companyAction("/about",t("about"),"footer-link")+companyAction("/partners",t("partners"),"footer-link")+'</div></div></footer>';
+ return '<footer class="footer"><div class="container footer-inner"><div><a class="brand" href="/"><span class="brand-mark">✺</span><span class="brand-text">AFRICA DIGITAL SYNERGY<small>PEOPLE · PLATFORMS · PROSPERITY</small></span></a><p>'+s(t("footer"))+'</p></div><div class="footer-links">'+link("/platforms",s(t("platforms")),"footer-link")+link("/opportunities",s(t("opportunities")),"footer-link")+link("/cloud",s(t("cloud")),"footer-link")+companyAction("/about",t("about"),"footer-link")+companyAction("/partners",t("partners"),"footer-link")+whatsAppContact(t("contact"),"footer-link")+'</div></div></footer>';
 }
 function render(){
  document.documentElement.lang=lang;
