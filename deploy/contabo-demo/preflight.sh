@@ -8,8 +8,9 @@ command -v curl >/dev/null || { echo "curl missing"; exit 1; }
 echo "Contabo demo deployment preflight: no changes made"
 echo "Disk:"; df -h /
 echo "Memory:"; free -h
+echo "Occupied legacy ports 18084 (RAG testbed) and 18088 (nginx) are PRESERVED."
 echo "Port listeners potentially conflicting with isolated demo ports:"
-ss -ltnH | awk '{print $4}' | grep -E ':(18084|18088)$' || true
+ss -ltnH | awk '{print $4}' | grep -E ':(18085|18089)$' || true
 echo "Existing identity (MUST REMAIN UNTOUCHED):"
 docker ps --filter name='^/africorestack-identity$' --format '{{.Names}} {{.Status}}'
 echo "Existing identity database (MUST REMAIN UNTOUCHED):"
