@@ -1,0 +1,16 @@
+# Standalone public catalogue. Does not touch Software Factory or legacy identity.
+name: ads-demo-portal
+services:
+  portal:
+    image: ${ADS_PORTAL_IMAGE:?Set ADS_PORTAL_IMAGE to an approved GHCR sha tag}
+    container_name: ads-demo-portal
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${ADS_PORTAL_PORT:-18088}:80"
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
