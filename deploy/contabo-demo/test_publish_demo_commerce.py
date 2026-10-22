@@ -118,7 +118,7 @@ class CommercePublication(unittest.TestCase):
                 return SimpleNamespace(stdout="true\n")
             if args[:2] == ("docker", "port"):
                 return SimpleNamespace(stdout="127.0.0.1:18086\n")
-            if args[0] == "curl" and "/api/ready" in args:
+            if args[0] == "curl" and any("/api/ready" in a for a in args):
                 return SimpleNamespace(stdout='{"status":"ready_for_internal_checks","certification":"EXTERNAL_SIGNOFF_REQUIRED"}')
             return SimpleNamespace(stdout="")
         with tempfile.TemporaryDirectory() as tmp:
