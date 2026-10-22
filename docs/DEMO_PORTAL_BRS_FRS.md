@@ -22,6 +22,8 @@ The visitor journey ultimately leads to the corporate **Partners** page (not an 
 - BRS-PORT-08: Present partnership inclusively—entrepreneur, institution, enterprise, technology provider, data centre, venture operator, and implementation partner—without promising regulatory rights or returns.
 - BRS-PORT-09: Public visitor experience must remain functional even if shared identity or sector demos are unavailable.
 - BRS-PORT-10: Site must be responsive and structured for English/French publication.
+- BRS-PORT-11: Reuse the existing `ads-platform-kit/services/identity` OIDC login, demo-account panel and per-product sign-in library, rather than creating a separate portal login service. The portal remains publicly browsable; individual verified demos own authentication.
+- BRS-PORT-12: Demo credentials are managed only by the isolated demo identity environment and never copied into the public catalogue. Show login instructions through `/demo-access`.
 
 ## Functional requirements and implementation evidence
 | ID | Requirement | V1 location | Status |
