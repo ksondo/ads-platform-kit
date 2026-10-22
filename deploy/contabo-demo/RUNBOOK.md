@@ -6,7 +6,8 @@ The public ADS ecosystem portal, dedicated demo login server and Commerce's inte
 **Existing Contabo VPS**: `vmi3191089` at `161.97.128.153`. The old Software Factory identity container `africorestack-identity` and its database `africorestack-identity-postgres` must never be stopped, removed, migrated or modified by this runbook. Never run `deploy/docker-compose.yml` over the live identity server: it is NOT the isolated demo configuration.
 
 Known occupied: `18084` RAG runtime, `18085` public retail container, `18088` nginx. Preserve these services and do not reassign their ports.
-\nProposed reserved loopback ports (verify available first):
+
+Proposed reserved loopback ports (verify available first):
 - Portal: `127.0.0.1:18089` (independent lightweight nginx)
 - ADS demo identity: `127.0.0.1:18090` (separate Postgres 16 volume `ads-demo-identity-postgres`)
 - Commerce demo: `127.0.0.1:18086` (separate Postgres DB/volume, in Commerce repo)
@@ -88,6 +89,26 @@ Then open `http://localhost:18888` on that computer while the SSH session remain
 Check /, /platforms, /opportunities, /cloud, /demo-access and Commerce's POS/E-commerce tool cards. About ADS and Partners must stay visible but inert; Contact must link to WhatsApp +237 654 035 075.
 
 ## E. Isolated demo identity SECOND
+
+### Preferred protected configuration (no secret values in chat)
+
+After choosing an **approved distinct HTTPS hostname** for demo login and confirming that the GHCR identity image has been successfully published and pulled, use the one-time preparer rather than manually pasting passwords or signing keys into shell history. Example only (the hostname is NOT claimed to have DNS/TLS configured):
+
+    cd /opt/ads/demo-platform-kit
+    git pull --ff-only origin main
+    DEMO_IDENTITY_IMAGE=ghcr.io/ksondo/ads-platform-kit-identity:sha-<approved-40-char-commit>
+    docker pull "$DEMO_IDENTITY_IMAGE"
+    read -rp 'Approved demo login HTTPS origin: ' DEMO_ISSUER
+    bash deploy/contabo-demo/prepare-identity-config.sh "$DEMO_ISSUER" "$DEMO_IDENTITY_IMAGE"
+    unset DEMO_ISSUER DEMO_IDENTITY_IMAGE
+
+The preparer refuses to reuse the production login issuer, refuses existing config-file overwrites and a busy 18090 port, generates independent cryptographic credentials and PKCS8 signing key on the server, verifies the running portal image and restricts files to owner-only mode 0600. It **does not** start containers or change any production data.
+
+Before starting identity, confirm `docker compose --env-file /etc/ads-demo/images.env -f deploy/contabo-demo/compose.identity.yml config --quiet`. Never share the filled config files in chat: they contain real passwords and private signing material.
+
+After local health is established, HTTPS, DNS and OAuth callbacks must be configured and independently tested before allowing public sign-in. The demo issuer must remain separate from `https://login.africadigitalsynergy.com`.
+
+
 
 **Do not initiate until** the dedicated identity HTTPS issuer name, ingress/TLS routing, filled environment settings, and package publication are verified. The name must not conflict with the old Software Factory issuer.
 
