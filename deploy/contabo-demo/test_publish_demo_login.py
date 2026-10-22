@@ -61,8 +61,8 @@ class GuardedDemoLogin(unittest.TestCase):
                 token = challenge.read_text()
                 seen.append(token)
                 if len(seen) == 1:
-                    return SimpleNamespace(stdout="Not Found\\nADS_HTTP_STATUS:404")
-                return SimpleNamespace(stdout=token + "\\nADS_HTTP_STATUS:200")
+                    return SimpleNamespace(stdout="Not Found\nADS_HTTP_STATUS:404")
+                return SimpleNamespace(stdout=token + "\nADS_HTTP_STATUS:200")
             old_umask = os.umask(0o077)
             try:
                 with patch.object(login, "ACME", acme), patch.object(login, "command", side_effect=mock_curl), patch.object(login.time, "sleep", return_value=None):
