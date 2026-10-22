@@ -198,6 +198,29 @@ Then test the login page in a real external browser. Product OAuth end-to-end (P
 
 Before considering the login public acceptance complete, confirm the demo instance has only isolated sandbox data, no live providers, and that publicly displayed `demo.user` credentials do not authorize any production systems. Keep secret backups and environment content off tickets, logs, and chat.
 
+### E3. Authorize the live Commerce callback (without re-bootstrapping demo identities)
+
+The operator approved the public Commerce hostname `https://commerce.demo.africadigitalsynergy.com` after public DNS verification. Its OAuth redirect and post-logout allow-list are updated in `config/clients.demo.json`. This source change alone does NOT modify the already-running demo identity database.
+
+After Commerce HTTPS and application callback endpoint exist, and before testing PKCE sign-in, update only the `commerce-web` registration in the **isolated** demo Identity database using its existing reviewed CLI. Do not rerun `bootstrap-demo-accounts.sh`, `apply-clients.mjs`, demo account setup, or any command against the CoreStack production identity:
+
+    docker exec ads-demo-identity node -e 'if(process.env.ADS_ENV!=="demo"||process.env.DEMO_MODE!=="1")process.exit(2)'
+    docker exec ads-demo-identity node src/cli.mjs register-client \
+      --id commerce-web --name 'ADS Commerce' \
+      --redirect https://commerce.demo.africadigitalsynergy.com/ \
+      --logout https://commerce.demo.africadigitalsynergy.com/ \
+      --self-roles commerce_buyer --personal true \
+      --admin-roles merchant_owner \
+      --assignable-roles merchant_owner,commerce_manager,commerce_cashier,commerce_accountant,bank_officer,bank_agent
+
+The CLI update keeps the existing demo identities, memberships, product-role grants, signing key, database volume and client secret state unchanged. It updates only the approved registration and records an identity audit event. It does replace the former test callback URI, so do this only when Commerce is actually deployed and ready for the new hostname.
+
+Verify registration without exposing credentials:
+
+    docker exec ads-demo-identity node --input-type=module -e 'import pg from "pg"; const p=new pg.Pool({connectionString:process.env.DATABASE_URL});try{const r=await p.query("SELECT client_id,redirect_uris,post_logout_redirect_uris FROM platform.oauth_clients WHERE client_id=$1",["commerce-web"]);console.log(JSON.stringify(r.rows[0]??null))}finally{await p.end()}'
+
+Expected exact callback and post-logout URI: `https://commerce.demo.africadigitalsynergy.com/`. Continue browser PKCE sign-in/out and role/tenant isolation E2E after the hostname is serving Commerce over valid HTTPS.
+
 ## F. Commerce integrated demo THIRD (in Commerce repository)
 
 See `ksondo/ADS-Commerce-Platform/deploy/demo/DEPLOYMENT_GATE.md`. The demo API, web and forward-only migrator images must come from **one reviewed Commerce commit**. Provision a dedicated commerce demo PostgreSQL instance, apply migrations as a schema owner, then run the app under `commerce_demo_app` with tenant RLS enabled. Test public e-commerce and restricted cashier/merchant POS separately.

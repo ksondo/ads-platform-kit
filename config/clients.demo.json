@@ -405,10 +405,10 @@
       "display_name": "ADS Commerce",
       "accent": null,
       "redirect_uris": [
-        "https://commerce.test.africadigitalsynergy.com/"
+        "https://commerce.demo.africadigitalsynergy.com/"
       ],
       "post_logout_redirect_uris": [
-        "https://commerce.test.africadigitalsynergy.com/"
+        "https://commerce.demo.africadigitalsynergy.com/"
       ],
       "self_service_roles": [
         "commerce_buyer"
