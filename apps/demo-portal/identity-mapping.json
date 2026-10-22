@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "note": "Reference-only OIDC client IDs for verified source-code mapping. No demo is live until its HTTPS URL is separately approved.",
+  "platformClients": [
+    {
+      "portal": "commerce",
+      "product": "commerce",
+      "clientId": "commerce-web",
+      "toolIds": [
+        "ecommerce",
+        "pos"
+      ]
+    },
+    {
+      "portal": "education",
+      "product": "education",
+      "clientId": "education-web",
+      "toolIds": []
+    },
+    {
+      "portal": "healthcare",
+      "product": "health",
+      "clientId": "health-web",
+      "toolIds": []
+    },
+    {
+      "portal": "agriculture",
+      "product": "agriculture",
+      "clientId": "agriculture-web",
+      "toolIds": []
+    },
+    {
+      "portal": "transport",
+      "product": "transport",
+      "clientId": "transport-web",
+      "toolIds": []
+    },
+    {
+      "portal": "ventureworks",
+      "product": "ventureworks",
+      "clientId": "ventureworks-web",
+      "toolIds": []
+    },
+    {
+      "portal": "morphoo",
+      "product": "morphoo",
+      "clientId": "morphoo-web",
+      "toolIds": []
+    }
+  ]
+}
