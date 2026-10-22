@@ -34,7 +34,7 @@ key_file=$directory/demo-signing-key.pem
 for item in "$images_file" "$identity_file" "$key_file"; do
   [[ ! -e "$item" ]] || { echo "Refusing to overwrite $item" >&2; exit 1; }
 done
-here="$(cd "$(dirname "\${BASH_SOURCE[0]}")" && pwd)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 [[ -r "$here/identity.env.example" && -r "$here/images.env.example" ]] || {
   echo "Missing repository templates." >&2; exit 1;
 }
