@@ -19,7 +19,7 @@ set -a; source "$ENV_FILE"; set +a
   echo "Approved immutable identity image tag required"; exit 1;
 }
 if ! docker ps -a --format '{{.Names}}' | grep -qx ads-demo-identity; then
-  if ss -ltnH | awk '{print $4}' | grep -Eq ":(${ADS_DEMO_IDENTITY_PORT:-18084})$"; then
+  if ss -ltnH | awk '{print $4}' | grep -Eq ":(${ADS_DEMO_IDENTITY_PORT:-18085})$"; then
     echo "Port allocated by another service; refusing deployment."; exit 1
   fi
 fi
@@ -33,7 +33,7 @@ docker compose --env-file "$ENV_FILE" -f "$HERE/compose.identity.yml" up -d db
 docker compose --env-file "$ENV_FILE" -f "$HERE/compose.identity.yml" up -d identity
 healthy=0
 for i in $(seq 1 60); do
-  if curl -fsS --max-time 3 "http://127.0.0.1:${ADS_DEMO_IDENTITY_PORT:-18084}/health" | grep -q '"status":"ok"'; then healthy=1; break; fi
+  if curl -fsS --max-time 3 "http://127.0.0.1:${ADS_DEMO_IDENTITY_PORT:-18085}/health" | grep -q '"status":"ok"'; then healthy=1; break; fi
   sleep 2
 done
 if [[ "$healthy" != 1 ]]; then
