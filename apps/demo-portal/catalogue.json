@@ -184,5 +184,6 @@
       "demoUrl": null,
       "independentDemo": false
     }
-  ]
+  ],
+  "companySiteLinksEnabled": false
 }

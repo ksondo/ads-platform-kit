@@ -8,7 +8,7 @@ Independent, lightweight, public portal in `apps/demo-portal`, using the ADS nav
 - `/platforms`: platform directory; `/platforms/:id`: integrated platform detail, its tools and optional verified demo.
 - `/opportunities`: business opportunity directory with platform filters; `/opportunities/:id`: tool description, business model and related platform.
 - `/cloud`: cloud hosting, application operations and infrastructure partnership overview.
-- About ADS, Partners and Contact link directly to `https://africadigitalsynergy.com/about`, `/partners`, and `/contact` in the separate company website. All calls to become a partner use `/partners`.
+- **Temporary company website upgrade:** About ADS and Partners stay visible but are intentionally inactive. Partnership calls-to-action also remain visible without navigation. **Contact** is active and opens WhatsApp at `https://wa.me/237654035075` (+237 654 035 075) in a new tab. Reactivation of the company-site links requires an explicit reviewed change once that website relaunches.
 
 ## Product semantics and safety
 
@@ -31,7 +31,7 @@ Visit `http://localhost:18888`. Docker nginx serves browser deep links and adds 
 
 `.github/workflows/demo-portal.yml` runs code and catalogue validation, Docker build and HTTP route smoke checks for PRs. After merge to main, it publishes a commit-tagged image to GitHub Container Registry. The workflow does not deploy into Contabo automatically.
 
-To deploy on `vmi3191089`, select a validated image digest, configure GHCR pull access, start an isolated container bound to 127.0.0.1, route through HTTPS reverse proxy, validate browser E2E navigation and confirm corporate links. Publish only approved demo URLs to `catalogue.json` in a reviewed PR. Avoid using the removed Retail Connect Kit service or reusing its volumes.
+To deploy on `vmi3191089`, select a validated image digest, configure GHCR pull access, start an isolated container bound to 127.0.0.1, route through HTTPS reverse proxy, validate browser E2E navigation, confirm inert About/Partners links and active WhatsApp Contact link. Publish only approved demo URLs to `catalogue.json` in a reviewed PR. Avoid using the removed Retail Connect Kit service or reusing its volumes.
 
 ## Future administration
 
@@ -39,4 +39,4 @@ Version 1 uses a Git-tracked JSON discovery catalogue to avoid creating a second
 
 ## Acceptance gaps
 
-The layout and catalogue are implemented; visual regression testing against the concept, mobile browser acceptance, independent tool demo deployment, full FR catalogue translation, admin backend and Contabo ingress are pending verification.
+Company-site About/Partners and partnership CTAs are temporarily inert by owner request; WhatsApp Contact remains active. The layout and catalogue are implemented; visual regression testing against the concept, mobile browser acceptance, independent tool demo deployment, full FR catalogue translation, admin backend and Contabo ingress are pending verification.

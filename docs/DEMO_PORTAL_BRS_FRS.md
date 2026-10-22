@@ -9,7 +9,7 @@ Provide a lightweight, public, bilingual entry point into the **actual applicati
 - Software and infrastructure partners: understand opportunities to operate, distribute, host, maintain or support ADS solutions.
 - Prospective customers and investors: browse solutions and open working, verified demos without fictitious screenshots, metrics or deployment status.
 
-The visitor journey should naturally lead to the corporate **Partners** page (not an 'Invest' top-level CTA), where the company owns qualification and registration.
+The visitor journey ultimately leads to the corporate **Partners** page (not an 'Invest' top-level CTA), where the company owns qualification and registration. **Temporary launch gate:** while the company site is being updated, About ADS and Partners remain visible but inactive; all partnership CTAs are similarly inert. Contact stays active through WhatsApp at `https://wa.me/237654035075`. Re-enable the company links only after the company site is ready.
 
 ## Business requirements
 - BRS-PORT-01: Keep a distinct ecosystem/demo portal, linked to—not merged with—the ADS corporate website.
@@ -18,7 +18,7 @@ The visitor journey should naturally lead to the corporate **Partners** page (no
 - BRS-PORT-04: Demo entry points must link only to real, verified application deployments. Standalone demos are optional by tool.
 - BRS-PORT-05: Commerce explicitly exposes E-commerce and Point of Sale as separate demonstrable capabilities, while BNPL and inventory may remain discovery-only until approved.
 - BRS-PORT-06: Showcase Cloud Services as a top-level navigation entry for hosting, operations and infrastructure partnership.
-- BRS-PORT-07: About ADS, Partners and Contact redirect to the corresponding ADS company website routes.
+- BRS-PORT-07: About ADS and Partners will ultimately link to the separate ADS company website. During the website upgrade these menu items remain visible but inert, as do partner CTAs. Contact opens WhatsApp (+237 654 035 075) and must remain operational.
 - BRS-PORT-08: Present partnership inclusively—entrepreneur, institution, enterprise, technology provider, data centre, venture operator, and implementation partner—without promising regulatory rights or returns.
 - BRS-PORT-09: Public visitor experience must remain functional even if shared identity or sector demos are unavailable.
 - BRS-PORT-10: Site must be responsive and structured for English/French publication.
@@ -31,7 +31,7 @@ The visitor journey should naturally lead to the corporate **Partners** page (no
 | FRS-03 | Tool catalogue, platform filters, tool detail + business model | /opportunities, /opportunities/:id | Implemented |
 | FRS-04 | Commerce POS and E-commerce tool entries | catalogue.json | Implemented, URLs pending |
 | FRS-05 | Verified HTTPS live-demo-only links | safeDemo helper and demoUrl records | Implemented |
-| FRS-06 | External corporate About/Partners/Contact | primary and footer navigation | Implemented |
+| FRS-06 | About/Partners visible but inert during website upgrade; Contact via WhatsApp | primary and footer navigation | Implemented with temporary gate |
 | FRS-07 | Cloud Services link and offering page | /cloud | Implemented |
 | FRS-08 | Bilingual interface and fully translated opportunity catalogue | main.js and catalogue.json | Partial; catalogue content still largely EN |
 | FRS-09 | Portal application registry editor, RBAC, audit, approvals | separate backend service | Not implemented |
@@ -59,8 +59,12 @@ sequenceDiagram
     V->>P: Select a tool
     P-->>V: Explain business model; show platform and demo readiness
     alt Visitor wants partnership
-        V->>S: Follow Be a Partner link
-        S-->>V: Company-managed partnership pathway
+        alt Company site under upgrade
+            P-->>V: Show Be a Partner but take no action
+        else Company site relaunched
+            V->>S: Follow Be a Partner link
+            S-->>V: Company-managed partnership pathway
+        end
     else Visitor wants a demo
         alt HTTPS demo verified and published
             P-->>V: Open matching deployed application
@@ -75,7 +79,7 @@ sequenceDiagram
 2. Portal is built from its GitHub repository and published as an immutable Docker image.
 3. Contabo pull is isolated from old Retail Connect Kit, Software Factory runtime, and existing identity/database.
 4. TLS reverse proxy routes the public portal hostname; deep links and static files load.
-5. Navigation and external company partner flow work.
+5. Internal navigation works; About ADS and Partners remain visible with no action during company-site upgrade; Contact opens WhatsApp at the approved number. Test corporate partner flow only after reactivation.
 6. POS/E-commerce only show 'Try Demo' when their validated application URLs and E2E journeys are operational.
 7. Cloud catalogue includes only commercially approved offers/prices.
 8. No demo credentials are disclosed publicly; restricted demos use the shared identity service and appropriate roles.
