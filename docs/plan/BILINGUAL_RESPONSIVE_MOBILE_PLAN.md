@@ -266,3 +266,11 @@ Translations: the developer writes the French text with the English text. A Fren
 - The script read `origin/main` of each repo (`git archive`), without switching any branch. Dictionary entries were counted from JSON locale files, `en`/`fr` dictionary objects (leaf entries) and per-screen `{en, fr}` copy. Hard-coded strings were found with a pattern for capitalised JSX text and text attributes, so the counts are approximate (they include some brand names and some sr-only text).
 - Responsive status is what the tests prove plus the breakpoints found in CSS. No page was rendered for this plan: the verification spec (K2) gives the measured answer.
 - "Account sync not found" means no code that saves the language to the account was found. Each case is confirmed by test 4.2-4.
+
+## Owner decisions (23 Oct 2026)
+
+- **When:** Android apps are prepared only after each platform passes its fit-for-purpose audit ("we are sure this platform works").
+- **First Android apps (5):** Commerce, Education, Tontine, Fleet Guard and VentureWorks. Other platforms follow later.
+- **Approach:** wrap the existing web app (Capacitor), same code and the same EN/FR switch as the web; iOS later from the same app.
+- **Lowest Android version:** the best balance for low-end and high-end phones. Proposed: **Android 7.0 (API 24)**. It runs on almost all phones still in use in Cameroon, including cheap ones, while keeping an updatable modern browser engine (WebView) inside the app for security and speed. Each app also targets the latest Android version Google Play requires, so it runs well on new high-end phones.
+- **Google Play account:** ADS company account (Africa Digital Synergy Ltd), which needs a free D-U-N-S number.
