@@ -26,3 +26,4 @@ Owner: Kengjiseh Sondo (ADS). Started 20 October 2026. **Planning only: nothing 
 - `FLEETGUARD_TONTINE_PLAN.md`
 - `HOSTING_AND_LANDING_PLAN.md`: hosting all platforms for testers, and the landing page.
 - `LAUNCH_PLAN_WAVE1.md`: the synthesis: what is in the pilot MVP vs later, the finalization build register, and the decisions needed.
+- `BILINGUAL_RESPONSIVE_MOBILE_PLAN.md`: French and English everywhere, styled pages on phone, tablet and computer, and an Android app per platform (inventory of all repos, the standard as an E2E verification test, app strategy, decisions).
