@@ -27,3 +27,23 @@ test("live links are configured only with HTTPS",()=>{
 test("company site is a separate destination",()=>{
   assert.equal(data.publicSite,"https://africadigitalsynergy.com");
 });
+
+test("Commerce, E-commerce and POS share the integrated Commerce deployment",()=> {
+  const commerce=data.platforms.find(x=>x.id==="commerce");
+  const ecommerce=data.tools.find(x=>x.id==="ecommerce");
+  const pos=data.tools.find(x=>x.id==="pos");
+  assert.equal(commerce.demoUrl,"https://commerce.demo.africadigitalsynergy.com/commerce");
+  assert.equal(ecommerce.demoUrl,commerce.demoUrl);
+  assert.equal(pos.demoUrl,"https://commerce.demo.africadigitalsynergy.com/commerce/merchant/pos");
+  assert.equal(data.tools.find(x=>x.id==="bnpl").demoUrl,null,
+    "Digital financing demos remain disabled until verified");
+});
+test("Demo launches stay in the current browser tab and let ADS Identity handle sign-in",()=>{
+  const code=readFileSync(new URL("../main.js",import.meta.url),"utf8");
+  const start=code.indexOf("function launch(");
+  const end=code.indexOf("function header(",start);
+  assert.ok(start!==-1&&end>start);
+  const launch=code.slice(start,end);
+  assert.ok(!launch.includes('target="_blank"'));
+  assert.ok(launch.includes("const url = safeDemo(target)"));
+});
