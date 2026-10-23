@@ -54,12 +54,12 @@ Yardsticks: **AngelList / Gust / Seedrs-type investment marketplaces** (deal dis
 | 8 | Express interest (non-binding) with amount and message | **Works** | "Interest sent — not a commitment", reference `INT-…`, "Delivered to VentureWorks" (`d-08-interest`, `d-09-interests`); a second open interest on the same venture is refused with a clear message. |
 | 9 | Q&A / messaging with the founder | **Missing** | The founder can only accept or decline in VentureWorks; the investor sees the answer. |
 | 10 | Diligence request with status and reason | **Works with friction** | Request → reviewer triage ("Needs information" + reason) → investor dashboard. **Friction:** the triage screen shows the referral id, not the venture name; on the demo the reviewer cannot see the request (separate staff organisation). |
-| 11 | Investor profile (type, language, contact), KYC/accreditation | **Works with friction** | Type, language, channel. No KYC/accreditation (owner default decision 5a: not needed for non-binding interest). Profile page scrolls 39 px sideways at 360 px. |
+| 11 | Investor profile (type, language, contact), KYC/accreditation | **Works with friction** | Type, language, channel. No KYC/accreditation (owner default decision 5a: not needed for non-binding interest). Profile page scrolls 39 px sideways at 360 px; with a long verified e-mail (the demo account's) the e-mail line overflows its box and covers the Save button on a phone. |
 | 12 | My activity / portfolio dashboard | **Works** | Interests with status and next step, following, diligence, preferences, budget (`d-11-dashboard-after`). |
 | 13 | Commit / subscribe / pay / e-sign | **Missing** | By decision (no money moves in the MVP). |
 | 14 | Research assistant with cited sources | **Works with friction** | Built (Progress RAG adapter, cited answers only). **On the demo:** "Research unavailable. No answer is invented." — the mock has no sources (`d-10-research`). |
 | 15 | Help and complaints with reference and answer | **Works with friction** | "Received. Your reference is SUP-…". On the demo the support agent's queue is empty (staff organisation), so the answer never comes. |
-| 16 | Listing review and publishing (maker-checker) | **Works with friction** | Review queue, sync, approve (two references), suspend. On the demo: empty queue for staff (`d-12-review-queue`), and a new publication can only come from VentureWorks. |
+| 16 | Listing review and publishing (maker-checker) | **Works with friction** | Review queue, sync, approve (two references), suspend. On the demo: empty queue for staff (`d-12-review-queue`), and a new publication can only come from VentureWorks. **Friction (found by the demo-journeys suite):** after Sync/Approve/Suspend the queue reloads and the "Saved." confirmation disappears with the item, so the reviewer gets no confirmation. |
 | 17 | Audit trail and export | **Works** | Filter by opportunity, CSV export. (In the staff workspace it is empty: `d-15-audit`.) |
 | 18 | Staff role management | **Works** | Members, give/remove role, invite (`d-16-staff`). |
 | 19 | Bilingual and mobile | **Works with friction** | All UI strings EN/FR; see §4 for the four rule failures. |
@@ -166,7 +166,8 @@ Nightly reset: the suite runs kit `demo-reset` + `demo-seed --reset` and then th
 | Shared demo accounts: the language chosen on the page wins after sign-in and is saved (real accounts keep IIP-AC-003-1: the saved language follows the account) | `src/App.tsx`, `src/identity.ts` (`isDemoSession`, kit `demo` claim) |
 | French is the default for every browser language except English | `src/i18n.ts` |
 | Language switch inside the phone menu (`drawer-lang-en/fr`) | `src/App.tsx`, `src/styles.css` |
-| Profile page no longer scrolls sideways at 360 px | `src/styles.css` |
+| Profile page no longer scrolls sideways at 360 px, and a long e-mail wraps instead of covering Save | `src/styles.css` |
+| Review queue keeps its "Saved." confirmation (with the venture name) after an action | `src/screens/ReviewQueue.tsx` |
 | Seed sends VentureWorks' readiness dimensions; the venture page never shows a raw key for an unknown dimension | `scripts/demo-seed.mjs`, `src/screens/VentureDetail.tsx` |
 | Seed loads test research sources into the kit research mock (`DEMO_SEED_RAG_MOCK_URL` / `ADS_MOCKS_URL`) and reads the reviewer persona sub (`personas.reviewer.sub`, fallback demo admin); test added | `scripts/demo-seed.mjs`, `tests/demo-seed.test.mjs`, `deploy/DEMO_DATA.md` |
 | Demo-journeys suite through the real kit sign-in page in demo mode, personas with fallback; desktop EN + phone FR for every journey, main journey (discover → venture → follow → interest → dashboard) also tablet EN/FR; language rules; nightly reset then desktop again; hosted smoke with `DEMO_BASE_URL` | `e2e/demo-journeys/`, `playwright.demo.config.mjs`, `scripts/demo-journeys.mjs`, `.github/workflows/demo-journeys.yml` |
