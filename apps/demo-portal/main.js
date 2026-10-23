@@ -49,7 +49,9 @@ const matches = (v,q) => [v.name,v.fr,v.summary,v.model,v.sector].join(" ").toLo
 const pill = (text,kind="neutral") => '<span class="pill pill-'+kind+'">'+s(text)+'</span>';
 function launch(target, label) {
   const url = safeDemo(target);
-  return url ? link(url,s(label)+' ↗',"btn btn-gold",'target="_blank" rel="noopener noreferrer"') : pill(t("demoPending"),"muted");
+  // Use one browser tab across the ADS landing page and the chosen platform.
+  // Shared ADS Identity redirects through its issuer and back to the original app.
+  return url ? link(url,s(label)+' →',"btn btn-gold",'rel="noopener noreferrer"') : pill(t("demoPending"),"muted");
 }
 function header() {
   const path=window.location.pathname;
