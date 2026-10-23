@@ -47,8 +47,17 @@ async function waitForAdsIdentity(page, timeout) {
     if (window.__adsE2eReady !== id.ready) {
       window.__adsE2eReady = id.ready;
       window.__adsE2eReadySettled = false;
-      const settle = () => { if (window.__adsE2eReady === id.ready) window.__adsE2eReadySettled = true; };
-      id.ready.then(settle, settle);
+      window.__adsE2eReadyError = null;
+      const settle = err => {
+        if (window.__adsE2eReady !== id.ready) return;
+        window.__adsE2eReadyError = err;
+        window.__adsE2eReadySettled = true;
+      };
+      id.ready.then(() => settle(null), e => settle(String((e && e.message) || e || 'rejected')));
+    }
+    // A rejected ready (e.g. a failed code exchange) fails the wait with its reason, as before.
+    if (window.__adsE2eReadySettled && window.__adsE2eReadyError !== null) {
+      throw new Error(`adsIdentity.ready rejected: ${window.__adsE2eReadyError}`);
     }
     return window.__adsE2eReadySettled === true;
   }, null, { timeout, polling: 50 });
