@@ -78,7 +78,7 @@ permissions:
 
 jobs:
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04   # pinned: ubuntu-latest moved to Ubuntu 26 (Oct 2026); Playwright --with-deps fails there
     timeout-minutes: 30
     services:
       postgres:
