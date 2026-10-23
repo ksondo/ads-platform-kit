@@ -108,7 +108,7 @@ export function createOAuth({ pool, config, keys, audit }) {
 
   // A signed access token for this user, workspace and product, after re-checking that access still holds.
   async function accessTokenFor(client, userId, tenantId, ssoSessionId, db = pool) {
-    const user = (await db.query('SELECT id,email,display_name,status,email_verified_at,is_demo FROM platform.users WHERE id=$1', [userId])).rows[0];
+    const user = (await db.query('SELECT id,email,display_name,status,email_verified_at,is_demo,demo_key,demo_sandbox_id FROM platform.users WHERE id=$1', [userId])).rows[0];
     if (!user || user.status !== 'active') fail(400, 'invalid_grant');
     if (user.is_demo && !config.demo.enabled) fail(400, 'invalid_grant');
     const member = (await db.query(`SELECT o.is_demo, o.is_staff FROM platform.memberships m JOIN platform.tenants t ON t.id=m.tenant_id AND t.status='active'
@@ -124,7 +124,10 @@ export function createOAuth({ pool, config, keys, audit }) {
       { tenant_id: tenantId, roles, email: user.email, email_verified: Boolean(user.email_verified_at), name: user.display_name ?? undefined, client_id: client.client_id, sid: ssoSessionId ?? undefined, locale,
         // `demo`: a demo account or demo organisation (show "Demo", keep out of reports). `ads_staff`: an ADS
         // staff organisation marked by an operator (ACC-04); products may trust staff roles only when it is true.
-        demo: user.is_demo || member.is_demo ? true : undefined, ads_staff: member.is_staff ? true : undefined },
+        demo: user.is_demo || member.is_demo ? true : undefined, ads_staff: member.is_staff ? true : undefined,
+        // BRIEF18: a personal demo sandbox account (its owner, or one of its personas). Products may show
+        // the "Switch role" control (ads-demo-switch.js) only when this is present.
+        demo_sandbox: user.demo_sandbox_id ?? undefined, demo_sandbox_owner: user.demo_sandbox_id && user.demo_key?.startsWith('sandbox-owner:') ? true : undefined },
       { audience: client.client_id, issuer: config.issuer, subject: userId, expiresIn: config.accessTokenTtl },
     );
   }
@@ -244,5 +247,11 @@ export function createOAuth({ pool, config, keys, audit }) {
     if (row) await pool.query('UPDATE platform.refresh_tokens SET revoked_at=now() WHERE family_id=$1 AND revoked_at IS NULL', [row.family_id]);
   }
 
-  return { getClient, createAuthRequest, loadAuthRequest, resolveWorkspace, issueCode, exchangeCode, refresh, revokeRefresh, workspacesFor, rolesFor };
+  // Tokens for a user in a workspace, re-checking access (BRIEF18 "Switch role" inside a demo sandbox).
+  async function issueTokens(client, userId, tenantId, ssoSessionId) {
+    const { id: _id, ...tokens } = await tokensFor(client, userId, tenantId, ssoSessionId);
+    return tokens;
+  }
+
+  return { getClient, createAuthRequest, loadAuthRequest, resolveWorkspace, issueCode, exchangeCode, refresh, revokeRefresh, workspacesFor, rolesFor, issueTokens };
 }

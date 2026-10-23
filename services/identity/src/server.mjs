@@ -1,5 +1,6 @@
 import http from 'node:http';
 import crypto from 'node:crypto';
+import nodePath from 'node:path';
 import { readFile } from 'node:fs/promises';
 import { createLocalJWKSet, jwtVerify } from 'jose';
 import { createAccounts } from './accounts.mjs';
@@ -8,12 +9,14 @@ import { renderAdminPage } from './admin-page.mjs';
 import { createLegacyApi } from './legacy.mjs';
 import { createOAuth } from './oauth.mjs';
 import { langOf, pickLocale, renderPage } from './pages.mjs';
+import { createSandboxRoutes } from './sandbox-routes.mjs';
+import { createSandboxes, openDemoPool } from './sandboxes.mjs';
 import { HttpError, RateLimiter, cookie, fail, isEmail, normalizeEmail, parseCookies, randomToken, sha256, signValue, unsignValue } from './security.mjs';
 
 const MINUTE = 60_000;
 const BODY_LIMIT = 16 * 1024;
 
-export function createApp({ config, pool, keys, mailer, google, log = console, sdkPath, limiter = new RateLimiter() }) {
+export function createApp({ config, pool, keys, mailer, google, log = console, sdkPath, limiter = new RateLimiter(), demoPool = null, sandboxFetch = fetch, sandboxWait }) {
   async function audit(eventType, { userId = null, tenantId = null, projectId = null, outcome, reason = null, ip = null, clientId = null, metadata = {} }, db = pool) {
     await db.query(`INSERT INTO platform.identity_audit(event_type,user_id,tenant_id,project_id,outcome,reason,metadata,ip,client_id)
       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9)`, [eventType, userId, tenantId, projectId, outcome, reason, JSON.stringify(metadata), ip, clientId]);
@@ -23,6 +26,12 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
   const legacy = createLegacyApi({ pool, config, accounts, audit });
   const localJwks = createLocalJWKSet(keys.jwks);
   const admin = createAdmin({ pool, config, keys, jwks: localJwks, audit, mailer, log });
+  // BRIEF18 personal demo sandboxes (demo environment only). The demo pool connects with ads.demo_mode=on.
+  const sandboxOn = Boolean(config.demo.enabled && config.sandbox?.enabled);
+  const ownDemoPool = sandboxOn && !demoPool;
+  const sandboxPool = sandboxOn ? demoPool ?? openDemoPool(config.databaseUrl) : null;
+  const sandboxes = createSandboxes({ pool, demoPool: sandboxPool, demo: config.demo, sandbox: config.sandbox ?? { enabled: false }, hashKey: config.cookieSecret,
+    mailer, oauth, jwks: localJwks, issuer: config.issuer, log, fetchImpl: sandboxFetch, wait: sandboxWait, minPasswordLength: config.passwordMinLength });
 
   // ---------- helpers ----------
   // Where to go after signing in without a product: only our own admin and invitation pages.
@@ -169,6 +178,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       locale, nonce, client: ctx.authRequest?.client ?? ctx.client ?? null, req: ctx.authRequest?.id ?? ctx.req ?? null,
       csrf: csrfToken(req, res), error: ctx.error, values: ctx.values, googleEnabled: config.google.enabled,
       minPassword: config.passwordMinLength, path: ctx.path ?? safePath(new URL(req.url, 'http://x').pathname), next: safeNext(ctx.next), demo, personas,
+      sandboxSignup: sandboxOn && view === 'login',
     });
     res.writeHead(status, { 'content-type': 'text/html; charset=utf-8' });
     res.end(body);
@@ -180,6 +190,10 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       if (safeNext(next)) return redirect(res, safeNext(next));
       return page(req, res, 'signed_in', { values: { email: sso.user.email } });
     }
+    // A personal demo sandbox owner lands in their sandbox's organisation for this product, or, where
+    // they hold no role there, as the product's first persona of the same sandbox (BRIEF18).
+    const landing = chosenTenant ? null : await sandboxRoutes.landingFor(sso, authRequest);
+    if (landing) return redirect(res, await oauth.issueCode(authRequest, { id: landing.userId }, landing.tenantId, sso.id));
     const result = await oauth.resolveWorkspace(sso.user, authRequest, chosenTenant);
     if (result.choose) return page(req, res, 'choose_workspace', { authRequest, values: { workspaces: result.choose } });
     if (result.noAccess) {
@@ -244,6 +258,8 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
   }
 
   let sdkCache = null;
+  const sandboxRoutes = createSandboxRoutes({ config, sandboxes, oauth, limiter, sdkDir: nodePath.dirname(sdkPath ?? ''), helpers: {
+    readBody, json, redirect, csrfToken, checkCsrf, currentSso, startSso, cors, finishSignIn } });
 
   // ---------- routes ----------
   async function route(req, res) {
@@ -266,7 +282,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
         jwks_uri: `${config.publicUrl}/.well-known/jwks.json`, userinfo_endpoint: `${config.publicUrl}/userinfo`, revocation_endpoint: `${config.publicUrl}/revoke`,
         end_session_endpoint: `${config.publicUrl}/logout`, response_types_supported: ['code'], grant_types_supported: ['authorization_code', 'refresh_token', TOKEN_EXCHANGE],
         code_challenge_methods_supported: ['S256'], token_endpoint_auth_methods_supported: ['none', 'client_secret_basic', 'client_secret_post'],
-        access_token_signing_alg_values_supported: ['RS256'], claims_supported: ['sub', 'tenant_id', 'roles', 'email', 'email_verified', 'name', 'locale', 'demo', 'ads_staff'],
+        access_token_signing_alg_values_supported: ['RS256'], claims_supported: ['sub', 'tenant_id', 'roles', 'email', 'email_verified', 'name', 'locale', 'demo', 'ads_staff', 'demo_sandbox', 'demo_sandbox_owner'],
         ui_locales_supported: ['en', 'fr'],
       }, { 'cache-control': 'public, max-age=300', 'access-control-allow-origin': '*' });
     }
@@ -275,6 +291,9 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       res.writeHead(200, { 'content-type': 'application/javascript; charset=utf-8', 'cache-control': 'public, max-age=300', 'x-content-type-options': 'nosniff', 'access-control-allow-origin': '*' });
       return res.end(sdkCache);
     }
+
+    // ----- personal demo sandboxes (BRIEF18; demo environment only) -----
+    if (await sandboxRoutes.handle(req, res, { path, method, q, ip, loadBoundRequest: id => (isBound(req, id) ? oauth.loadAuthRequest(id) : null) })) return;
 
     // ----- product sign-in (OAuth 2.0 + PKCE) -----
     if (method === 'GET' && path === '/authorize') {
@@ -715,5 +734,10 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     await pool.query("DELETE FROM platform.sessions WHERE expires_at < now() - interval '30 days'");
   }
 
-  return { handler, server: http.createServer(handler), accounts, oauth, admin, audit, purgeExpired };
+  async function close() {
+    await sandboxes.idle();
+    if (ownDemoPool) await sandboxPool.end();
+  }
+
+  return { handler, server: http.createServer(handler), accounts, oauth, admin, audit, purgeExpired, sandboxes, close };
 }

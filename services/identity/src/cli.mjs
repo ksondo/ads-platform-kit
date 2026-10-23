@@ -9,6 +9,9 @@ import pg from 'pg';
 import { DEMO_ACCOUNTS, demoSettings, isProductionEnv, readSecret, redirectAllowed } from './config.mjs';
 import { migrate } from './db.mjs';
 import { bootstrapDemoAccounts, demoAccountSubs, ensureDemoOrgs, personaAccounts, resetDemo, tenantsDocument } from './demo.mjs';
+import { createMailer } from './mailer.mjs';
+import { mailSettingsFromEnv, sandboxSettings } from './sandbox-config.mjs';
+import { createSandboxes, openDemoPool } from './sandboxes.mjs';
 
 const [command, ...rest] = process.argv.slice(2);
 const args = {};
@@ -36,7 +39,14 @@ Demo environment only (ADS_ENV=demo AND DEMO_MODE=1; refused everywhere else):
   demo-orgs [--clients config/clients.demo.json] [--personas config/demo-personas.json] [--out demo-tenants.json]
                                        demo organisations per product (+ ADS staff ones); demo user and checker get every role; each persona
                                        exactly its roles in its one organisation; writes product -> tenant ids and persona subs
-  demo-reset [--clients ...] [--personas ...] [--out ...]   nightly: restore the demo accounts and personas, end their sign-ins, restore memberships and roles`;
+  demo-reset [--clients ...] [--personas ...] [--out ...]   nightly: restore the demo accounts and personas, end their sign-ins, restore memberships and roles
+  demo-sandboxes expire                daily (cron): warnings at 7 and 1 day before expiry; at expiry each product deletes the
+                                       sandbox (signed DELETE), then its personas, organisations, memberships and owner are deleted
+  demo-sandboxes extend <sandbox id> <days>   ADS staff: more days for a tester's sandbox
+  demo-sandboxes list                  sandboxes with status, expiry and per-product status (no personal data)
+  demo-sandboxes retry [<sandbox id>]  provision again what is not ready yet
+  demo-sandboxes delete <sandbox id>   delete one sandbox now (same steps as at expiry)
+                                       (personal demo sandboxes need DEMO_SANDBOXES=1 and DEMO_PROVISIONING_SECRET, never printed)`;
 const here = path.dirname(fileURLToPath(import.meta.url));
 const defaultClients = path.resolve(here, '../../../config/clients.demo.json');
 const defaultPersonas = path.resolve(here, '../../../config/demo-personas.json');
@@ -220,6 +230,38 @@ try {
       const result = await resetDemo(pool, demo, passwords, doc, { minPasswordLength, personas });
       console.log(`demo reset: accounts ${result.accounts.filter(a => !a.persona).map(a => a.key).join(', ')} restored; personas ${result.accounts.filter(a => a.persona).length} restored; ${JSON.stringify(result.cleaned)}`);
       await writeTenants(args.out ?? 'demo-tenants.json', result.tenants);
+      break;
+    }
+    case 'demo-sandboxes': {
+      const [sub, id, days] = rest;
+      const sandbox = sandboxSettings(process.env, demo);
+      if (['expire', 'retry', 'delete'].includes(sub) && !sandbox.enabled) throw new Error('refused: demo-sandboxes needs DEMO_SANDBOXES=1 and DEMO_PROVISIONING_SECRET');
+      const demoPool = openDemoPool(process.env.DATABASE_URL, 2);
+      const mailer = createMailer({ mail: mailSettingsFromEnv(process.env) });
+      const sandboxes = createSandboxes({ pool, demoPool, demo, sandbox, hashKey: process.env.IDENTITY_COOKIE_SECRET ?? '', mailer, minPasswordLength });
+      try {
+        switch (sub) {
+          case 'expire': console.log(`demo sandboxes: ${JSON.stringify(await sandboxes.expire())}`); break;
+          case 'extend': {
+            if (!id || !days) throw new Error('usage: demo-sandboxes extend <sandbox id> <days>');
+            const r = await sandboxes.extend(id, Number(days));
+            console.log(`${r.sandbox_id} now expires at ${r.expires_at}`);
+            break;
+          }
+          case 'list':
+            for (const r of await sandboxes.list()) console.log(`${r.id} ${r.status.padEnd(12)} expires ${new Date(r.expires_at).toISOString()} +${r.extended_days}d ${JSON.stringify(r.products ?? {})}`);
+            break;
+          case 'retry': console.log(JSON.stringify(await sandboxes.retry(id ?? null))); break;
+          case 'delete': {
+            if (!id) throw new Error('usage: demo-sandboxes delete <sandbox id>');
+            console.log(`${id}: ${(await sandboxes.deleteSandbox(id)) ? 'deleted' : 'waiting for a product to delete its data (run again later)'}`);
+            break;
+          }
+          default: throw new Error('usage: demo-sandboxes expire | extend <id> <days> | list | retry [<id>] | delete <id>');
+        }
+      } finally {
+        await demoPool.end();
+      }
       break;
     }
     default:

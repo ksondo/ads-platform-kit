@@ -10,6 +10,7 @@ import { createRemoteJWKSet, jwtVerify } from 'jose';
 import pg from 'pg';
 import { verifyWebhookSignature } from './webhook-signature.mjs';
 import { createMomoAdapter } from './payments-adapter.mjs';
+import { createDemoSandboxEndpoint } from './demo-sandboxes.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const env = process.env;
@@ -61,6 +62,8 @@ async function asTenant(tenantId, fn) {
   }
 }
 
+const demoSandboxes = createDemoSandboxEndpoint({ env, pool, asTenant: (tenantId, fn) => asTenant(tenantId, fn) });
+
 const readRaw = req => new Promise((resolve, reject) => {
   const chunks = [];
   let size = 0;
@@ -79,6 +82,8 @@ const STATIC = {
   '/app.css': ['public/app.css', 'text/css'],
   // A real product copies ads-identity.js into its public folder; the example serves the kit's copy.
   '/ads-identity.js': ['../../packages/identity-client/ads-identity.js', 'application/javascript'],
+  // Demo "Switch role" control (shows nothing outside a personal demo sandbox).
+  '/ads-demo-switch.js': ['../../packages/identity-client/ads-demo-switch.js', 'application/javascript'],
 };
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -127,6 +132,13 @@ async function route(req, res) {
     } finally {
       client.release();
     }
+  }
+
+  // ----- demo sandbox provisioning (kit -> product, signed; demo environment only) -----
+  if (p.startsWith('/internal/demo/sandboxes')) {
+    const rawBody = m === 'POST' ? await readRaw(req) : '';
+    const result = await demoSandboxes({ method: m, path: p, rawBody, signature: req.headers['ads-demo-signature'] });
+    return json(res, result.status, result.body);
   }
 
   if (!p.startsWith('/api/')) throw new ApiError(404, 'NOT_FOUND');

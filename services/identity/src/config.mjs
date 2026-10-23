@@ -1,5 +1,6 @@
 // All settings come from environment variables (twelve-factor). See deploy/.env.example.
 import { readFileSync } from 'node:fs';
+import { sandboxSettings } from './sandbox-config.mjs';
 
 const num = (value, fallback) => {
   if (value === undefined || value === '') return fallback;
@@ -125,6 +126,8 @@ export function loadConfig(env = process.env) {
     legacyOnboard,
     strictRoleGrants,
     demo,
+    // BRIEF18 personal demo sandboxes (DEMO_SANDBOXES=1, demo environment only).
+    sandbox: sandboxSettings(env, demo),
     publicUrl,
     issuer: env.IDENTITY_ISSUER ? String(env.IDENTITY_ISSUER).replace(/\/$/, '') : publicUrl,
     databaseUrl: env.DATABASE_URL,

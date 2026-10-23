@@ -29,6 +29,7 @@ const T = {
     inviteSwitch: 'Sign out and use {email}', inviteAccepted: 'Welcome to {organization}', inviteAcceptedBody: 'You now have access to {product} as {roles}.',
     openProduct: 'Open {product}', inviteInvalid: 'This invitation is invalid or has expired', inviteInvalidBody: 'Ask the person who invited you to send a new one.',
     demoTitle: 'Try the ADS demo', demoBody: 'Use the shared demo account. Everything you see is sample data, and it is reset every night.',
+    sandboxTry: 'Try ADS free for 30 days', sandboxTryHint: 'Your own private demo with every role, ready in under a minute.',
     demoUse: 'Use demo account', demoFilled: 'Demo account filled in. Select Continue to sign in.', demoBadge: 'Demo environment',
     personasBody: 'Choose who you want to be. Each person sees only their own job. Everything is sample data, and it is reset every night.',
     personasList: 'Demo people', personaPassword: 'Password for every person below', personaUse: 'Use this account',
@@ -76,6 +77,7 @@ const T = {
     inviteSwitch: 'Se déconnecter et utiliser {email}', inviteAccepted: 'Bienvenue chez {organization}', inviteAcceptedBody: 'Vous avez maintenant accès à {product} en tant que {roles}.',
     openProduct: 'Ouvrir {product}', inviteInvalid: 'Cette invitation est invalide ou a expiré', inviteInvalidBody: "Demandez à la personne qui vous a invité d'en envoyer une nouvelle.",
     demoTitle: 'Essayer la démo ADS', demoBody: 'Utilisez le compte de démonstration partagé. Toutes les données sont fictives et remises à zéro chaque nuit.',
+    sandboxTry: 'Essayez ADS gratuitement pendant 30 jours', sandboxTryHint: 'Votre propre démo privée avec tous les rôles, prête en moins d’une minute.',
     demoUse: 'Utiliser le compte démo', demoFilled: 'Compte de démonstration saisi. Sélectionnez Continuer pour vous connecter.', demoBadge: 'Environnement de démonstration',
     personasBody: 'Choisissez qui vous voulez être. Chaque personne ne voit que son propre travail. Toutes les données sont fictives et remises à zéro chaque nuit.',
     personasList: 'Personnes de démonstration', personaPassword: 'Mot de passe de toutes les personnes ci-dessous', personaUse: 'Utiliser ce compte',
@@ -241,7 +243,8 @@ export function renderPage(view, ctx) {
 <label for="password">${esc(t.password)}</label><input id="password" name="password" type="password" autocomplete="current-password" required>
 <button type="submit" id="signin-submit">${esc(t.continue)}</button></form>
 ${googleEnabled ? `<div class="or">${esc(t.or)}</div><a class="button secondary" href="/google/start${q}">${esc(t.google)}</a>` : ''}
-<div class="links"><a href="/forgot-password${q}">${esc(t.forgot)}</a><br>${esc(t.noAccount)} <a href="/register${q}">${esc(t.createAccount)}</a></div>` });
+<div class="links"><a href="/forgot-password${q}">${esc(t.forgot)}</a><br>${esc(t.noAccount)} <a href="/register${q}">${esc(t.createAccount)}</a></div>
+${ctx.sandboxSignup ? `<a class="button secondary" id="sandbox-signup" href="/demo/signup${q}">${esc(t.sandboxTry)}</a><p class="hint">${esc(t.sandboxTryHint)}</p>` : ''}` });
     case 'register':
       return layout({ ...base, title: t.register, body: `<h1>${esc(t.register)}</h1>${errorBox(locale, error)}
 <form method="post" action="/register" novalidate>${csrfField}

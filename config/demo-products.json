@@ -1,0 +1,81 @@
+{
+  "$comment": "BRIEF18 personal demo sandboxes: where the kit calls each product's provisioning endpoint (POST/DELETE {base_url}/internal/demo/sandboxes, docs/contracts/DEMO_SANDBOX_PROVISIONING.md). Server-to-server address; it may be a private network address. null = the product does not implement the endpoint yet: its part of a sandbox shows 'Not available yet' and the rest still works. No secrets here: requests are signed with the server secret DEMO_PROVISIONING_SECRET. Override the file with DEMO_PRODUCTS_FILE.",
+  "version": 1,
+  "products": {
+    "software-factory": {
+      "base_url": null
+    },
+    "career-path": {
+      "base_url": null
+    },
+    "nutrition": {
+      "base_url": null
+    },
+    "personal-finance": {
+      "base_url": null
+    },
+    "education": {
+      "base_url": null
+    },
+    "morphoo": {
+      "base_url": null
+    },
+    "ventureworks": {
+      "base_url": null
+    },
+    "commerce": {
+      "base_url": "https://commerce.demo.africadigitalsynergy.com"
+    },
+    "logistics": {
+      "base_url": null
+    },
+    "mamacare": {
+      "base_url": null
+    },
+    "fleetguard": {
+      "base_url": null
+    },
+    "tontine": {
+      "base_url": null
+    },
+    "leisure-events": {
+      "base_url": null
+    },
+    "soulbridge": {
+      "base_url": null
+    },
+    "health": {
+      "base_url": null
+    },
+    "home-services": {
+      "base_url": null
+    },
+    "project-management": {
+      "base_url": null
+    },
+    "africover": {
+      "base_url": null
+    },
+    "agriculture": {
+      "base_url": null
+    },
+    "investment": {
+      "base_url": null
+    },
+    "hub": {
+      "base_url": null
+    },
+    "hopebridge": {
+      "base_url": null
+    },
+    "tourism": {
+      "base_url": null
+    },
+    "banking": {
+      "base_url": null
+    },
+    "transport": {
+      "base_url": null
+    }
+  }
+}

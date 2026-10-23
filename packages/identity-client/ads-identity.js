@@ -209,7 +209,7 @@
     getUser: function () {
       var c = accessToken ? decode(accessToken) : null;
       if (!c) return null;
-      return { id: c.sub, email: c.email, name: c.name || null, tenantId: c.tenant_id, roles: c.roles || [] };
+      return { id: c.sub, email: c.email, name: c.name || null, tenantId: c.tenant_id, roles: c.roles || [], demoSandbox: c.demo_sandbox || null };
     },
     isSignedIn: function () { return Boolean(accessToken && accessExp > Date.now()) || Boolean(ss('refresh')); },
     signIn: function (options) {
@@ -235,6 +235,24 @@
       };
       if (!rt) return go();
       return postForm('/revoke', { token: rt, client_id: clientId }).catch(function () {}).then(go);
+    },
+    // Demo sandboxes only (BRIEF18, ads-demo-switch.js): the personas of the signed-in tester's OWN
+    // sandbox, and switching this tab to one of them (token exchange; never across sandboxes).
+    demoPersonas: function () {
+      return api.getAccessToken().then(function (at) {
+        if (!at) return null;
+        return fetch(issuer + '/demo/v1/personas?client_id=' + encodeURIComponent(clientId), { headers: { authorization: 'Bearer ' + at }, credentials: 'omit', cache: 'no-store' })
+          .then(function (r) { return r.ok ? r.json() : null; });
+      });
+    },
+    switchDemoPersona: function (persona) {
+      return api.getAccessToken().then(function (at) {
+        if (!at) throw new Error('not_signed_in');
+        return postForm('/demo/v1/switch', {
+          grant_type: 'urn:ietf:params:oauth:grant-type:token-exchange', subject_token: at,
+          subject_token_type: 'urn:ietf:params:oauth:token-type:access_token', client_id: clientId, persona: String(persona),
+        });
+      }).then(function (tokens) { store(tokens); return api.getUser(); });
     },
     onChange: function (fn) { listeners.push(fn); return function () { listeners = listeners.filter(function (f) { return f !== fn; }); }; },
     // Optional helper: turns any element into a Sign in / Sign out button.
