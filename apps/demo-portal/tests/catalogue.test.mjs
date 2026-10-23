@@ -38,12 +38,14 @@ test("Commerce, E-commerce and POS share the integrated Commerce deployment",()=
   assert.equal(data.tools.find(x=>x.id==="bnpl").demoUrl,null,
     "Digital financing demos remain disabled until verified");
 });
-test("Demo launches stay in the current browser tab and let ADS Identity handle sign-in",()=>{
+test("Demo launches open a new browser tab and keep the ADS portal available",()=>{
   const code=readFileSync(new URL("../main.js",import.meta.url),"utf8");
   const start=code.indexOf("function launch(");
   const end=code.indexOf("function header(",start);
   assert.ok(start!==-1&&end>start);
   const launch=code.slice(start,end);
-  assert.ok(!launch.includes('target="_blank"'));
+  assert.ok(launch.includes('target="_blank"'));
+  assert.ok(launch.includes('rel="noopener noreferrer"'));
+  assert.ok(!launch.includes('window.open('), "Normal link activation avoids popup blockers");
   assert.ok(launch.includes("const url = safeDemo(target)"));
 });
