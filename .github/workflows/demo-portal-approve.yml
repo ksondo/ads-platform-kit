@@ -1,0 +1,47 @@
+name: ADS Demo Portal — Approved Image Tag
+
+# The same successful build/publish workflow is the authority for promotion.
+# The Software Factory Contabo controller polls immutable approvals and never
+# deploys a portal candidate that is newer than the CI-published image.
+on:
+  workflow_run:
+    workflows:
+      - Demo Portal CI and Image Publish
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  approve:
+    if: >-
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Tag only green-published current main, never an obsolete SHA
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner, repo} = context.repo;
+            const run = context.payload.workflow_run;
+            const sha = run.head_sha;
+            if (!/^[a-f0-9]{40}$/.test(sha)) throw new Error('Invalid commit SHA');
+            const current = await github.rest.repos.getBranch({owner, repo, branch:'main'});
+            if (current.data.commit.sha !== sha) {
+              core.notice('Newer main exists; skip the superseded portal image');
+              return;
+            }
+            // The parent workflow has both "test" and "publish", and a success
+            // conclusion means the immutable SHA image is already on GHCR.
+            const tag = 'ads-demo-portal-approved/' + sha;
+            try {
+              const old = await github.rest.git.getRef({owner, repo, ref:'tags/'+tag});
+              if (old.data.object.sha !== sha) throw new Error('Approval tag modified');
+              core.info('Portal release previously approved; no change');
+            } catch (error) {
+              if (error.status !== 404) throw error;
+              await github.rest.git.createRef({owner,repo,ref:'refs/tags/'+tag,sha});
+              core.notice('ADS_DEMO_PORTAL_APPROVED='+sha);
+            }
