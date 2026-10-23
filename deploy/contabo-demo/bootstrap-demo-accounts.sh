@@ -29,7 +29,7 @@ if docker exec ads-demo-identity test -f "/tmp/$secret_name"; then
   chmod 600 "$output_dir/$secret_name"
   docker exec -u 0 ads-demo-identity rm -f "/tmp/$secret_name"
 fi
-echo "Creating the 3 demo identity accounts and demo-only organisations..."
+echo "Creating the 3 demo identity accounts, the demo personas and demo-only organisations..."
 docker exec ads-demo-identity node src/cli.mjs demo-bootstrap
 docker exec ads-demo-identity node src/cli.mjs demo-orgs --out "/tmp/$tenant_name"
 docker cp "ads-demo-identity:/tmp/$tenant_name" "$output_dir/$tenant_name"

@@ -2,13 +2,13 @@
 // /admin or through the admin API; these commands are for ADS operators. Run inside the identity container:
 //   node src/cli.mjs <command> [--flag value ...]
 import crypto from 'node:crypto';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { DEMO_ACCOUNTS, demoSettings, isProductionEnv, readSecret, redirectAllowed } from './config.mjs';
 import { migrate } from './db.mjs';
-import { bootstrapDemoAccounts, ensureDemoOrgs, resetDemo } from './demo.mjs';
+import { bootstrapDemoAccounts, demoAccountSubs, ensureDemoOrgs, personaAccounts, resetDemo, tenantsDocument } from './demo.mjs';
 
 const [command, ...rest] = process.argv.slice(2);
 const args = {};
@@ -29,21 +29,49 @@ const usage = `Commands:
   mark-staff-org --tenant <tenant uuid> [--staff true|false]   ADS staff organisation flag (ACC-04, token claim ads_staff)
 
 Demo environment only (ADS_ENV=demo AND DEMO_MODE=1; refused everywhere else):
-  demo-bootstrap                       create or refresh the demo user, second demo user and demo admin
-                                       passwords from DEMO_USER_PASSWORD, DEMO_USER2_PASSWORD, DEMO_ADMIN_PASSWORD (or *_FILE); never printed
-  demo-orgs [--clients config/clients.demo.json] [--out demo-tenants.json]
-                                       demo organisations per product (+ ADS staff ones); demo accounts get every role; writes product -> tenant ids
-  demo-reset [--clients ...] [--out ...]   nightly: restore the demo accounts, end their sign-ins, restore memberships and roles`;
+  demo-bootstrap [--clients ...] [--personas config/demo-personas.json]
+                                       create or refresh the demo user, second demo user and demo admin, and the demo personas
+                                       passwords from DEMO_USER_PASSWORD, DEMO_USER2_PASSWORD, DEMO_ADMIN_PASSWORD, DEMO_PERSONA_PASSWORD (or *_FILE); never printed
+                                       (without DEMO_PERSONA_PASSWORD the personas are skipped, with a warning)
+  demo-orgs [--clients config/clients.demo.json] [--personas config/demo-personas.json] [--out demo-tenants.json]
+                                       demo organisations per product (+ ADS staff ones); demo user and checker get every role; each persona
+                                       exactly its roles in its one organisation; writes product -> tenant ids and persona subs
+  demo-reset [--clients ...] [--personas ...] [--out ...]   nightly: restore the demo accounts and personas, end their sign-ins, restore memberships and roles`;
 const here = path.dirname(fileURLToPath(import.meta.url));
 const defaultClients = path.resolve(here, '../../../config/clients.demo.json');
-const demoPasswords = () => Object.fromEntries(DEMO_ACCOUNTS.map(k => [k, readSecret(process.env, { user: 'DEMO_USER_PASSWORD', user2: 'DEMO_USER2_PASSWORD', admin: 'DEMO_ADMIN_PASSWORD' }[k])]));
+const defaultPersonas = path.resolve(here, '../../../config/demo-personas.json');
+const demoPasswords = () => ({
+  ...Object.fromEntries(DEMO_ACCOUNTS.map(k => [k, readSecret(process.env, { user: 'DEMO_USER_PASSWORD', user2: 'DEMO_USER2_PASSWORD', admin: 'DEMO_ADMIN_PASSWORD' }[k])])),
+  persona: readSecret(process.env, 'DEMO_PERSONA_PASSWORD'),
+});
 const minPasswordLength = Number(process.env.IDENTITY_PASSWORD_MIN_LENGTH || 10);
-const writeTenants = (file, map) => {
-  writeFileSync(file, `${JSON.stringify({ generated_at: new Date().toISOString(), products: map }, null, 2)}\n`);
+const readClients = () => JSON.parse(readFileSync(args.clients ?? defaultClients, 'utf8'));
+// The personas file is optional (none: no personas). An explicit --personas must exist.
+const readPersonas = clients => {
+  const file = args.personas ?? defaultPersonas;
+  if (!args.personas && !existsSync(file)) return [];
+  return personaAccounts(demo, JSON.parse(readFileSync(file, 'utf8')), clients);
+};
+// Personas need their password; without it they are skipped (the three demo accounts still work).
+const bootstrapPersonas = (personas, passwords) => {
+  if (personas.length && !passwords.persona) {
+    console.warn(`demo personas skipped: ${demo.personaPasswordVar} (or ${demo.personaPasswordVar}_FILE) is not set`);
+    return [];
+  }
+  return personas;
+};
+const writeTenants = async (file, map) => {
+  writeFileSync(file, `${JSON.stringify(tenantsDocument(map, await demoAccountSubs(pool)), null, 2)}\n`);
   for (const [slug, e] of Object.entries(map)) {
-    console.log(`${slug.padEnd(20)} ${Object.entries(e.tenants).map(([k, v]) => `${k}=${v}`).join(' ')}${Object.keys(e.settings).length ? `  [${Object.keys(e.settings).join(', ')}]` : ''}`);
+    const personas = Object.keys(e.personas ?? {}).length;
+    console.log(`${slug.padEnd(20)} ${Object.entries(e.tenants).map(([k, v]) => `${k}=${v}`).join(' ')}${Object.keys(e.settings).length ? `  [${Object.keys(e.settings).join(', ')}]` : ''}${personas ? `  personas=${personas}` : ''}`);
   }
   console.log(`tenant ids written to ${file}`);
+};
+const printAccounts = accounts => {
+  for (const a of accounts.filter(x => !x.persona)) console.log(`demo ${a.key.padEnd(5)} ${a.email} ${a.created ? 'created' : 'refreshed'} (password from ${demo.accounts[a.key].passwordVar}, not shown)`);
+  const personas = accounts.filter(x => x.persona);
+  if (personas.length) console.log(`demo personas: ${personas.length} (${personas.filter(a => a.created).length} created, ${personas.filter(a => !a.created).length} refreshed; password from ${demo.personaPasswordVar}, not shown)`);
 };
 // Demo accounts are refused outside demo mode; the operator CLI does not hand them roles or organisations there either.
 const isDemoAccount = async email => (await pool.query('SELECT is_demo FROM platform.users WHERE email=$1', [String(email).toLowerCase()])).rows[0]?.is_demo === true;
@@ -175,20 +203,23 @@ try {
       break;
     }
     case 'demo-bootstrap': {
-      const done = await bootstrapDemoAccounts(pool, demo, demoPasswords(), { minPasswordLength });
-      for (const a of done) console.log(`demo ${a.key.padEnd(5)} ${a.email} ${a.created ? 'created' : 'refreshed'} (password from ${demo.accounts[a.key].passwordVar}, not shown)`);
+      const passwords = demoPasswords();
+      const personas = bootstrapPersonas(readPersonas(readClients()), passwords);
+      printAccounts(await bootstrapDemoAccounts(pool, demo, passwords, { minPasswordLength, personas }));
       break;
     }
     case 'demo-orgs': {
-      const doc = JSON.parse(readFileSync(args.clients ?? defaultClients, 'utf8'));
-      writeTenants(args.out ?? 'demo-tenants.json', await ensureDemoOrgs(pool, demo, doc));
+      const doc = readClients();
+      await writeTenants(args.out ?? 'demo-tenants.json', await ensureDemoOrgs(pool, demo, doc, { personas: readPersonas(doc) }));
       break;
     }
     case 'demo-reset': {
-      const doc = JSON.parse(readFileSync(args.clients ?? defaultClients, 'utf8'));
-      const result = await resetDemo(pool, demo, demoPasswords(), doc, { minPasswordLength });
-      console.log(`demo reset: accounts ${result.accounts.map(a => a.key).join(', ')} restored; ${JSON.stringify(result.cleaned)}`);
-      writeTenants(args.out ?? 'demo-tenants.json', result.tenants);
+      const doc = readClients();
+      const passwords = demoPasswords();
+      const personas = bootstrapPersonas(readPersonas(doc), passwords);
+      const result = await resetDemo(pool, demo, passwords, doc, { minPasswordLength, personas });
+      console.log(`demo reset: accounts ${result.accounts.filter(a => !a.persona).map(a => a.key).join(', ')} restored; personas ${result.accounts.filter(a => a.persona).length} restored; ${JSON.stringify(result.cleaned)}`);
+      await writeTenants(args.out ?? 'demo-tenants.json', result.tenants);
       break;
     }
     default:

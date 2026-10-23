@@ -117,8 +117,11 @@ export function createOAuth({ pool, config, keys, audit }) {
     if (!member) fail(400, 'invalid_grant');
     const roles = await rolesFor(userId, tenantId, client, db);
     if (!roles.length) fail(400, 'invalid_grant');
+    // `locale`: the language of this sign-in (the product's ui_locales or the choice made on the sign-in
+    // page), never a language saved on the account: shared demo accounts carry no tester's language.
+    const locale = ssoSessionId ? (await db.query('SELECT locale FROM platform.sso_sessions WHERE id=$1', [ssoSessionId])).rows[0]?.locale ?? undefined : undefined;
     return keys.sign(
-      { tenant_id: tenantId, roles, email: user.email, email_verified: Boolean(user.email_verified_at), name: user.display_name ?? undefined, client_id: client.client_id, sid: ssoSessionId ?? undefined,
+      { tenant_id: tenantId, roles, email: user.email, email_verified: Boolean(user.email_verified_at), name: user.display_name ?? undefined, client_id: client.client_id, sid: ssoSessionId ?? undefined, locale,
         // `demo`: a demo account or demo organisation (show "Demo", keep out of reports). `ads_staff`: an ADS
         // staff organisation marked by an operator (ACC-04); products may trust staff roles only when it is true.
         demo: user.is_demo || member.is_demo ? true : undefined, ads_staff: member.is_staff ? true : undefined },

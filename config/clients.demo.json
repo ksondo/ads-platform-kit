@@ -276,6 +276,14 @@
           ]
         },
         {
+          "key": "partner",
+          "name": "ADS Demo – Education partner",
+          "staff": false,
+          "roles": [
+            "partner_admin"
+          ]
+        },
+        {
           "key": "staff",
           "name": "ADS Staff – Education platform",
           "staff": true,
@@ -707,6 +715,23 @@
             "auditor",
             "compliance_officer",
             "support_officer"
+          ]
+        },
+        {
+          "key": "cooperative",
+          "name": "ADS Demo – Savings cooperative",
+          "staff": false,
+          "roles": [
+            "cooperative_admin"
+          ]
+        },
+        {
+          "key": "partner",
+          "name": "ADS Demo – Savings partner",
+          "staff": false,
+          "roles": [
+            "partner_admin",
+            "partner_support"
           ]
         }
       ],

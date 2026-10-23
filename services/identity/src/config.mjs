@@ -44,7 +44,22 @@ export function demoSettings(env = process.env) {
     enabled, adsEnv, domain, accounts, showCredentials,
     // Only the demo USER's password is ever shown on the sign-in page; never the admin's.
     shownPassword: showCredentials ? readSecret(env, 'DEMO_USER_PASSWORD') : '',
+    // BRIEF16 demo personas (config/demo-personas.json): one shared persona password, shown with the
+    // persona picker under the same rule as the demo user's. Never the admin's or the checker's.
+    personaPasswordVar: 'DEMO_PERSONA_PASSWORD',
+    shownPersonaPassword: showCredentials ? readSecret(env, 'DEMO_PERSONA_PASSWORD') : '',
+    personaEmail: (slug, key) => `demo.${slug}.${key}@${domain}`,
   };
+}
+
+// The persona password is shown on the sign-in page, so it must not open any other demo account.
+export function assertPersonaPasswordSeparate(env, personaPassword) {
+  if (!personaPassword) return;
+  for (const name of ['DEMO_USER2_PASSWORD', 'DEMO_ADMIN_PASSWORD']) {
+    let other = '';
+    try { other = readSecret(env, name); } catch { other = ''; }
+    if (other && other === personaPassword) throw new Error(`DEMO_PERSONA_PASSWORD_MUST_DIFFER_FROM_${name}`);
+  }
 }
 
 // True for an address under the reserved demo domain (or one of its subdomains).
@@ -99,6 +114,7 @@ export function loadConfig(env = process.env) {
   const strictRoleGrants = production ? true : bool(strictRaw, adsEnv === 'demo');
   const demo = demoSettings(env);
   if (demo.showCredentials && !demo.shownPassword) throw new Error('DEMO_USER_PASSWORD_REQUIRED_TO_SHOW_CREDENTIALS');
+  if (demo.showCredentials) assertPersonaPasswordSeparate(env, demo.shownPersonaPassword);
 
   return {
     host: env.HOST ?? '0.0.0.0',

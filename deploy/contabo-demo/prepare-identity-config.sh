@@ -58,6 +58,7 @@ export ADS_SETUP_COOKIE="$(openssl rand -hex 32)"
 export ADS_SETUP_USER_PASS="$(openssl rand -hex 24)"
 export ADS_SETUP_CHECKER_PASS="$(openssl rand -hex 24)"
 export ADS_SETUP_ADMIN_PASS="$(openssl rand -hex 24)"
+export ADS_SETUP_PERSONA_PASS="$(openssl rand -hex 24)"
 export ADS_SETUP_DIR="$directory"
 export ADS_SETUP_TEMPLATE_DIR="$here"
 python3 - <<'PY'
@@ -84,6 +85,7 @@ inputs=[
     "DEMO_USER_PASSWORD":os.environ["ADS_SETUP_USER_PASS"],
     "DEMO_USER2_PASSWORD":os.environ["ADS_SETUP_CHECKER_PASS"],
     "DEMO_ADMIN_PASSWORD":os.environ["ADS_SETUP_ADMIN_PASS"],
+    "DEMO_PERSONA_PASSWORD":os.environ["ADS_SETUP_PERSONA_PASS"],
   }),
 ]
 for template,filename,variables in inputs:
