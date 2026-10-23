@@ -377,7 +377,7 @@ export function createSandboxes({ pool, demoPool, demo, sandbox, hashKey, mailer
     if (!jwks || typeof subjectToken !== 'string' || !subjectToken) refuse(401, 'invalid_token');
     let claims;
     try {
-      ({ payload: claims } = await jwtVerify(subjectToken, jwks, { issuer, audience: clientId, algorithms: ['RS256'] }));
+      ({ payload: claims } = await jwtVerify(subjectToken, jwks, { issuer: typeof issuer === 'function' ? issuer() : issuer, audience: clientId, algorithms: ['RS256'] }));
     } catch {
       refuse(401, 'invalid_token');
     }

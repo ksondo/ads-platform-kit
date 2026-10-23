@@ -31,7 +31,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
   const ownDemoPool = sandboxOn && !demoPool;
   const sandboxPool = sandboxOn ? demoPool ?? openDemoPool(config.databaseUrl) : null;
   const sandboxes = createSandboxes({ pool, demoPool: sandboxPool, demo: config.demo, sandbox: config.sandbox ?? { enabled: false }, hashKey: config.cookieSecret,
-    mailer, oauth, jwks: localJwks, issuer: config.issuer, log, fetchImpl: sandboxFetch, wait: sandboxWait, minPasswordLength: config.passwordMinLength });
+    mailer, oauth, jwks: localJwks, issuer: () => config.issuer, log, fetchImpl: sandboxFetch, wait: sandboxWait, minPasswordLength: config.passwordMinLength });
 
   // ---------- helpers ----------
   // Where to go after signing in without a product: only our own admin and invitation pages.

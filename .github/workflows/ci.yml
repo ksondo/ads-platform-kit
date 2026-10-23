@@ -100,7 +100,8 @@ jobs:
           E2E_KIT_TEST_DATABASE_URL: postgres://kit:kit@127.0.0.1:5432/kit_e2e
 
   # BRIEF16: the demo persona picker on the real hosted sign-in page (360/768/1280 px, EN/FR) and
-  # the signInAsPersona() Playwright helper.
+  # the signInAsPersona() Playwright helper. BRIEF18: personal demo sandboxes (sign-up, provisioning
+  # through the sample product, Switch role, deletion) at 360 px in EN and FR.
   e2e-kit-browser:
     runs-on: ubuntu-24.04   # pinned: Playwright --with-deps fails on Ubuntu 26
     timeout-minutes: 20
@@ -124,6 +125,9 @@ jobs:
         working-directory: services/identity
       - run: npm ci --no-audit --no-fund
         working-directory: packages/e2e-kit
+      # BRIEF18: the sample product's reference /internal/demo/sandboxes endpoint, provisioned for real.
+      - run: npm ci --no-audit --no-fund
+        working-directory: examples/sample-product
       - run: npx playwright install --with-deps chromium
         working-directory: packages/e2e-kit
       - run: npx playwright test

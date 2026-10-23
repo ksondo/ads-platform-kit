@@ -62,6 +62,7 @@ export async function runIdentityInProcess({ databaseUrl, host = '127.0.0.1', po
     url: publicUrl, issuer: config.issuer, outbox, pool, app,
     async stop() {
       await new Promise(r => { app.server.close(() => r()); app.server.closeAllConnections?.(); });
+      await app.close?.();
       await pool.end();
     },
   };

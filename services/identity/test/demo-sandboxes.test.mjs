@@ -18,7 +18,6 @@ import { DATABASE_URL, browser, csrfFrom, listenForTest, pkce, reqFrom, startSer
 // refusal outside the demo environment.
 const here = path.dirname(fileURLToPath(import.meta.url));
 const cli = path.resolve(here, '../src/cli.mjs');
-const applyScript = path.resolve(here, '../scripts/apply-clients.mjs');
 const clientsDoc = JSON.parse(readFileSync(path.resolve(here, '../../../config/clients.demo.json'), 'utf8'));
 const personasDoc = JSON.parse(readFileSync(path.resolve(here, '../../../config/demo-personas.json'), 'utf8'));
 const bySlug = Object.fromEntries(clientsDoc.products.map(p => [p.slug, p]));
@@ -96,8 +95,11 @@ describe('personal demo sandboxes', () => {
       DEMO_PROVISIONING_BACKOFF_MS: '5', DEMO_PROVISIONING_ATTEMPTS: '3', DEMO_SIGNUP_CODES_PER_CONTACT_PER_DAY: '4',
       DEMO_SIGNUP_CODES_PER_IP_PER_DAY: '50', DEMO_SIGNUP_SANDBOXES_PER_IP_PER_DAY: '10',
     } });
-    const applied = spawnSync(process.execPath, [applyScript, '--secrets-out', path.join(dir, 'secrets.json')], { encoding: 'utf8', env: { PATH: process.env.PATH, DATABASE_URL }, timeout: 120_000 });
-    assert.equal(applied.status, 0, applied.stderr);
+    // The reviewed client list, registered as apply-clients does (without client secrets, not needed here).
+    for (const p of clientsDoc.products) {
+      await svc.pool.query(`INSERT INTO platform.oauth_clients(client_id,display_name,redirect_uris,post_logout_redirect_uris,self_service_roles,allow_personal_workspace,admin_roles,assignable_roles)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`, [p.client_id, p.display_name, p.redirect_uris, p.post_logout_redirect_uris ?? [], p.self_service_roles ?? [], p.allow_personal_workspace !== false, p.admin_roles ?? [], p.assignable_roles ?? []]);
+    }
     demoPool = openDemoPool(DATABASE_URL, 2);
   });
   after(async () => {
@@ -192,7 +194,7 @@ describe('personal demo sandboxes', () => {
       const u = (await svc.pool.query('SELECT is_demo, demo_sandbox_id, password_hash IS NOT NULL AS has_pw FROM platform.users WHERE id=$1', [sub])).rows[0];
       assert.deepEqual([u.is_demo, u.demo_sandbox_id], [true, A.sandboxId]);
     }
-    const memberships = (await svc.pool.query('SELECT count(*)::int AS n, count(*) FILTER (WHERE demo_sandbox_id=$1)::int AS tagged FROM platform.memberships m JOIN platform.users u ON u.id=m.user_id WHERE u.demo_sandbox_id=$1', [A.sandboxId])).rows[0];
+    const memberships = (await svc.pool.query('SELECT count(*)::int AS n, count(*) FILTER (WHERE m.demo_sandbox_id=$1)::int AS tagged FROM platform.memberships m JOIN platform.users u ON u.id=m.user_id WHERE u.demo_sandbox_id=$1', [A.sandboxId])).rows[0];
     assert.ok(memberships.n > 0);
     assert.equal(memberships.tagged, memberships.n, 'every membership of the sandbox is tagged');
     // A product that answered 404 was asked once; a 400 is not retried.
@@ -260,7 +262,10 @@ describe('personal demo sandboxes', () => {
     // A non-demo connection cannot create sandboxes or tag rows.
     await assert.rejects(svc.pool.query("INSERT INTO platform.demo_sandboxes(id,expires_at) VALUES ('sb-zzzzzzzzzz', now())"), /DEMO_SANDBOXES_DEMO_ONLY/);
     await assert.rejects(svc.pool.query("UPDATE platform.users SET demo_sandbox_id=$2 WHERE id=$1", [outsider, A.sandboxId]), /DEMO_SANDBOXES_DEMO_ONLY|DEMO_SANDBOX_ROWS_MUST_BE_DEMO/);
-    await assert.rejects(demoPool.query("UPDATE platform.users SET demo_sandbox_id=$2 WHERE id=$1", [aCashier, B.sandboxId]), /DEMO_SANDBOX_TAG_IS_PERMANENT/);
+    // A sandbox account's tag follows its demo_key and cannot be moved to another sandbox.
+    await demoPool.query("UPDATE platform.users SET demo_sandbox_id=$2 WHERE id=$1", [aCashier, B.sandboxId]);
+    assert.equal((await svc.pool.query('SELECT demo_sandbox_id FROM platform.users WHERE id=$1', [aCashier])).rows[0].demo_sandbox_id, A.sandboxId);
+    await assert.rejects(demoPool.query("UPDATE platform.organizations SET demo_sandbox_id=NULL, demo_key=NULL WHERE demo_sandbox_id=$1", [A.sandboxId]), /DEMO_SANDBOX_TAG_IS_PERMANENT/);
   });
 
   // Signs the tester (already signed in to ADS in browser b) in to a product through /authorize.

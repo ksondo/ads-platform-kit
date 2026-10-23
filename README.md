@@ -116,6 +116,42 @@ Persona subs and tenant ids stay the same across `demo-reset`. A `personal` pers
 - Playwright: `signInAsPersona(page, 'cashier', { startUrl, lang })` from `@ads/e2e-kit/playwright` opens the real sign-in page from the product, presses **Use this account** and Continue (no password in the test). Without `button` it forces the sign-in page (`prompt=login`), so two personas can take turns in one browser.
 - Reuse for other demo sets (e.g. a per-tester sandbox): `personaAccounts(settings, personasDoc, clientsDoc, { set })`, `ensurePersonaAccounts(pool, settings, personas, password, { set })`, `ensureDemoOrgs(pool, settings, clientsDoc, { personas, set, ownerId })` and `placePersonas(c, personas, map, { set })` in `services/identity/src/demo.mjs`. A named set gets its own organisations (`<set>/<product>:<org>`, owned by `ownerId`) and personas (`demo.<set>.<product>.<key>@…`); the global `demo-reset` and the global sign-in page leave it alone.
 
+#### Personal demo sandboxes (BRIEF18)
+
+Shared demo accounts stay for a quick look (reset nightly). For full journeys, anyone can sign up for their **own 30-day sandbox** on the demo sign-in page ("Try ADS free for 30 days", `/demo/signup`): email or mobile number, a 6-digit one-time code, consent that everything is deleted after 30 days. No CAPTCHA; abuse is held back by the code and by daily limits per IP address, email and phone number (stored as keyed hashes in PostgreSQL). The same email or number signs back in to the same sandbox.
+
+A sandbox owns one demo organisation set per product (as `demo-orgs`) and one persona account per persona of `config/demo-personas.json`, all tagged with the sandbox id (`platform.demo_sandboxes`, `demo_sandbox_id` on users, organisations and memberships) and owned by the tester. The database refuses memberships across sandboxes, and refuses sandbox rows from any connection not opened in demo mode. The kit then calls every product's `POST /internal/demo/sandboxes` (signed, retried with backoff; see [the provisioning contract](docs/contracts/DEMO_SANDBOX_PROVISIONING.md)); "Preparing your demo…" shows each product's status, and products without the endpoint show "Not available yet". The tester then lands back in the product they came from.
+
+Inside a product, the **"Switch role"** control lets the tester act as any persona of their own sandbox (one click, token exchange at `POST /demo/v1/switch`, audited, never across sandboxes). Products include it after `ads-identity.js`:
+
+```html
+<script src="https://<demo login host>/sdk/ads-demo-switch.js" defer></script>
+```
+
+It shows nothing unless the token has the `demo_sandbox` claim. Page code can also call `adsIdentity.demoPersonas()` and `adsIdentity.switchDemoPersona('cashier')`.
+
+| Setting | Meaning |
+| --- | --- |
+| `DEMO_SANDBOXES=1` | Turn sandboxes on. Works only with `ADS_ENV=demo` and `DEMO_MODE=1`; refused at start in production |
+| `DEMO_PROVISIONING_SECRET` (or `_FILE`) | Shared HMAC secret for the kit's calls to products (at least 32 characters; server secrets only, never printed) |
+| `DEMO_PRODUCTS_FILE` | Products' provisioning addresses (default `config/demo-products.json`; `base_url: null` = not available yet) |
+| `DEMO_SANDBOX_DAYS`, `DEMO_SANDBOX_MAX_ACTIVE` | 30 days; at most 500 live sandboxes |
+| `DEMO_OTP_SMS_URL` | Where SMS codes go (default `IDENTITY_SMS_URL`, the kit mocks in the demo). Email codes go through the mailer (or `DEMO_OTP_EMAIL_URL`) |
+| `DEMO_OTP_SHOW_SMS_CODE=1` | Test mode: SMS are simulated, so the code page shows the code it sent by SMS (never email codes) |
+| `DEMO_SIGNUP_CODES_PER_IP_PER_DAY`, `..._CODES_PER_CONTACT_PER_DAY`, `..._SANDBOXES_PER_IP_PER_DAY`, `..._SANDBOXES_PER_CONTACT_PER_DAY` | Daily limits (10, 5, 3, 1) |
+| `DEMO_PROVISIONING_ATTEMPTS`, `DEMO_PROVISIONING_BACKOFF_MS`, `DEMO_PROVISIONING_TIMEOUT_MS` | 4 attempts, 0.5 s doubling, 15 s each |
+
+Expiry, daily (cron, inside the identity container):
+
+```bash
+node src/cli.mjs demo-sandboxes expire                 # reminders at T-7 and T-1 (email/SMS); at T: sign-in ends, contact erased,
+                                                       # products DELETE their data, then personas, organisations, memberships, owner
+node src/cli.mjs demo-sandboxes extend sb-k3v9q2m7xa 14   # ADS staff: on a tester's request
+node src/cli.mjs demo-sandboxes list | retry [<id>] | delete <id>
+```
+
+A product that cannot delete yet is retried on the next run; the kit keeps its own records until every product has deleted. The audit log keeps only counts.
+
 #### Sign-in language
 
 The sign-in page uses, in order: the language chosen on the page, the product's `ui_locales` (`adsIdentity.signIn({ lang })`; lists and region tags such as `fr-CM en` are understood), then the browser. The language of the sign-in is returned in the token claim `locale` (`en`/`fr`) and is **never saved on the account**. Products must not let a language saved for a demo account (`demo: true`) override the visible choice: use their own switch, or the `locale` claim.
