@@ -27,8 +27,14 @@ test("POS and E-commerce use existing Commerce sign-in, not duplicate identity c
   assert.deepEqual([...commerce.toolIds].sort(),["ecommerce","pos"]);
 });
 test("public portal does not expose passwords or claim unverified deployments",()=>{
+  const allowed = new Map([
+    ["commerce", "https://commerce.demo.africadigitalsynergy.com/commerce"],
+    ["ecommerce", "https://commerce.demo.africadigitalsynergy.com/commerce"],
+    ["pos", "https://commerce.demo.africadigitalsynergy.com/commerce/merchant/pos"]
+  ]);
   for(const record of [...catalogue.platforms,...catalogue.tools]) {
-    assert.equal(record.demoUrl,null,"Unverified public demo URL in "+record.id);
+    assert.equal(record.demoUrl,allowed.get(record.id) ?? null,
+      "Only the hosted Commerce demo and its two tool journeys may be linked: "+record.id);
   }
   const text=readFileSync(new URL("../main.js",import.meta.url),"utf8");
   assert.ok(text.includes('function demoAccessGuide()'));
