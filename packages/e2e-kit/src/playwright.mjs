@@ -34,9 +34,33 @@ export class SignInError extends Error {
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const originOf = u => { try { return new URL(u).origin; } catch { return null; } };
 
+// Waits until adsIdentity.ready has settled. Polls a flag with waitForFunction instead of awaiting the
+// promise in one page.evaluate: on the return from the hosted sign-in, `ready` spans the code exchange
+// and the address-bar clean-up, and a single evaluate held across that occasionally fails with
+// "Execution context was destroyed" (Playwright rewrites any CDP error during awaitPromise to that),
+// failing a sign-in that actually succeeded. waitForFunction is re-run by Playwright when a context
+// goes away, so the wait is navigation-safe.
 async function waitForAdsIdentity(page, timeout) {
-  await page.waitForFunction(() => Boolean(window.adsIdentity && window.adsIdentity.ready), null, { timeout });
-  await page.evaluate(() => window.adsIdentity.ready);
+  await page.waitForFunction(() => {
+    const id = window.adsIdentity;
+    if (!id || !id.ready) return false;
+    if (window.__adsE2eReady !== id.ready) {
+      window.__adsE2eReady = id.ready;
+      window.__adsE2eReadySettled = false;
+      window.__adsE2eReadyError = null;
+      const settle = err => {
+        if (window.__adsE2eReady !== id.ready) return;
+        window.__adsE2eReadyError = err;
+        window.__adsE2eReadySettled = true;
+      };
+      id.ready.then(() => settle(null), e => settle(String((e && e.message) || e || 'rejected')));
+    }
+    // A rejected ready (e.g. a failed code exchange) fails the wait with its reason, as before.
+    if (window.__adsE2eReadySettled && window.__adsE2eReadyError !== null) {
+      throw new Error(`adsIdentity.ready rejected: ${window.__adsE2eReadyError}`);
+    }
+    return window.__adsE2eReadySettled === true;
+  }, null, { timeout, polling: 50 });
 }
 
 async function textOf(page, selector) {
