@@ -10,6 +10,19 @@ import { checkPasswordStrength, hashPassword } from './security.mjs';
 export class DemoError extends Error {}
 const refuse = message => { throw new DemoError(message); };
 
+// Demo sets. The global demo set (null) is the shared one run by demo-bootstrap/demo-orgs/demo-reset.
+// A named set (e.g. a future per-tester sandbox id) gets its own organisations and personas, namespaced so
+// the global commands never touch it: organisation demo_key '<set>/<slug>:<org>', persona demo_key
+// 'persona:<set>/<slug>:<key>', persona email 'demo.<set>.<slug>.<key>@<domain>'.
+const SET_ID = /^[a-z0-9][a-z0-9-]{0,39}$/;
+export function checkDemoSet(set) {
+  if (set !== null && set !== undefined && !SET_ID.test(String(set))) refuse(`bad demo set id ${set}`);
+  return set ?? null;
+}
+const setPrefix = set => (set ? `${set}/` : '');
+// Postgres regex matching the persona demo_keys of one set (and only that set).
+const personaKeyPattern = set => (set ? `^persona:${set}/[a-z0-9-]+:[a-z0-9-]+$` : '^persona:[a-z0-9-]+:[a-z0-9-]+$');
+
 export function assertDemoMode(settings) {
   if (!settings?.enabled) refuse('refused: demo accounts and organisations exist only when ADS_ENV=demo and DEMO_MODE=1');
 }
@@ -27,14 +40,11 @@ export async function bootstrapDemoAccounts(pool, settings, passwords, { minPass
   const prepared = [];
   let personaHash = null;
   if (personas?.length) {
-    const pw = passwords?.persona;
-    if (!pw) refuse(`missing ${settings.personaPasswordVar} (or ${settings.personaPasswordVar}_FILE)`);
-    const weak = checkPasswordStrength(pw, minPasswordLength);
-    if (weak) refuse(`${settings.personaPasswordVar} is not accepted (${weak})`);
     // It is shown on the sign-in page: it must not open the checker or the admin account.
-    if (pw === passwords?.user2 || pw === passwords?.admin) refuse(`${settings.personaPasswordVar} must differ from DEMO_USER2_PASSWORD and DEMO_ADMIN_PASSWORD`);
-    // One shared (shown) password: one hash serves every persona account.
-    personaHash = await hashPassword(pw);
+    if (passwords?.persona && (passwords.persona === passwords?.user2 || passwords.persona === passwords?.admin)) {
+      refuse(`${settings.personaPasswordVar} must differ from DEMO_USER2_PASSWORD and DEMO_ADMIN_PASSWORD`);
+    }
+    personaHash = await personaPasswordHash(settings, passwords?.persona, minPasswordLength);
   }
   for (const key of DEMO_ACCOUNTS) {
     const account = settings.accounts[key];
@@ -45,44 +55,78 @@ export async function bootstrapDemoAccounts(pool, settings, passwords, { minPass
     prepared.push({ ...account, hash: await hashPassword(password) });
   }
   if (new Set(prepared.map(a => a.email)).size !== prepared.length) refuse('the three demo accounts need three different emails');
-  for (const p of personaHash ? personas : []) prepared.push({ key: p.demoKey, email: p.email, name: p.name, hash: personaHash, persona: true });
+  for (const p of personaHash ? personas : []) {
+    if (p.set) refuse('demo-bootstrap handles the global demo set only; use ensurePersonaAccounts for a named set');
+    prepared.push({ key: p.demoKey, email: p.email, name: p.name, hash: personaHash, persona: true });
+  }
   if (new Set(prepared.map(a => a.email)).size !== prepared.length) refuse('every demo account needs its own email');
   return withTransaction(pool, async c => {
     await c.query("SET LOCAL ads.demo_maintenance = 'on'");
     const out = [];
-    for (const a of prepared) {
-      let row = (await c.query('SELECT id FROM platform.users WHERE demo_key=$1 FOR UPDATE', [a.key])).rows[0];
-      const byEmail = (await c.query('SELECT id, is_demo, demo_key FROM platform.users WHERE email=$1 FOR UPDATE', [a.email])).rows[0];
-      if (byEmail && !byEmail.is_demo) refuse(`${a.email} belongs to a real account; demo accounts never take over real ones`);
-      if (byEmail && row && byEmail.id !== row.id) refuse(`${a.email} is already used by another demo account`);
-      row ??= byEmail;
-      let created = false;
-      if (row) {
-        // locale back to 'en': a shared demo account keeps no language between testers.
-        await c.query(`UPDATE platform.users SET email=$2, password_hash=$3, status='active', email_verified_at=coalesce(email_verified_at, now()),
-          display_name=$4, is_demo=true, demo_key=$5, locale='en', updated_at=now() WHERE id=$1`, [row.id, a.email, a.hash, a.name, a.key]);
-      } else {
-        row = { id: crypto.randomUUID() };
-        created = true;
-        await c.query(`INSERT INTO platform.users(id,email,password_hash,status,email_verified_at,display_name,locale,is_demo,demo_key)
-          VALUES ($1,$2,$3,'active',now(),$4,'en',true,$5)`, [row.id, a.email, a.hash, a.name, a.key]);
-      }
-      // No activation or reset links stay open for a demo account.
-      await c.query('UPDATE platform.email_tokens SET used_at=now() WHERE user_id=$1 AND used_at IS NULL', [row.id]);
-      await audit(c, 'demo_account_bootstrap', { userId: row.id, metadata: { demo_key: a.key, created } });
-      out.push({ key: a.key, email: a.email, userId: row.id, created, persona: Boolean(a.persona) });
-    }
-    if (personaHash) {
-      // Personas removed from the list: disabled and signed out (their rows stay for the audit trail).
-      const keep = personas.map(p => p.demoKey);
-      const gone = (await c.query(`UPDATE platform.users SET status='disabled', updated_at=now()
-        WHERE is_demo AND demo_key LIKE 'persona:%' AND NOT (demo_key = ANY($1::text[])) AND status<>'disabled' RETURNING id`, [keep])).rows.map(r => r.id);
-      if (gone.length) {
-        await c.query('UPDATE platform.sso_sessions SET revoked_at=now() WHERE user_id = ANY($1::uuid[]) AND revoked_at IS NULL', [gone]);
-        await c.query('UPDATE platform.refresh_tokens SET revoked_at=now() WHERE user_id = ANY($1::uuid[]) AND revoked_at IS NULL', [gone]);
-        await c.query('DELETE FROM platform.demo_personas WHERE user_id = ANY($1::uuid[])', [gone]);
-      }
-    }
+    for (const a of prepared) out.push(await upsertDemoAccount(c, a));
+    if (personaHash) await disableStalePersonas(c, personas.map(p => p.demoKey), null);
+    return out;
+  });
+}
+
+// One shared (shown) persona password: one hash serves every persona account of a set.
+async function personaPasswordHash(settings, password, minPasswordLength) {
+  if (!password) refuse(`missing ${settings.personaPasswordVar} (or ${settings.personaPasswordVar}_FILE)`);
+  const weak = checkPasswordStrength(password, minPasswordLength);
+  if (weak) refuse(`${settings.personaPasswordVar} is not accepted (${weak})`);
+  return hashPassword(password);
+}
+
+// Creates or refreshes one demo account (inside a transaction with ads.demo_maintenance on).
+// a: { key (demo_key), email, name, hash, persona? }.
+async function upsertDemoAccount(c, a) {
+  let row = (await c.query('SELECT id FROM platform.users WHERE demo_key=$1 FOR UPDATE', [a.key])).rows[0];
+  const byEmail = (await c.query('SELECT id, is_demo, demo_key FROM platform.users WHERE email=$1 FOR UPDATE', [a.email])).rows[0];
+  if (byEmail && !byEmail.is_demo) refuse(`${a.email} belongs to a real account; demo accounts never take over real ones`);
+  if (byEmail && row && byEmail.id !== row.id) refuse(`${a.email} is already used by another demo account`);
+  row ??= byEmail;
+  let created = false;
+  if (row) {
+    // locale back to 'en': a shared demo account keeps no language between testers.
+    await c.query(`UPDATE platform.users SET email=$2, password_hash=$3, status='active', email_verified_at=coalesce(email_verified_at, now()),
+      display_name=$4, is_demo=true, demo_key=$5, locale='en', updated_at=now() WHERE id=$1`, [row.id, a.email, a.hash, a.name, a.key]);
+  } else {
+    row = { id: crypto.randomUUID() };
+    created = true;
+    await c.query(`INSERT INTO platform.users(id,email,password_hash,status,email_verified_at,display_name,locale,is_demo,demo_key)
+      VALUES ($1,$2,$3,'active',now(),$4,'en',true,$5)`, [row.id, a.email, a.hash, a.name, a.key]);
+  }
+  // No activation or reset links stay open for a demo account.
+  await c.query('UPDATE platform.email_tokens SET used_at=now() WHERE user_id=$1 AND used_at IS NULL', [row.id]);
+  await audit(c, 'demo_account_bootstrap', { userId: row.id, metadata: { demo_key: a.key, created } });
+  return { key: a.key, email: a.email, userId: row.id, created, persona: Boolean(a.persona) };
+}
+
+// Personas of one set no longer in its list: disabled and signed out (their rows stay for the audit trail).
+async function disableStalePersonas(c, keep, set) {
+  const gone = (await c.query(`UPDATE platform.users SET status='disabled', updated_at=now()
+    WHERE is_demo AND demo_key ~ $2 AND NOT (demo_key = ANY($1::text[])) AND status<>'disabled' RETURNING id`, [keep, personaKeyPattern(set)])).rows.map(r => r.id);
+  if (gone.length) {
+    await c.query('UPDATE platform.sso_sessions SET revoked_at=now() WHERE user_id = ANY($1::uuid[]) AND revoked_at IS NULL', [gone]);
+    await c.query('UPDATE platform.refresh_tokens SET revoked_at=now() WHERE user_id = ANY($1::uuid[]) AND revoked_at IS NULL', [gone]);
+    await c.query('DELETE FROM platform.demo_personas WHERE user_id = ANY($1::uuid[])', [gone]);
+  }
+  return gone;
+}
+
+// Creates or refreshes the persona accounts of one demo set (from personaAccounts(..., { set })), all
+// with one password, and disables that set's personas no longer listed. Reusable building block for a
+// named set (a per-tester sandbox); the global set goes through bootstrapDemoAccounts.
+export async function ensurePersonaAccounts(pool, settings, personas, password, { set = null, minPasswordLength = 10 } = {}) {
+  assertDemoMode(settings);
+  set = checkDemoSet(set);
+  if (personas.some(p => (p.set ?? null) !== set)) refuse('personas belong to another demo set');
+  const hash = await personaPasswordHash(settings, password, minPasswordLength);
+  return withTransaction(pool, async c => {
+    await c.query("SET LOCAL ads.demo_maintenance = 'on'");
+    const out = [];
+    for (const p of personas) out.push(await upsertDemoAccount(c, { key: p.demoKey, email: p.email, name: p.name, hash, persona: true }));
+    await disableStalePersonas(c, personas.map(p => p.demoKey), set);
     return out;
   });
 }
@@ -129,8 +173,10 @@ export function validatePersonas(personasDoc, clientsDoc) {
   return personasDoc;
 }
 
-// The persona accounts to create, in file order: { slug, clientId, key, demoKey, email, name, label, hint, org, roles, position }.
-export function personaAccounts(settings, personasDoc, clientsDoc) {
+// The persona accounts to create, in file order: { set, slug, clientId, key, demoKey, email, name, label, hint, org, roles, position }.
+// opts.set: a named demo set (sandbox id); null is the global demo set.
+export function personaAccounts(settings, personasDoc, clientsDoc, { set = null } = {}) {
+  set = checkDemoSet(set);
   if (!personasDoc) return [];
   validateClientList(clientsDoc);
   validatePersonas(personasDoc, clientsDoc);
@@ -138,7 +184,8 @@ export function personaAccounts(settings, personasDoc, clientsDoc) {
   const out = [];
   for (const [slug, entry] of Object.entries(personasDoc.products)) {
     entry.personas.forEach((p, position) => out.push({
-      slug, clientId: bySlug.get(slug).client_id, key: p.key, demoKey: `persona:${slug}:${p.key}`, email: settings.personaEmail(slug, p.key),
+      set, slug, clientId: bySlug.get(slug).client_id, key: p.key, demoKey: `persona:${setPrefix(set)}${slug}:${p.key}`,
+      email: settings.personaEmail(set ? `${set}.${slug}` : slug, p.key),
       name: `${p.label.en} (demo)`, label: { en: p.label.en, fr: p.label.fr }, hint: p.hint ? { en: p.hint.en, fr: p.hint.fr } : {}, org: p.org, roles: [...p.roles], position,
     }));
   }
@@ -180,12 +227,21 @@ export function validateClientList(doc) {
 // every listed role. Each demo persona (opts.personas, from personaAccounts()) whose account exists
 // becomes a member of exactly its one organisation (or keeps only its personal workspace) with exactly
 // its roles. Returns the product -> tenant ids (and persona) map for the products' settings and seeds.
-export async function ensureDemoOrgs(pool, settings, doc, { personas = [] } = {}) {
+//
+// opts.set: a named demo set (e.g. a per-tester sandbox id) gets its own organisations ('<set>/<slug>:<org>',
+// names suffixed with the set id) owned by opts.ownerId (that tester), and only that set's personas; the
+// shared demo user, checker and admin are not added. Null (default) is the global demo set.
+export async function ensureDemoOrgs(pool, settings, doc, { personas = [], set = null, ownerId = null } = {}) {
   assertDemoMode(settings);
   validateClientList(doc);
+  set = checkDemoSet(set);
+  if (personas.some(p => (p.set ?? null) !== set)) refuse('personas belong to another demo set');
+  if (set && !ownerId) refuse('a named demo set needs ownerId');
   return withTransaction(pool, async c => {
-    const ids = await demoAccountIds(c);
-    const personaIds = Object.fromEntries((await c.query("SELECT id, demo_key FROM platform.users WHERE is_demo AND status='active' AND demo_key LIKE 'persona:%'")).rows.map(r => [r.demo_key, r.id]));
+    // Global set: the three shared accounts (owner = demo admin). Named set: only its owner.
+    const ids = set ? { admin: ownerId } : await demoAccountIds(c);
+    const shared = set ? [] : ['user', 'user2'];
+    const personaIds = Object.fromEntries((await c.query("SELECT id, demo_key FROM platform.users WHERE is_demo AND status='active' AND demo_key ~ $1", [personaKeyPattern(set)])).rows.map(r => [r.demo_key, r.id]));
     const registered = new Set((await c.query('SELECT client_id FROM platform.oauth_clients')).rows.map(r => r.client_id));
     const missing = doc.products.filter(p => !registered.has(p.client_id)).map(p => p.client_id);
     if (missing.length) refuse(`clients not registered (run apply-clients first): ${missing.join(', ')}`);
@@ -193,21 +249,22 @@ export async function ensureDemoOrgs(pool, settings, doc, { personas = [] } = {}
     for (const p of doc.products) {
       const entry = { client_id: p.client_id, tenants: {}, staff_tenants: [], settings: {}, operator_setup: p.operator_setup ?? [] };
       for (const o of p.demo_orgs) {
-        const key = `${p.slug ?? p.client_id}:${o.key}`;
+        const key = `${setPrefix(set)}${p.slug ?? p.client_id}:${o.key}`;
+        const name = set ? `${o.name} [${set}]` : o.name;
         let org = (await c.query('SELECT id FROM platform.organizations WHERE demo_key=$1 FOR UPDATE', [key])).rows[0];
         let tenantId;
         if (org) {
-          await c.query("UPDATE platform.organizations SET name=$2, is_demo=true, is_staff=$3, status='active' WHERE id=$1", [org.id, o.name, Boolean(o.staff)]);
+          await c.query("UPDATE platform.organizations SET name=$2, is_demo=true, is_staff=$3, status='active' WHERE id=$1", [org.id, name, Boolean(o.staff)]);
           tenantId = (await c.query('SELECT id FROM platform.tenants WHERE organization_id=$1 ORDER BY created_at LIMIT 1', [org.id])).rows[0]?.id;
-          if (tenantId) await c.query("UPDATE platform.tenants SET status='active', name=$2 WHERE id=$1", [tenantId, o.name]);
+          if (tenantId) await c.query("UPDATE platform.tenants SET status='active', name=$2 WHERE id=$1", [tenantId, name]);
         } else {
           org = { id: crypto.randomUUID() };
           await c.query("INSERT INTO platform.organizations(id,name,slug,kind,is_demo,is_staff,demo_key) VALUES ($1,$2,$3,'organization',true,$4,$5)",
-            [org.id, o.name, `demo-${key.replace(/[^a-z0-9]+/g, '-')}`, Boolean(o.staff), key]);
+            [org.id, name, `demo-${key.replace(/[^a-z0-9]+/g, '-')}`, Boolean(o.staff), key]);
         }
         if (!tenantId) {
           tenantId = crypto.randomUUID();
-          await c.query('INSERT INTO platform.tenants(id,organization_id,name) VALUES ($1,$2,$3)', [tenantId, org.id, o.name]);
+          await c.query('INSERT INTO platform.tenants(id,organization_id,name) VALUES ($1,$2,$3)', [tenantId, org.id, name]);
         }
         const upsertMember = (userId, role) => c.query(`INSERT INTO platform.memberships(user_id,tenant_id,role,scopes) VALUES ($1,$2,$3,'{}')
           ON CONFLICT (user_id,tenant_id) DO UPDATE SET role=EXCLUDED.role, status='active'`, [userId, tenantId, role]);
@@ -218,11 +275,11 @@ export async function ensureDemoOrgs(pool, settings, doc, { personas = [] } = {}
           [userId, tenantId, p.client_id, roles, ids.admin]);
         };
         await upsertMember(ids.admin, 'owner');
-        await upsertMember(ids.user, 'member');
-        await upsertMember(ids.user2, 'member');
         await setRoles(ids.admin, [...new Set(p.admin_roles ?? [])]);
-        await setRoles(ids.user, [...new Set(o.roles)]);
-        await setRoles(ids.user2, [...new Set(o.roles)]);
+        for (const k of shared) {
+          await upsertMember(ids[k], 'member');
+          await setRoles(ids[k], [...new Set(o.roles)]);
+        }
         // A demo organisation serves one product: the demo accounts hold no other product's roles there.
         await c.query('DELETE FROM platform.product_roles WHERE tenant_id=$1 AND client_id<>$2 AND user_id = ANY($3::uuid[])', [tenantId, p.client_id, [...Object.values(ids), ...Object.values(personaIds)]]);
         entry.tenants[o.key] = tenantId;
@@ -233,45 +290,58 @@ export async function ensureDemoOrgs(pool, settings, doc, { personas = [] } = {}
       map[p.slug ?? p.client_id] = entry;
     }
 
-    // Personas: exactly one workspace each, exactly their roles there.
-    const placed = [];
-    for (const persona of personas) {
-      const entry = map[persona.slug];
-      const userId = personaIds[persona.demoKey];
-      if (!entry || !userId) continue;
-      let tenantId;
-      if (persona.org === 'personal') {
-        tenantId = await ensurePersonalWorkspace(c, userId, persona.email);
-        await c.query('DELETE FROM platform.product_roles WHERE user_id=$1 AND tenant_id=$2', [userId, tenantId]);
-      } else {
-        tenantId = entry.tenants[persona.org];
-        await c.query(`INSERT INTO platform.memberships(user_id,tenant_id,role,scopes) VALUES ($1,$2,'member','{}')
-          ON CONFLICT (user_id,tenant_id) DO UPDATE SET role='member', scopes='{}', status='active'`, [userId, tenantId]);
-        await c.query(`INSERT INTO platform.product_roles(user_id,tenant_id,client_id,roles,granted_by) VALUES ($1,$2,$3,$4,$5)
-          ON CONFLICT (user_id,tenant_id,client_id) DO UPDATE SET roles=EXCLUDED.roles, granted_by=EXCLUDED.granted_by, updated_at=now()`,
-        [userId, tenantId, persona.clientId, persona.roles, ids.admin]);
-        await c.query('DELETE FROM platform.product_roles WHERE user_id=$1 AND tenant_id=$2 AND client_id<>$3', [userId, tenantId, persona.clientId]);
-      }
-      // Nothing anywhere else (other demo organisations, organisations joined by invitation).
-      await c.query('DELETE FROM platform.product_roles WHERE user_id=$1 AND tenant_id<>$2', [userId, tenantId]);
-      await c.query('DELETE FROM platform.memberships WHERE user_id=$1 AND tenant_id<>$2', [userId, tenantId]);
-      await c.query(`INSERT INTO platform.demo_personas(user_id,client_id,product_slug,persona_key,org_key,tenant_id,roles,label,hint,position)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9::jsonb,$10)
-        ON CONFLICT (user_id) DO UPDATE SET client_id=EXCLUDED.client_id, product_slug=EXCLUDED.product_slug, persona_key=EXCLUDED.persona_key, org_key=EXCLUDED.org_key,
-          tenant_id=EXCLUDED.tenant_id, roles=EXCLUDED.roles, label=EXCLUDED.label, hint=EXCLUDED.hint, position=EXCLUDED.position`,
-      [userId, persona.clientId, persona.slug, persona.key, persona.org, tenantId, persona.roles, JSON.stringify(persona.label), JSON.stringify(persona.hint), persona.position]);
-      placed.push(userId);
-      entry.personas[persona.key] = { sub: userId, email: persona.email, org: persona.org, tenant_id: tenantId, roles: persona.roles, label: persona.label };
-    }
-    // The sign-in page lists only personas placed now; persona accounts not placed now (removed from
-    // the file, or disabled) hold no workspace at all.
-    await c.query('DELETE FROM platform.demo_personas WHERE NOT (user_id = ANY($1::uuid[]))', [placed]);
-    const unplaced = `SELECT id FROM platform.users WHERE is_demo AND demo_key LIKE 'persona:%' AND NOT (id = ANY($1::uuid[]))`;
-    await c.query(`DELETE FROM platform.product_roles WHERE user_id IN (${unplaced})`, [placed]);
-    await c.query(`DELETE FROM platform.memberships WHERE user_id IN (${unplaced})`, [placed]);
-    await audit(c, 'demo_orgs_ensured', { metadata: { products: Object.keys(map).length, personas: placed.length } });
+    const placed = await placePersonas(c, personas, map, { set, personaIds, grantedBy: ids.admin });
+    await audit(c, 'demo_orgs_ensured', { metadata: { set, products: Object.keys(map).length, personas: placed.length } });
     return map;
   });
+}
+
+// Places the personas of one demo set: each becomes a member of exactly its one organisation of that set
+// (map: product slug -> { tenants: { <org key>: tenant id }, personas: {} }, as ensureDemoOrgs builds it)
+// or keeps only its personal workspace, with exactly its roles; records them for the sign-in page; and
+// strips every workspace from that set's persona accounts not placed now. Fills map[slug].personas.
+// Returns the placed user ids. Runs inside the caller's transaction (c).
+export async function placePersonas(c, personas, map, { set = null, personaIds = null, grantedBy = null } = {}) {
+  set = checkDemoSet(set);
+  personaIds ??= Object.fromEntries((await c.query("SELECT id, demo_key FROM platform.users WHERE is_demo AND status='active' AND demo_key ~ $1", [personaKeyPattern(set)])).rows.map(r => [r.demo_key, r.id]));
+  const demoSet = set ?? '';
+  // Personas: exactly one workspace each, exactly their roles there.
+  const placed = [];
+  for (const persona of personas) {
+    const entry = map[persona.slug];
+    const userId = personaIds[persona.demoKey];
+    if (!entry || !userId) continue;
+    let tenantId;
+    if (persona.org === 'personal') {
+      tenantId = await ensurePersonalWorkspace(c, userId, persona.email);
+      await c.query('DELETE FROM platform.product_roles WHERE user_id=$1 AND tenant_id=$2', [userId, tenantId]);
+    } else {
+      tenantId = entry.tenants[persona.org];
+      await c.query(`INSERT INTO platform.memberships(user_id,tenant_id,role,scopes) VALUES ($1,$2,'member','{}')
+        ON CONFLICT (user_id,tenant_id) DO UPDATE SET role='member', scopes='{}', status='active'`, [userId, tenantId]);
+      await c.query(`INSERT INTO platform.product_roles(user_id,tenant_id,client_id,roles,granted_by) VALUES ($1,$2,$3,$4,$5)
+        ON CONFLICT (user_id,tenant_id,client_id) DO UPDATE SET roles=EXCLUDED.roles, granted_by=EXCLUDED.granted_by, updated_at=now()`,
+      [userId, tenantId, persona.clientId, persona.roles, grantedBy]);
+      await c.query('DELETE FROM platform.product_roles WHERE user_id=$1 AND tenant_id=$2 AND client_id<>$3', [userId, tenantId, persona.clientId]);
+    }
+    // Nothing anywhere else (other demo organisations, organisations joined by invitation).
+    await c.query('DELETE FROM platform.product_roles WHERE user_id=$1 AND tenant_id<>$2', [userId, tenantId]);
+    await c.query('DELETE FROM platform.memberships WHERE user_id=$1 AND tenant_id<>$2', [userId, tenantId]);
+    await c.query(`INSERT INTO platform.demo_personas(user_id,demo_set,client_id,product_slug,persona_key,org_key,tenant_id,roles,label,hint,position)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11)
+      ON CONFLICT (user_id) DO UPDATE SET demo_set=EXCLUDED.demo_set, client_id=EXCLUDED.client_id, product_slug=EXCLUDED.product_slug, persona_key=EXCLUDED.persona_key, org_key=EXCLUDED.org_key,
+        tenant_id=EXCLUDED.tenant_id, roles=EXCLUDED.roles, label=EXCLUDED.label, hint=EXCLUDED.hint, position=EXCLUDED.position`,
+    [userId, demoSet, persona.clientId, persona.slug, persona.key, persona.org, tenantId, persona.roles, JSON.stringify(persona.label), JSON.stringify(persona.hint), persona.position]);
+    placed.push(userId);
+    entry.personas[persona.key] = { sub: userId, email: persona.email, org: persona.org, tenant_id: tenantId, roles: persona.roles, label: persona.label };
+  }
+  // The sign-in page lists only personas placed now; persona accounts not placed now (removed from
+  // the file, or disabled) hold no workspace at all.
+  await c.query('DELETE FROM platform.demo_personas WHERE demo_set=$2 AND NOT (user_id = ANY($1::uuid[]))', [placed, demoSet]);
+  const unplaced = 'SELECT id FROM platform.users WHERE is_demo AND demo_key ~ $2 AND NOT (id = ANY($1::uuid[]))';
+  await c.query(`DELETE FROM platform.product_roles WHERE user_id IN (${unplaced})`, [placed, personaKeyPattern(set)]);
+  await c.query(`DELETE FROM platform.memberships WHERE user_id IN (${unplaced})`, [placed, personaKeyPattern(set)]);
+  return placed;
 }
 
 // A persona's own personal workspace (same shape as the one oauth creates at first sign-in), so seeds
@@ -313,8 +383,9 @@ export async function resetDemo(pool, settings, passwords, doc, opts = {}) {
   const accounts = await bootstrapDemoAccounts(pool, settings, passwords, opts);
   const cleaned = await withTransaction(pool, async c => {
     await demoAccountIds(c);
-    // Every demo account, personas included (also disabled ones: their sign-ins end too).
-    const ids = (await c.query('SELECT id FROM platform.users WHERE is_demo')).rows.map(r => r.id);
+    // Every account of the global demo set, personas included (also disabled ones: their sign-ins end
+    // too). Named sets (sandboxes) are left alone.
+    const ids = (await c.query("SELECT id FROM platform.users WHERE is_demo AND (demo_key IN ('user','user2','admin') OR demo_key ~ $1)", [personaKeyPattern(null)])).rows.map(r => r.id);
     const n = {};
     n.ssoSessions = (await c.query('UPDATE platform.sso_sessions SET revoked_at=now() WHERE user_id = ANY($1::uuid[]) AND revoked_at IS NULL', [ids])).rowCount;
     n.refreshTokens = (await c.query('UPDATE platform.refresh_tokens SET revoked_at=now() WHERE user_id = ANY($1::uuid[]) AND revoked_at IS NULL', [ids])).rowCount;
@@ -324,7 +395,7 @@ export async function resetDemo(pool, settings, passwords, doc, opts = {}) {
     await c.query(`DELETE FROM platform.product_roles WHERE user_id = ANY($1::uuid[]) AND tenant_id IN (${foreign})`, [ids]);
     n.foreignMemberships = (await c.query(`DELETE FROM platform.memberships WHERE user_id = ANY($1::uuid[]) AND tenant_id IN (${foreign})`, [ids])).rowCount;
     // Demo organisations hold only the demo accounts.
-    const demoTenants = "SELECT t.id FROM platform.tenants t JOIN platform.organizations o ON o.id=t.organization_id WHERE o.is_demo";
+    const demoTenants = "SELECT t.id FROM platform.tenants t JOIN platform.organizations o ON o.id=t.organization_id WHERE o.is_demo AND o.demo_key NOT LIKE '%/%'";
     await c.query(`DELETE FROM platform.product_roles WHERE NOT (user_id = ANY($1::uuid[])) AND tenant_id IN (${demoTenants})`, [ids]);
     n.outsiders = (await c.query(`DELETE FROM platform.memberships WHERE NOT (user_id = ANY($1::uuid[])) AND tenant_id IN (${demoTenants})`, [ids])).rowCount;
     n.invitations = (await c.query(`UPDATE platform.invitations SET revoked_at=now() WHERE accepted_at IS NULL AND revoked_at IS NULL AND tenant_id IN (${demoTenants})`)).rowCount;

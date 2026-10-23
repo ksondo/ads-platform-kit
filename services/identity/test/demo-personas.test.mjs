@@ -8,9 +8,9 @@ import { fileURLToPath } from 'node:url';
 import { after, before, describe, it } from 'node:test';
 import { JSDOM } from 'jsdom';
 import { demoSettings, loadConfig } from '../src/config.mjs';
-import { bootstrapDemoAccounts, ensureDemoOrgs, personaAccounts, validatePersonas } from '../src/demo.mjs';
+import { bootstrapDemoAccounts, ensureDemoOrgs, ensurePersonaAccounts, personaAccounts, validatePersonas } from '../src/demo.mjs';
 import { langOf } from '../src/pages.mjs';
-import { DATABASE_URL, browser, csrfFrom, reqFrom, signInTokens, startService } from './helpers.mjs';
+import { DATABASE_URL, browser, createActiveUser, csrfFrom, reqFrom, signInTokens, startService } from './helpers.mjs';
 
 // BRIEF16 demo personas: single-job demo accounts per product, the persona picker on the demo sign-in
 // page, and the sign-in language that never sticks to a shared demo account.
@@ -253,6 +253,37 @@ describe('demo personas: bootstrap, organisations, reset, sign-in page and langu
     const back = node(cli, ['demo-reset', '--out', path.join(dir, 'back.json')], DEMO);
     assert.equal(back.status, 0, back.stderr);
     assert.equal((await svc.pool.query('SELECT status FROM platform.users WHERE id=$1', [accountant.sub])).rows[0].status, 'active');
+  });
+
+  it('a named demo set (future per-tester sandbox) gets its own organisations and personas, untouched by the global reset', async () => {
+    const set = 'sbx-test1';
+    const tester = await createActiveUser(svc.pool, `tester-${hex()}@example.cm`, `Tester-Pass-${hex()}`);
+    const doc = { ...clients, products: clients.products.filter(p => p.slug === 'commerce') };
+    const mine = personaAccounts(settings(), { products: { commerce: personasDoc.products.commerce } }, doc, { set });
+    assert.ok(mine.every(p => p.demoKey.startsWith(`persona:${set}/commerce:`) && p.email.startsWith(`demo.${set}.commerce.`)));
+    await assert.rejects(ensureDemoOrgs(svc.pool, settings(), doc, { personas: mine }), /another demo set/);
+    await assert.rejects(ensureDemoOrgs(svc.pool, settings(), doc, { personas: mine, set }), /needs ownerId/);
+    await ensurePersonaAccounts(svc.pool, settings(), mine, PW.persona, { set });
+    const map = await ensureDemoOrgs(svc.pool, settings(), doc, { personas: mine, set, ownerId: tester.id });
+    assert.notEqual(map.commerce.tenants.main, tenants.products.commerce.tenants.main, 'its own organisations');
+    const owner = (await svc.pool.query('SELECT role FROM platform.memberships WHERE user_id=$1 AND tenant_id=$2', [tester.id, map.commerce.tenants.main])).rows[0];
+    assert.equal(owner.role, 'owner');
+    const shared = (await svc.pool.query("SELECT count(*)::int AS n FROM platform.memberships m JOIN platform.users u ON u.id=m.user_id WHERE m.tenant_id=$1 AND u.demo_key IN ('user','user2','admin')", [map.commerce.tenants.main])).rows[0].n;
+    assert.equal(shared, 0, 'the shared demo accounts are not in a named set');
+    const cashier = map.commerce.personas.cashier;
+    assert.notEqual(cashier.sub, tenants.products.commerce.personas.cashier.sub);
+    assert.deepEqual(decode((await signInTokens(svc, clientOf('commerce'), { email: cashier.email, password: PW.persona })).access_token).roles, ['commerce_cashier']);
+    // The global nightly reset leaves the named set alone, and the global set keeps its personas.
+    const r = node(cli, ['demo-reset', '--out', path.join(dir, 'after-set.json')], DEMO);
+    assert.equal(r.status, 0, r.stderr);
+    const stillOwner = (await svc.pool.query('SELECT role FROM platform.memberships WHERE user_id=$1 AND tenant_id=$2', [tester.id, map.commerce.tenants.main])).rows[0];
+    assert.equal(stillOwner?.role, 'owner');
+    assert.deepEqual((await svc.pool.query('SELECT tenant_id, roles FROM platform.product_roles WHERE user_id=$1', [cashier.sub])).rows, [{ tenant_id: map.commerce.tenants.main, roles: ['commerce_cashier'] }]);
+    assert.equal((await svc.pool.query('SELECT status FROM platform.users WHERE id=$1', [cashier.sub])).rows[0].status, 'active');
+    assert.deepEqual(JSON.parse(readFileSync(path.join(dir, 'after-set.json'), 'utf8')).personas, tenants.personas);
+    // The global sign-in page never lists a named set's personas.
+    const { page } = await productLogin(svc, 'commerce');
+    assert.ok(!page.text.includes(cashier.email));
   });
 
   it('the sign-in page shows the personas of the product the tester came from, in English, with "Use this account"', async () => {

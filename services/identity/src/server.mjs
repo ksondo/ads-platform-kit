@@ -152,7 +152,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     if (hit && Date.now() - hit.at < 30_000) return hit.value;
     const list = (await pool.query(`SELECT p.persona_key AS key, p.label, p.hint, u.email FROM platform.demo_personas p
       JOIN platform.users u ON u.id=p.user_id AND u.is_demo AND u.status='active'
-      WHERE p.client_id=$1 ORDER BY p.position, p.persona_key`, [clientId])).rows;
+      WHERE p.client_id=$1 AND p.demo_set='' ORDER BY p.position, p.persona_key`, [clientId])).rows;
     const value = list.length ? { password: config.demo.shownPersonaPassword, list } : null;
     personaCache.set(clientId, { at: Date.now(), value });
     return value;

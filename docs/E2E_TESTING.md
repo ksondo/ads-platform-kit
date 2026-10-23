@@ -207,9 +207,10 @@ Playwright helpers (`@ads/e2e-kit/playwright`, no Playwright import of their own
 
 | Helper | Does |
 | --- | --- |
-| `signIn(page, { email, password, startUrl?, button?, tenantId? })` | Triggers `adsIdentity.signIn()` (or clicks your button), fills the hosted login page (skipped when the browser already has an ADS session), picks the workspace if asked, waits until the product page holds a token. Returns `{ accessToken, user }`. Throws `SignInError` with `code` `NO_ACCESS`, `LOGIN_FAILED` or `TIMEOUT`, so unhappy paths are testable |
+| `signIn(page, { email, password, startUrl?, button?, tenantId?, lang? })` | Triggers `adsIdentity.signIn()` (or clicks your button), fills the hosted login page (skipped when the browser already has an ADS session), picks the workspace if asked, waits until the product page holds a token. Returns `{ accessToken, user }`. Throws `SignInError` with `code` `NO_ACCESS`, `LOGIN_FAILED` or `TIMEOUT`, so unhappy paths are testable |
 | `expectSignedIn(page, { email?, tenantId?, roles? })` | Asserts a valid session and its claims |
 | `signOut(page)` / `expectSignedOut(page)` | Real sign-out (refresh token revoked, ADS session ended) |
+| `signInAsPersona(page, key, { startUrl?, button?, tenantId?, lang? })` | Demo environment (demo journeys, `DEMO_BASE_URL`): opens the hosted sign-in from the product (forcing the page, so personas can take turns in one browser), presses **Use this account** on the demo persona `key` (`config/demo-personas.json`) and Continue; no password in the test. Throws `SignInError` `NO_PERSONA` (lists the offered keys), `NO_ACCESS`, `LOGIN_FAILED` or `TIMEOUT` |
 | `acceptInvitation(page, { link, email, password, newAccount?, ads? })` | Opens the invitation, signs in (or with `newAccount: true` registers, activates from the email and comes back), clicks Accept. Throws `SignInError` `INVITATION_INVALID`, `WRONG_ACCOUNT` or `LOGIN_FAILED` |
 | `withAds(test)` | Adds the `ads` fixture (connected harness, cleaned up after each test) |
 
