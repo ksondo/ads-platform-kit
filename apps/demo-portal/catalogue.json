@@ -19,7 +19,7 @@
       "summary": "Business and trade solutions for African markets",
       "image": "photo-1556742049-0cfed4f6a45d",
       "icon": "🛒",
-      "demoUrl": null,
+      "demoUrl": "https://commerce.demo.africadigitalsynergy.com/commerce",
       "featured": true
     },
     {
@@ -91,7 +91,7 @@
       "summary": "Online stores, product catalogues, orders and checkout",
       "model": "Operate an online marketplace, a branded store, or managed merchant storefronts",
       "image": "photo-1556742049-0cfed4f6a45d",
-      "demoUrl": null,
+      "demoUrl": "https://commerce.demo.africadigitalsynergy.com/commerce",
       "independentDemo": true
     },
     {
@@ -101,7 +101,7 @@
       "summary": "Retail sales, cashier operations, inventory and receipts",
       "model": "Offer POS-as-a-service to stores or manage your own retail operation",
       "image": "photo-1556742502-ec7c0e9f34b1",
-      "demoUrl": null,
+      "demoUrl": "https://commerce.demo.africadigitalsynergy.com/commerce/merchant/pos",
       "independentDemo": true
     },
     {
