@@ -42,7 +42,8 @@ test("public portal does not expose passwords or claim unverified deployments",(
   assert.ok(!text.includes("DEMO_USER_PASSWORD")&&!text.includes("DEMO_ADMIN_PASSWORD"));
 });
 test("demo sign-in guide never creates a duplicate login form",()=>{
-  const js=readFileSync(new URL("../main.js",import.meta.url),"utf8");
+  const js=readFileSync(new URL("../main.js",import.meta.url),"utf8")
+    .replace(/^import \* as ADSOpportunities[^\n]*\n/m, ""); // VM tests legacy guide without loading other modules
   const fake={
     document:{getElementById:()=>({innerHTML:""}),documentElement:{}},
     localStorage:{getItem:()=>null},

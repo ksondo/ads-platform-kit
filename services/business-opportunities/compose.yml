@@ -1,0 +1,20 @@
+# API only. Database is a separately provisioned, isolated PostgreSQL database.
+# Do not attach this container to Commerce or Identity networks.
+name: ads-business-opportunities
+services:
+  public-read-api:
+    build:
+      context: ../..
+      dockerfile: services/business-opportunities/Dockerfile
+    container_name: ads-business-opportunities-api
+    restart: unless-stopped
+    env_file:
+      - /etc/ads-demo/opportunities-api.env
+    ports:
+      - "127.0.0.1:18090:31090"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+    mem_limit: 256m

@@ -1,0 +1,2795 @@
+{
+  "schemaVersion": 1,
+  "source": "ADS proposed opportunity catalogue. Content-only non-sensitive summaries.",
+  "families": [
+    {
+      "id": "business",
+      "name_en": "Business Sectors"
+    },
+    {
+      "id": "institutional",
+      "name_en": "Institutional & Regulatory Services"
+    }
+  ],
+  "categories": [
+    {
+      "id": "business-agriculture",
+      "family": "business",
+      "name_en": "Agriculture & Livestock",
+      "sectorIds": [
+        "agriculture-crop-farming",
+        "livestock-poultry"
+      ]
+    },
+    {
+      "id": "business-processing",
+      "family": "business",
+      "name_en": "Processing & Manufacturing",
+      "sectorIds": [
+        "food-agricultural-processing",
+        "wood-forest-processing",
+        "animal-products-processing",
+        "industrial-manufacturing",
+        "mineral-processing",
+        "recycling-circular-economy"
+      ]
+    },
+    {
+      "id": "business-commerce",
+      "family": "business",
+      "name_en": "Retail, Wholesale & Food",
+      "sectorIds": [
+        "retail-neighborhood-shops",
+        "wholesale-distribution",
+        "e-commerce-marketplaces",
+        "food-service-restaurants",
+        "pharmacies-medical-retail"
+      ]
+    },
+    {
+      "id": "business-construction",
+      "family": "business",
+      "name_en": "Construction & Property",
+      "sectorIds": [
+        "construction-contractors",
+        "real-estate-property"
+      ]
+    },
+    {
+      "id": "business-mobility",
+      "family": "business",
+      "name_en": "Transport & Logistics",
+      "sectorIds": [
+        "passenger-transport",
+        "logistics-courier-warehousing",
+        "fleet-services-equipment",
+        "car-sales-dealerships"
+      ]
+    },
+    {
+      "id": "business-tourism",
+      "family": "business",
+      "name_en": "Tourism, Events & Recreation",
+      "sectorIds": [
+        "tourism-hospitality",
+        "events-recreation-entertainment",
+        "sports-gyms-fitness"
+      ]
+    },
+    {
+      "id": "business-education",
+      "family": "business",
+      "name_en": "Education & Careers",
+      "sectorIds": [
+        "schools-education",
+        "training-certification",
+        "careers-employment-skills"
+      ]
+    },
+    {
+      "id": "business-health",
+      "family": "business",
+      "name_en": "Healthcare & Wellness",
+      "sectorIds": [
+        "healthcare-clinics",
+        "maternal-newborn-family-care",
+        "mental-wellness-counselling",
+        "nutrition-food-planning-dietetics"
+      ]
+    },
+    {
+      "id": "business-services",
+      "family": "business",
+      "name_en": "Personal & Professional Services",
+      "sectorIds": [
+        "home-domestic-services",
+        "beauty-personal-services",
+        "legal-professional-services",
+        "confidential-adult-matchmaking",
+        "family-heritage-ancestry",
+        "creative-industries-media"
+      ]
+    },
+    {
+      "id": "business-finance",
+      "family": "business",
+      "name_en": "Finance & Insurance",
+      "sectorIds": [
+        "banking-credit-facilitation",
+        "cooperatives-tontines",
+        "insurance-risk-services",
+        "personal-household-finance",
+        "investment-preparation-opportunities"
+      ]
+    },
+    {
+      "id": "business-communities",
+      "family": "business",
+      "name_en": "Communities & Nonprofits",
+      "sectorIds": [
+        "ngos-charities-social-projects",
+        "community-services-public-infrastructure",
+        "churches-faith-communities"
+      ]
+    },
+    {
+      "id": "business-technology",
+      "family": "business",
+      "name_en": "Technology & Enterprise",
+      "sectorIds": [
+        "software-it-services",
+        "cloud-managed-operations",
+        "business-formation-advisory",
+        "project-organizational-management",
+        "telecom-digital-communications",
+        "regulatory-compliance-service-providers"
+      ]
+    },
+    {
+      "id": "business-environment",
+      "family": "business",
+      "name_en": "Environment & Waste Services",
+      "sectorIds": [
+        "waste-collection-environmental-services"
+      ]
+    },
+    {
+      "id": "institutional-formalities",
+      "family": "institutional",
+      "name_en": "Business Formalities",
+      "sectorIds": []
+    },
+    {
+      "id": "institutional-tax",
+      "family": "institutional",
+      "name_en": "Tax & Fiscal Services",
+      "sectorIds": []
+    },
+    {
+      "id": "institutional-trade",
+      "family": "institutional",
+      "name_en": "Trade & Customs",
+      "sectorIds": []
+    },
+    {
+      "id": "institutional-banking",
+      "family": "institutional",
+      "name_en": "Banking & Payments",
+      "sectorIds": []
+    },
+    {
+      "id": "institutional-standards",
+      "family": "institutional",
+      "name_en": "Standards & Certification",
+      "sectorIds": []
+    },
+    {
+      "id": "institutional-licensing",
+      "family": "institutional",
+      "name_en": "Sector Licensing",
+      "sectorIds": []
+    },
+    {
+      "id": "institutional-insurance",
+      "family": "institutional",
+      "name_en": "Insurance & Risk",
+      "sectorIds": []
+    },
+    {
+      "id": "institutional-multiagency",
+      "family": "institutional",
+      "name_en": "Multi-Agency & Monitoring",
+      "sectorIds": []
+    }
+  ],
+  "solutions": [
+    {
+      "id": "sector-agriculture-crop-farming",
+      "family": "business",
+      "categoryId": "business-agriculture",
+      "sectorId": "agriculture-crop-farming",
+      "title": "Digital solutions for Agriculture & crop farming",
+      "summary": "Explore how Farm operations, Crop-cycle tracker, Farm inventory, Produce marketplace can work together in a digital solution for agriculture & crop farming.",
+      "tools": [
+        "Farm operations",
+        "Crop-cycle tracker",
+        "Farm inventory",
+        "Produce marketplace",
+        "Farm-to-buyer orders",
+        "QR provenance"
+      ],
+      "examples": [
+        "Maize grower",
+        "cocoa farm",
+        "vegetable producer"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-livestock-poultry",
+      "family": "business",
+      "categoryId": "business-agriculture",
+      "sectorId": "livestock-poultry",
+      "title": "Digital solutions for Livestock & poultry",
+      "summary": "Explore how Livestock batch tracker, Feeding and vaccination logs, Animal-product stock, Farm sales POS can work together in a digital solution for livestock & poultry.",
+      "tools": [
+        "Livestock batch tracker",
+        "Feeding and vaccination logs",
+        "Animal-product stock",
+        "Farm sales POS",
+        "Buyer ordering",
+        "Traceability"
+      ],
+      "examples": [
+        "Poultry farmer",
+        "cattle breeder",
+        "livestock cooperative"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-food-agricultural-processing",
+      "family": "business",
+      "categoryId": "business-processing",
+      "sectorId": "food-agricultural-processing",
+      "title": "Digital solutions for Food & agricultural processing",
+      "summary": "Explore how Processing ERP, Raw-material receiving, Production batches, Finished-goods inventory can work together in a digital solution for food & agricultural processing.",
+      "tools": [
+        "Processing ERP",
+        "Raw-material receiving",
+        "Production batches",
+        "Finished-goods inventory",
+        "E-commerce storefront",
+        "POS",
+        "Product traceability"
+      ],
+      "examples": [
+        "Cassava processor",
+        "cocoa processor",
+        "juice maker",
+        "miller"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-wood-forest-processing",
+      "family": "business",
+      "categoryId": "business-processing",
+      "sectorId": "wood-forest-processing",
+      "title": "Digital solutions for Wood & forest processing",
+      "summary": "Explore how Processing ERP, Timber input and yield tracking, Production job cards, Stock and warehousing can work together in a digital solution for wood & forest processing.",
+      "tools": [
+        "Processing ERP",
+        "Timber input and yield tracking",
+        "Production job cards",
+        "Stock and warehousing",
+        "E-commerce catalogue",
+        "Retail or trade POS",
+        "Shipment scheduling"
+      ],
+      "examples": [
+        "Sawmill",
+        "timber processor",
+        "furniture workshop",
+        "carpentry factory"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-animal-products-processing",
+      "family": "business",
+      "categoryId": "business-processing",
+      "sectorId": "animal-products-processing",
+      "title": "Digital solutions for Animal-products processing",
+      "summary": "Explore how Batch processing, Cold-chain records, Product packaging, Inventory and expiry tracking can work together in a digital solution for animal-products processing.",
+      "tools": [
+        "Batch processing",
+        "Cold-chain records",
+        "Product packaging",
+        "Inventory and expiry tracking",
+        "Wholesale ordering",
+        "POS",
+        "E-commerce"
+      ],
+      "examples": [
+        "Dairy plant",
+        "meat processor",
+        "feed mill"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-industrial-manufacturing",
+      "family": "business",
+      "categoryId": "business-processing",
+      "sectorId": "industrial-manufacturing",
+      "title": "Digital solutions for Industrial manufacturing",
+      "summary": "Explore how Manufacturing work orders, Bill of materials, Production scheduling, Quality checks can work together in a digital solution for industrial manufacturing.",
+      "tools": [
+        "Manufacturing work orders",
+        "Bill of materials",
+        "Production scheduling",
+        "Quality checks",
+        "Finished-goods stock",
+        "B2B e-commerce",
+        "POS"
+      ],
+      "examples": [
+        "Clothing factory",
+        "soap maker",
+        "metalworks",
+        "furniture manufacturer"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-mineral-processing",
+      "family": "business",
+      "categoryId": "business-processing",
+      "sectorId": "mineral-processing",
+      "title": "Digital solutions for Mineral processing",
+      "summary": "Explore how Batch/yield register, Materials stock, B2B sales catalogue, Order management can work together in a digital solution for mineral processing.",
+      "tools": [
+        "Batch/yield register",
+        "Materials stock",
+        "B2B sales catalogue",
+        "Order management",
+        "Dispatch",
+        "Sales POS",
+        "Compliance evidence"
+      ],
+      "examples": [
+        "Stone quarry",
+        "stone-cutting business",
+        "mineral processor"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-recycling-circular-economy",
+      "family": "business",
+      "categoryId": "business-processing",
+      "sectorId": "recycling-circular-economy",
+      "title": "Digital solutions for Recycling & circular economy",
+      "summary": "Explore how Materials collection registry, Processing batches, Recovered-material inventory, B2B marketplace can work together in a digital solution for recycling & circular economy.",
+      "tools": [
+        "Materials collection registry",
+        "Processing batches",
+        "Recovered-material inventory",
+        "B2B marketplace",
+        "POS",
+        "Pickup scheduling",
+        "Provenance"
+      ],
+      "examples": [
+        "Plastic recycler",
+        "paper processor",
+        "waste-to-products workshop"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-retail-neighborhood-shops",
+      "family": "business",
+      "categoryId": "business-commerce",
+      "sectorId": "retail-neighborhood-shops",
+      "title": "Digital solutions for Retail & neighborhood shops",
+      "summary": "Explore how Cash POS, Digital receipts, Product catalogue, Stock count can work together in a digital solution for retail & neighborhood shops.",
+      "tools": [
+        "Cash POS",
+        "Digital receipts",
+        "Product catalogue",
+        "Stock count",
+        "Online storefront",
+        "Customer orders",
+        "Merchant management"
+      ],
+      "examples": [
+        "Boutique",
+        "grocery",
+        "hardware shop",
+        "cosmetics shop"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-wholesale-distribution",
+      "family": "business",
+      "categoryId": "business-commerce",
+      "sectorId": "wholesale-distribution",
+      "title": "Digital solutions for Wholesale & distribution",
+      "summary": "Explore how B2B order portal, Pricing and catalogue, Multi-location inventory, Wholesale POS can work together in a digital solution for wholesale & distribution.",
+      "tools": [
+        "B2B order portal",
+        "Pricing and catalogue",
+        "Multi-location inventory",
+        "Wholesale POS",
+        "Dealer accounts",
+        "Delivery dispatch",
+        "Receivables records"
+      ],
+      "examples": [
+        "Import wholesaler",
+        "beverage distributor",
+        "building-material wholesaler"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-e-commerce-marketplaces",
+      "family": "business",
+      "categoryId": "business-commerce",
+      "sectorId": "e-commerce-marketplaces",
+      "title": "Digital solutions for E-commerce & marketplaces",
+      "summary": "Explore how Multi-merchant marketplace, Branded web shop, Product publishing, Order requests can work together in a digital solution for e-commerce & marketplaces.",
+      "tools": [
+        "Multi-merchant marketplace",
+        "Branded web shop",
+        "Product publishing",
+        "Order requests",
+        "Seller onboarding",
+        "POS link",
+        "Merchant digitalization service"
+      ],
+      "examples": [
+        "Online shop operator",
+        "marketplace partner",
+        "white-label store agency"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-food-service-restaurants",
+      "family": "business",
+      "categoryId": "business-commerce",
+      "sectorId": "food-service-restaurants",
+      "title": "Digital solutions for Food service & restaurants",
+      "summary": "Explore how Restaurant POS, Menu and online ordering, Reservation system, Kitchen order queue can work together in a digital solution for food service & restaurants.",
+      "tools": [
+        "Restaurant POS",
+        "Menu and online ordering",
+        "Reservation system",
+        "Kitchen order queue",
+        "Ingredient inventory",
+        "Delivery scheduling"
+      ],
+      "examples": [
+        "Restaurant",
+        "café",
+        "takeaway",
+        "bakery",
+        "caterer"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-pharmacies-medical-retail",
+      "family": "business",
+      "categoryId": "business-commerce",
+      "sectorId": "pharmacies-medical-retail",
+      "title": "Digital solutions for Pharmacies & medical retail",
+      "summary": "Explore how Medicine catalogue, Lot/expiry inventory, Retail POS, Pickup ordering can work together in a digital solution for pharmacies & medical retail.",
+      "tools": [
+        "Medicine catalogue",
+        "Lot/expiry inventory",
+        "Retail POS",
+        "Pickup ordering",
+        "Supplier procurement",
+        "Audit trail"
+      ],
+      "examples": [
+        "Pharmacy",
+        "medical supplies retailer"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-construction-contractors",
+      "family": "business",
+      "categoryId": "business-construction",
+      "sectorId": "construction-contractors",
+      "title": "Digital solutions for Construction & contractors",
+      "summary": "Explore how Project milestones, Quotations and job costing, Materials tracking, Contractor assignments can work together in a digital solution for construction & contractors.",
+      "tools": [
+        "Project milestones",
+        "Quotations and job costing",
+        "Materials tracking",
+        "Contractor assignments",
+        "Procurement marketplace",
+        "Payments evidence",
+        "Field reporting"
+      ],
+      "examples": [
+        "Builder",
+        "contractor",
+        "building-material supplier"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-real-estate-property",
+      "family": "business",
+      "categoryId": "business-construction",
+      "sectorId": "real-estate-property",
+      "title": "Digital solutions for Real estate & property",
+      "summary": "Explore how Property listings, Viewing scheduling, Tenant portal, Lease and maintenance tracker can work together in a digital solution for real estate & property.",
+      "tools": [
+        "Property listings",
+        "Viewing scheduling",
+        "Tenant portal",
+        "Lease and maintenance tracker",
+        "Property service marketplace",
+        "Document archive"
+      ],
+      "examples": [
+        "Estate agent",
+        "landlord",
+        "property manager"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-passenger-transport",
+      "family": "business",
+      "categoryId": "business-mobility",
+      "sectorId": "passenger-transport",
+      "title": "Digital solutions for Passenger transport",
+      "summary": "Explore how Trip schedules, Seat reservations, Tickets, Station operations can work together in a digital solution for passenger transport.",
+      "tools": [
+        "Trip schedules",
+        "Seat reservations",
+        "Tickets",
+        "Station operations",
+        "Passenger check-in",
+        "Parcel handoff",
+        "Fleet scheduling"
+      ],
+      "examples": [
+        "Bus company",
+        "intercity agency",
+        "taxi operator",
+        "transport union"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-logistics-courier-warehousing",
+      "family": "business",
+      "categoryId": "business-mobility",
+      "sectorId": "logistics-courier-warehousing",
+      "title": "Digital solutions for Logistics, courier & warehousing",
+      "summary": "Explore how Delivery booking, Dispatch console, Shipment tracking, Route allocation can work together in a digital solution for logistics, courier & warehousing.",
+      "tools": [
+        "Delivery booking",
+        "Dispatch console",
+        "Shipment tracking",
+        "Route allocation",
+        "Proof of delivery",
+        "Warehouse inventory",
+        "Customer notifications"
+      ],
+      "examples": [
+        "Courier",
+        "warehouse operator",
+        "parcel agency"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-fleet-services-equipment",
+      "family": "business",
+      "categoryId": "business-mobility",
+      "sectorId": "fleet-services-equipment",
+      "title": "Digital solutions for Fleet services & equipment",
+      "summary": "Explore how Vehicle registry, Maintenance scheduler, Defect reporting, Work orders can work together in a digital solution for fleet services & equipment.",
+      "tools": [
+        "Vehicle registry",
+        "Maintenance scheduler",
+        "Defect reporting",
+        "Work orders",
+        "Driver assignments",
+        "Fleet expense log",
+        "Equipment availability"
+      ],
+      "examples": [
+        "Transport fleet owner",
+        "equipment-rental company",
+        "service garage"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-car-sales-dealerships",
+      "family": "business",
+      "categoryId": "business-mobility",
+      "sectorId": "car-sales-dealerships",
+      "title": "Digital solutions for Car sales & dealerships",
+      "summary": "Explore how Vehicle marketplace, Dealer storefront, Inventory and condition reports, Test-drive booking can work together in a digital solution for car sales & dealerships.",
+      "tools": [
+        "Vehicle marketplace",
+        "Dealer storefront",
+        "Inventory and condition reports",
+        "Test-drive booking",
+        "Sales CRM",
+        "Service reminders"
+      ],
+      "examples": [
+        "Used-car dealer",
+        "car importer",
+        "vehicle sales agent"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-tourism-hospitality",
+      "family": "business",
+      "categoryId": "business-tourism",
+      "sectorId": "tourism-hospitality",
+      "title": "Digital solutions for Tourism & hospitality",
+      "summary": "Explore how Destination catalogue, Tour bookings, Guest reservations, Digital tickets can work together in a digital solution for tourism & hospitality.",
+      "tools": [
+        "Destination catalogue",
+        "Tour bookings",
+        "Guest reservations",
+        "Digital tickets",
+        "Guide calendar",
+        "Experience POS",
+        "Visitor communications"
+      ],
+      "examples": [
+        "Hotel",
+        "tour guide",
+        "guesthouse",
+        "travel experience operator"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-events-recreation-entertainment",
+      "family": "business",
+      "categoryId": "business-tourism",
+      "sectorId": "events-recreation-entertainment",
+      "title": "Digital solutions for Events, recreation & entertainment",
+      "summary": "Explore how Event listings, Registrations, Invitation management, RSVP can work together in a digital solution for events, recreation & entertainment.",
+      "tools": [
+        "Event listings",
+        "Registrations",
+        "Invitation management",
+        "RSVP",
+        "Ticketing",
+        "Event check-in",
+        "Organizer dashboard"
+      ],
+      "examples": [
+        "Event planner",
+        "conference organizer",
+        "concert promoter"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-sports-gyms-fitness",
+      "family": "business",
+      "categoryId": "business-tourism",
+      "sectorId": "sports-gyms-fitness",
+      "title": "Digital solutions for Sports, gyms & fitness",
+      "summary": "Explore how Membership administration, Session scheduling, Class bookings, Attendance tracker can work together in a digital solution for sports, gyms & fitness.",
+      "tools": [
+        "Membership administration",
+        "Session scheduling",
+        "Class bookings",
+        "Attendance tracker",
+        "Coach directory",
+        "Event registration"
+      ],
+      "examples": [
+        "Gym",
+        "sports academy",
+        "community fitness leader"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-schools-education",
+      "family": "business",
+      "categoryId": "business-education",
+      "sectorId": "schools-education",
+      "title": "Digital solutions for Schools & education",
+      "summary": "Explore how Admissions, School administration, Timetables, Learning portal can work together in a digital solution for schools & education.",
+      "tools": [
+        "Admissions",
+        "School administration",
+        "Timetables",
+        "Learning portal",
+        "Assignments and assessment",
+        "Fees and bursar",
+        "Guardian access"
+      ],
+      "examples": [
+        "Primary school",
+        "secondary school",
+        "training institution"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-training-certification",
+      "family": "business",
+      "categoryId": "business-education",
+      "sectorId": "training-certification",
+      "title": "Digital solutions for Training & certification",
+      "summary": "Explore how Course delivery, Cohort management, Assessment engine, Certificates can work together in a digital solution for training & certification.",
+      "tools": [
+        "Course delivery",
+        "Cohort management",
+        "Assessment engine",
+        "Certificates",
+        "Instructor workspace",
+        "Training marketplace",
+        "Learner follow-up"
+      ],
+      "examples": [
+        "Vocational trainer",
+        "coaching academy",
+        "university training partner"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-careers-employment-skills",
+      "family": "business",
+      "categoryId": "business-education",
+      "sectorId": "careers-employment-skills",
+      "title": "Digital solutions for Careers, employment & skills",
+      "summary": "Explore how Career-path discovery, Skills-gap assessment, Training recommendations, Job opportunity directory can work together in a digital solution for careers, employment & skills.",
+      "tools": [
+        "Career-path discovery",
+        "Skills-gap assessment",
+        "Training recommendations",
+        "Job opportunity directory",
+        "Candidate onboarding",
+        "Evidence-backed profiles"
+      ],
+      "examples": [
+        "Recruitment firm",
+        "career counselor",
+        "employer",
+        "student advisor"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-healthcare-clinics",
+      "family": "business",
+      "categoryId": "business-health",
+      "sectorId": "healthcare-clinics",
+      "title": "Digital solutions for Healthcare & clinics",
+      "summary": "Explore how Appointment booking, Provider directory, Front-desk scheduling, Clinical administration can work together in a digital solution for healthcare & clinics.",
+      "tools": [
+        "Appointment booking",
+        "Provider directory",
+        "Front-desk scheduling",
+        "Clinical administration",
+        "Service records",
+        "Patient communication"
+      ],
+      "examples": [
+        "Clinic",
+        "diagnostic centre",
+        "outpatient practice"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-maternal-newborn-family-care",
+      "family": "business",
+      "categoryId": "business-health",
+      "sectorId": "maternal-newborn-family-care",
+      "title": "Digital solutions for Maternal, newborn & family care",
+      "summary": "Explore how Maternal education, Pregnancy milestones, Visit scheduling, Family support portal can work together in a digital solution for maternal, newborn & family care.",
+      "tools": [
+        "Maternal education",
+        "Pregnancy milestones",
+        "Visit scheduling",
+        "Family support portal",
+        "Newborn care guidance",
+        "Staff service workflows"
+      ],
+      "examples": [
+        "Maternity centre",
+        "prenatal educator",
+        "maternal support service"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-mental-wellness-counselling",
+      "family": "business",
+      "categoryId": "business-health",
+      "sectorId": "mental-wellness-counselling",
+      "title": "Digital solutions for Mental wellness & counselling",
+      "summary": "Explore how Provider directory, Appointments, Confidential case coordination, Referral management can work together in a digital solution for mental wellness & counselling.",
+      "tools": [
+        "Provider directory",
+        "Appointments",
+        "Confidential case coordination",
+        "Referral management",
+        "Resources",
+        "Service follow-up"
+      ],
+      "examples": [
+        "Counselling practice",
+        "wellbeing centre",
+        "supervised support organization"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-nutrition-food-planning-dietetics",
+      "family": "business",
+      "categoryId": "business-health",
+      "sectorId": "nutrition-food-planning-dietetics",
+      "title": "Digital solutions for Nutrition, food planning & dietetics",
+      "summary": "Explore how Meal planner, Recipe and food database, Food budget planner, Shopping lists can work together in a digital solution for nutrition, food planning & dietetics.",
+      "tools": [
+        "Meal planner",
+        "Recipe and food database",
+        "Food budget planner",
+        "Shopping lists",
+        "Dietitian workspace",
+        "Food-provider storefront",
+        "Menu cost estimator"
+      ],
+      "examples": [
+        "Nutritionist",
+        "meal-prep service",
+        "family nutrition educator"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-home-domestic-services",
+      "family": "business",
+      "categoryId": "business-services",
+      "sectorId": "home-domestic-services",
+      "title": "Digital solutions for Home & domestic services",
+      "summary": "Explore how Service directory, Booking and scheduling, Quotes, Service job orders can work together in a digital solution for home & domestic services.",
+      "tools": [
+        "Service directory",
+        "Booking and scheduling",
+        "Quotes",
+        "Service job orders",
+        "Technician dispatch",
+        "Service POS",
+        "Customer feedback"
+      ],
+      "examples": [
+        "Plumber",
+        "electrician",
+        "house cleaner",
+        "home-repair business"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-beauty-personal-services",
+      "family": "business",
+      "categoryId": "business-services",
+      "sectorId": "beauty-personal-services",
+      "title": "Digital solutions for Beauty & personal services",
+      "summary": "Explore how Appointment booking, Salon POS, Staff calendars, Beauty product catalogue can work together in a digital solution for beauty & personal services.",
+      "tools": [
+        "Appointment booking",
+        "Salon POS",
+        "Staff calendars",
+        "Beauty product catalogue",
+        "Loyalty records",
+        "Mobile service booking"
+      ],
+      "examples": [
+        "Hair salon",
+        "barbershop",
+        "nail studio",
+        "beauty therapist"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-legal-professional-services",
+      "family": "business",
+      "categoryId": "business-services",
+      "sectorId": "legal-professional-services",
+      "title": "Digital solutions for Legal & professional services",
+      "summary": "Explore how Client intake, Case or matter tracking, Appointment booking, Secure document workspace can work together in a digital solution for legal & professional services.",
+      "tools": [
+        "Client intake",
+        "Case or matter tracking",
+        "Appointment booking",
+        "Secure document workspace",
+        "Deadline calendar",
+        "Billing records",
+        "Client updates"
+      ],
+      "examples": [
+        "Law firm",
+        "accountant",
+        "consultant",
+        "audit practice"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-banking-credit-facilitation",
+      "family": "business",
+      "categoryId": "business-finance",
+      "sectorId": "banking-credit-facilitation",
+      "title": "Digital solutions for Banking & credit facilitation",
+      "summary": "Explore how Loan lead qualification, Consent-based loan dossier, Partner product catalogue, Applicant readiness can work together in a digital solution for banking & credit facilitation.",
+      "tools": [
+        "Loan lead qualification",
+        "Consent-based loan dossier",
+        "Partner product catalogue",
+        "Applicant readiness",
+        "Officer workflow",
+        "Evidence exchange",
+        "Partner reporting"
+      ],
+      "examples": [
+        "Bank partner",
+        "microfinance institution",
+        "credit union"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-cooperatives-tontines",
+      "family": "business",
+      "categoryId": "business-finance",
+      "sectorId": "cooperatives-tontines",
+      "title": "Digital solutions for Cooperatives & tontines",
+      "summary": "Explore how Group membership, Contribution schedule, Obligation ledger, Payout approval workflow can work together in a digital solution for cooperatives & tontines.",
+      "tools": [
+        "Group membership",
+        "Contribution schedule",
+        "Obligation ledger",
+        "Payout approval workflow",
+        "Group audit trail",
+        "Reminders",
+        "Member statements"
+      ],
+      "examples": [
+        "Village savings group",
+        "tontine manager",
+        "credit cooperative"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-insurance-risk-services",
+      "family": "business",
+      "categoryId": "business-finance",
+      "sectorId": "insurance-risk-services",
+      "title": "Digital solutions for Insurance & risk services",
+      "summary": "Explore how Coverage discovery, Insurer comparison, Application preparation, Risk evidence can work together in a digital solution for insurance & risk services.",
+      "tools": [
+        "Coverage discovery",
+        "Insurer comparison",
+        "Application preparation",
+        "Risk evidence",
+        "Policy workflow",
+        "Claims submission",
+        "Renewal notices"
+      ],
+      "examples": [
+        "Insurance agent",
+        "broker",
+        "farmer cooperative",
+        "insurer partner"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-personal-household-finance",
+      "family": "business",
+      "categoryId": "business-finance",
+      "sectorId": "personal-household-finance",
+      "title": "Digital solutions for Personal & household finance",
+      "summary": "Explore how Budget planner, Income and expenses, Obligations tracker, Financial goals can work together in a digital solution for personal & household finance.",
+      "tools": [
+        "Budget planner",
+        "Income and expenses",
+        "Obligations tracker",
+        "Financial goals",
+        "Savings scenarios",
+        "Affordability calculator",
+        "Household dashboards"
+      ],
+      "examples": [
+        "Family budgeting service",
+        "household advisor",
+        "individual planner"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-investment-preparation-opportunities",
+      "family": "business",
+      "categoryId": "business-finance",
+      "sectorId": "investment-preparation-opportunities",
+      "title": "Digital solutions for Investment preparation & opportunities",
+      "summary": "Explore how Investor preferences, Opportunity screening, Venture-readiness evidence, Business plans can work together in a digital solution for investment preparation & opportunities.",
+      "tools": [
+        "Investor preferences",
+        "Opportunity screening",
+        "Venture-readiness evidence",
+        "Business plans",
+        "Funding package preparation",
+        "Investment status views"
+      ],
+      "examples": [
+        "Startup support office",
+        "investor network",
+        "enterprise accelerator"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-ngos-charities-social-projects",
+      "family": "business",
+      "categoryId": "business-communities",
+      "sectorId": "ngos-charities-social-projects",
+      "title": "Digital solutions for NGOs, charities & social projects",
+      "summary": "Explore how Beneficiary needs intake, Donation campaign management, Aid delivery tracking, Evidence verification can work together in a digital solution for ngos, charities & social projects.",
+      "tools": [
+        "Beneficiary needs intake",
+        "Donation campaign management",
+        "Aid delivery tracking",
+        "Evidence verification",
+        "Referral coordination",
+        "Project reporting",
+        "Donor transparency"
+      ],
+      "examples": [
+        "NGO",
+        "donor collective",
+        "foundation",
+        "aid delivery partner"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-community-services-public-infrastructure",
+      "family": "business",
+      "categoryId": "business-communities",
+      "sectorId": "community-services-public-infrastructure",
+      "title": "Digital solutions for Community services & public infrastructure",
+      "summary": "Explore how Community incident reports, Positive improvements feed, Road alerts, Verification workflow can work together in a digital solution for community services & public infrastructure.",
+      "tools": [
+        "Community incident reports",
+        "Positive improvements feed",
+        "Road alerts",
+        "Verification workflow",
+        "Infrastructure project tracking",
+        "Notices",
+        "Subscriber alerts"
+      ],
+      "examples": [
+        "Resident committee",
+        "utility response desk",
+        "municipal partner"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-churches-faith-communities",
+      "family": "business",
+      "categoryId": "business-communities",
+      "sectorId": "churches-faith-communities",
+      "title": "Digital solutions for Churches & faith communities",
+      "summary": "Explore how Devotional learning, Reflection archive, Ministry scheduling, Mentorship support can work together in a digital solution for churches & faith communities.",
+      "tools": [
+        "Devotional learning",
+        "Reflection archive",
+        "Ministry scheduling",
+        "Mentorship support",
+        "Worship event registration",
+        "Member service directory"
+      ],
+      "examples": [
+        "Church",
+        "pastor",
+        "ministry organization",
+        "formation group"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-confidential-adult-matchmaking",
+      "family": "business",
+      "categoryId": "business-services",
+      "sectorId": "confidential-adult-matchmaking",
+      "title": "Digital solutions for Confidential adult matchmaking",
+      "summary": "Explore how Consent-based profiles, Private introductions, Screening workflow, Moderator scheduling can work together in a digital solution for confidential adult matchmaking.",
+      "tools": [
+        "Consent-based profiles",
+        "Private introductions",
+        "Screening workflow",
+        "Moderator scheduling",
+        "Confidential follow-up"
+      ],
+      "examples": [
+        "Adult matchmaking operator",
+        "screened introduction agency"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-software-it-services",
+      "family": "business",
+      "categoryId": "business-technology",
+      "sectorId": "software-it-services",
+      "title": "Digital solutions for Software & IT services",
+      "summary": "Explore how Website/app commissioning, Requirements intake, Application build delivery, Subscription management can work together in a digital solution for software & it services.",
+      "tools": [
+        "Website/app commissioning",
+        "Requirements intake",
+        "Application build delivery",
+        "Subscription management",
+        "Customer support",
+        "Deployment certification",
+        "Technical maintenance"
+      ],
+      "examples": [
+        "Software agency",
+        "IT consultant",
+        "digital services integrator"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-cloud-managed-operations",
+      "family": "business",
+      "categoryId": "business-technology",
+      "sectorId": "cloud-managed-operations",
+      "title": "Digital solutions for Cloud & managed operations",
+      "summary": "Explore how Managed VPS hosting, Application hosting, Backups, Domain and HTTPS can work together in a digital solution for cloud & managed operations.",
+      "tools": [
+        "Managed VPS hosting",
+        "Application hosting",
+        "Backups",
+        "Domain and HTTPS",
+        "Monitoring",
+        "Managed upgrades",
+        "Service-desk operations"
+      ],
+      "examples": [
+        "Cloud hosting reseller",
+        "SaaS operator",
+        "company IT department"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-business-formation-advisory",
+      "family": "business",
+      "categoryId": "business-technology",
+      "sectorId": "business-formation-advisory",
+      "title": "Digital solutions for Business formation & advisory",
+      "summary": "Explore how Business opportunity discovery, Registration checklist, Regulatory KPI planning, Startup budgets can work together in a digital solution for business formation & advisory.",
+      "tools": [
+        "Business opportunity discovery",
+        "Registration checklist",
+        "Regulatory KPI planning",
+        "Startup budgets",
+        "Evidence tracking",
+        "Contributor matching",
+        "Readiness dashboard"
+      ],
+      "examples": [
+        "Entrepreneur",
+        "startup incubator",
+        "company formation advisor"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-project-organizational-management",
+      "family": "business",
+      "categoryId": "business-technology",
+      "sectorId": "project-organizational-management",
+      "title": "Digital solutions for Project & organizational management",
+      "summary": "Explore how Project portfolios, Workforce assignment, Task and milestone tracking, Resource planning can work together in a digital solution for project & organizational management.",
+      "tools": [
+        "Project portfolios",
+        "Workforce assignment",
+        "Task and milestone tracking",
+        "Resource planning",
+        "Evidence acceptance",
+        "Executive reporting",
+        "Compliance follow-up"
+      ],
+      "examples": [
+        "Consulting firm",
+        "construction PMO",
+        "NGO program office"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-family-heritage-ancestry",
+      "family": "business",
+      "categoryId": "business-services",
+      "sectorId": "family-heritage-ancestry",
+      "title": "Digital solutions for Family heritage & ancestry",
+      "summary": "Explore how Family tree, Archive of family records, Consent-led contributor portal, History timeline can work together in a digital solution for family heritage & ancestry.",
+      "tools": [
+        "Family tree",
+        "Archive of family records",
+        "Consent-led contributor portal",
+        "History timeline",
+        "Family reunion planning"
+      ],
+      "examples": [
+        "Genealogy researcher",
+        "family historian",
+        "heritage society"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-creative-industries-media",
+      "family": "business",
+      "categoryId": "business-services",
+      "sectorId": "creative-industries-media",
+      "title": "Digital solutions for Creative industries & media",
+      "summary": "Explore how Creative portfolio site, Booking and commission requests, Art marketplace, Event registration can work together in a digital solution for creative industries & media.",
+      "tools": [
+        "Creative portfolio site",
+        "Booking and commission requests",
+        "Art marketplace",
+        "Event registration",
+        "Digital catalogue",
+        "Point of sale"
+      ],
+      "examples": [
+        "Photographer",
+        "artist",
+        "creative studio",
+        "cultural promoter"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-telecom-digital-communications",
+      "family": "business",
+      "categoryId": "business-technology",
+      "sectorId": "telecom-digital-communications",
+      "title": "Digital solutions for Telecom & digital communications",
+      "summary": "Explore how Notification delivery, Consent-managed customer messaging, Support desk, Digital subscription management can work together in a digital solution for telecom & digital communications.",
+      "tools": [
+        "Notification delivery",
+        "Consent-managed customer messaging",
+        "Support desk",
+        "Digital subscription management",
+        "Merchant communications"
+      ],
+      "examples": [
+        "Communications agency",
+        "bulk SMS service provider",
+        "community operator"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-regulatory-compliance-service-providers",
+      "family": "business",
+      "categoryId": "business-technology",
+      "sectorId": "regulatory-compliance-service-providers",
+      "title": "Digital solutions for Regulatory & compliance service providers",
+      "summary": "Explore how Regulator directory, Registration steps, Document evidence vault, Compliance checklist can work together in a digital solution for regulatory & compliance service providers.",
+      "tools": [
+        "Regulator directory",
+        "Registration steps",
+        "Document evidence vault",
+        "Compliance checklist",
+        "Permit renewal alerts",
+        "Readiness report"
+      ],
+      "examples": [
+        "Business compliance advisor",
+        "regulatory filing facilitator"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "sector-waste-collection-environmental-services",
+      "family": "business",
+      "categoryId": "business-environment",
+      "sectorId": "waste-collection-environmental-services",
+      "title": "Digital solutions for Waste collection & environmental services",
+      "summary": "Explore how Pickup scheduling, Recycling job tracking, Route planning, Service billing records can work together in a digital solution for waste collection & environmental services.",
+      "tools": [
+        "Pickup scheduling",
+        "Recycling job tracking",
+        "Route planning",
+        "Service billing records",
+        "Public improvements feed",
+        "Materials resale marketplace"
+      ],
+      "examples": [
+        "Waste collector",
+        "community cleanup operator",
+        "green association"
+      ],
+      "stage": "concept",
+      "format": "sector-bundle"
+    },
+    {
+      "id": "business-wood-processor-sawmill",
+      "family": "business",
+      "categoryId": "business-processing",
+      "sectorId": "wood-forest-processing",
+      "title": "Wood processor / sawmill digital operations",
+      "summary": "A proposed connected solution for wood processor / sawmill: combine Processing ERP, Timber input and yield tracking, Stock and warehousing, B2B e-commerce catalogue to coordinate its activities.",
+      "tools": [
+        "Processing ERP",
+        "Timber input and yield tracking",
+        "Stock and warehousing",
+        "B2B e-commerce catalogue",
+        "Retail or trade POS",
+        "Shipment scheduling"
+      ],
+      "examples": [
+        "Wood processor / sawmill"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-furniture-manufacturer",
+      "family": "business",
+      "categoryId": "business-processing",
+      "sectorId": "wood-forest-processing",
+      "title": "Furniture manufacturer digital operations",
+      "summary": "A proposed connected solution for furniture manufacturer: combine Production job cards, Finished-goods inventory, E-commerce catalogue, Retail or trade POS to coordinate its activities.",
+      "tools": [
+        "Production job cards",
+        "Finished-goods inventory",
+        "E-commerce catalogue",
+        "Retail or trade POS",
+        "Delivery scheduling"
+      ],
+      "examples": [
+        "Furniture manufacturer"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-carpentry-workshop",
+      "family": "business",
+      "categoryId": "business-processing",
+      "sectorId": "wood-forest-processing",
+      "title": "Carpentry workshop digital operations",
+      "summary": "A proposed connected solution for carpentry workshop: combine Production job cards, Order requests, POS, Customer quotes to coordinate its activities.",
+      "tools": [
+        "Production job cards",
+        "Order requests",
+        "POS",
+        "Customer quotes"
+      ],
+      "examples": [
+        "Carpentry workshop"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-cocoa-processor",
+      "family": "business",
+      "categoryId": "business-processing",
+      "sectorId": "food-agricultural-processing",
+      "title": "Cocoa processor digital operations",
+      "summary": "A proposed connected solution for cocoa processor: combine Processing ERP, Batch traceability, Finished-goods inventory, Wholesale ordering to coordinate its activities.",
+      "tools": [
+        "Processing ERP",
+        "Batch traceability",
+        "Finished-goods inventory",
+        "Wholesale ordering",
+        "E-commerce storefront"
+      ],
+      "examples": [
+        "Cocoa processor"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-cassava-processor",
+      "family": "business",
+      "categoryId": "business-processing",
+      "sectorId": "food-agricultural-processing",
+      "title": "Cassava processor digital operations",
+      "summary": "A proposed connected solution for cassava processor: combine Raw-material receiving, Production batches, E-commerce storefront, POS to coordinate its activities.",
+      "tools": [
+        "Raw-material receiving",
+        "Production batches",
+        "E-commerce storefront",
+        "POS"
+      ],
+      "examples": [
+        "Cassava processor"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-poultry-farm",
+      "family": "business",
+      "categoryId": "business-agriculture",
+      "sectorId": "livestock-poultry",
+      "title": "Poultry farm digital operations",
+      "summary": "A proposed connected solution for poultry farm: combine Livestock batch tracker, Animal-product stock, Farm sales POS, Buyer ordering to coordinate its activities.",
+      "tools": [
+        "Livestock batch tracker",
+        "Animal-product stock",
+        "Farm sales POS",
+        "Buyer ordering"
+      ],
+      "examples": [
+        "Poultry farm"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-crop-cooperative",
+      "family": "business",
+      "categoryId": "business-agriculture",
+      "sectorId": "agriculture-crop-farming",
+      "title": "Crop cooperative digital operations",
+      "summary": "A proposed connected solution for crop cooperative: combine Farm inventory, Produce marketplace, QR provenance, Farm-to-buyer orders to coordinate its activities.",
+      "tools": [
+        "Farm inventory",
+        "Produce marketplace",
+        "QR provenance",
+        "Farm-to-buyer orders"
+      ],
+      "examples": [
+        "Crop cooperative"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-bakery",
+      "family": "business",
+      "categoryId": "business-commerce",
+      "sectorId": "food-service-restaurants",
+      "title": "Bakery digital operations",
+      "summary": "A proposed connected solution for bakery: combine Restaurant POS, Kitchen order queue, Ingredient inventory, Online ordering to coordinate its activities.",
+      "tools": [
+        "Restaurant POS",
+        "Kitchen order queue",
+        "Ingredient inventory",
+        "Online ordering"
+      ],
+      "examples": [
+        "Bakery"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-grocery-store",
+      "family": "business",
+      "categoryId": "business-commerce",
+      "sectorId": "retail-neighborhood-shops",
+      "title": "Grocery store digital operations",
+      "summary": "A proposed connected solution for grocery store: combine Cash POS, Stock count, Online storefront, Digital receipts to coordinate its activities.",
+      "tools": [
+        "Cash POS",
+        "Stock count",
+        "Online storefront",
+        "Digital receipts"
+      ],
+      "examples": [
+        "Grocery store"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-pharmacy",
+      "family": "business",
+      "categoryId": "business-commerce",
+      "sectorId": "pharmacies-medical-retail",
+      "title": "Pharmacy digital operations",
+      "summary": "A proposed connected solution for pharmacy: combine Lot/expiry inventory, Retail POS, Supplier procurement, Audit trail to coordinate its activities.",
+      "tools": [
+        "Lot/expiry inventory",
+        "Retail POS",
+        "Supplier procurement",
+        "Audit trail"
+      ],
+      "examples": [
+        "Pharmacy"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-hardware-shop",
+      "family": "business",
+      "categoryId": "business-commerce",
+      "sectorId": "retail-neighborhood-shops",
+      "title": "Hardware shop digital operations",
+      "summary": "A proposed connected solution for hardware shop: combine Cash POS, Product catalogue, Stock count, Online storefront to coordinate its activities.",
+      "tools": [
+        "Cash POS",
+        "Product catalogue",
+        "Stock count",
+        "Online storefront"
+      ],
+      "examples": [
+        "Hardware shop"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-wholesaler",
+      "family": "business",
+      "categoryId": "business-commerce",
+      "sectorId": "wholesale-distribution",
+      "title": "Wholesaler digital operations",
+      "summary": "A proposed connected solution for wholesaler: combine B2B order portal, Multi-location inventory, Wholesale POS, Delivery dispatch to coordinate its activities.",
+      "tools": [
+        "B2B order portal",
+        "Multi-location inventory",
+        "Wholesale POS",
+        "Delivery dispatch"
+      ],
+      "examples": [
+        "Wholesaler"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-online-store-operator",
+      "family": "business",
+      "categoryId": "business-commerce",
+      "sectorId": "e-commerce-marketplaces",
+      "title": "Online store operator digital operations",
+      "summary": "A proposed connected solution for online store operator: combine Multi-merchant marketplace, Branded web shop, Seller onboarding to coordinate its activities.",
+      "tools": [
+        "Multi-merchant marketplace",
+        "Branded web shop",
+        "Seller onboarding"
+      ],
+      "examples": [
+        "Online store operator"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-restaurant",
+      "family": "business",
+      "categoryId": "business-commerce",
+      "sectorId": "food-service-restaurants",
+      "title": "Restaurant digital operations",
+      "summary": "A proposed connected solution for restaurant: combine Restaurant POS, Menu and online ordering, Delivery scheduling to coordinate its activities.",
+      "tools": [
+        "Restaurant POS",
+        "Menu and online ordering",
+        "Delivery scheduling"
+      ],
+      "examples": [
+        "Restaurant"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-coffee-shop",
+      "family": "business",
+      "categoryId": "business-commerce",
+      "sectorId": "food-service-restaurants",
+      "title": "Coffee shop digital operations",
+      "summary": "A proposed connected solution for coffee shop: combine Restaurant POS, Menu and online ordering, Loyalty records to coordinate its activities.",
+      "tools": [
+        "Restaurant POS",
+        "Menu and online ordering",
+        "Loyalty records"
+      ],
+      "examples": [
+        "Coffee shop"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-hotel",
+      "family": "business",
+      "categoryId": "business-tourism",
+      "sectorId": "tourism-hospitality",
+      "title": "Hotel digital operations",
+      "summary": "A proposed connected solution for hotel: combine Guest reservations, Experience POS, Visitor communications to coordinate its activities.",
+      "tools": [
+        "Guest reservations",
+        "Experience POS",
+        "Visitor communications"
+      ],
+      "examples": [
+        "Hotel"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-tour-guide",
+      "family": "business",
+      "categoryId": "business-tourism",
+      "sectorId": "tourism-hospitality",
+      "title": "Tour guide digital operations",
+      "summary": "A proposed connected solution for tour guide: combine Tour bookings, Guide calendar, Digital tickets to coordinate its activities.",
+      "tools": [
+        "Tour bookings",
+        "Guide calendar",
+        "Digital tickets"
+      ],
+      "examples": [
+        "Tour guide"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-event-organizer",
+      "family": "business",
+      "categoryId": "business-tourism",
+      "sectorId": "events-recreation-entertainment",
+      "title": "Event organizer digital operations",
+      "summary": "A proposed connected solution for event organizer: combine Invitation management, RSVP, Ticketing, Event check-in to coordinate its activities.",
+      "tools": [
+        "Invitation management",
+        "RSVP",
+        "Ticketing",
+        "Event check-in"
+      ],
+      "examples": [
+        "Event organizer"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-gym",
+      "family": "business",
+      "categoryId": "business-tourism",
+      "sectorId": "sports-gyms-fitness",
+      "title": "Gym digital operations",
+      "summary": "A proposed connected solution for gym: combine Membership administration, Session scheduling, Class bookings to coordinate its activities.",
+      "tools": [
+        "Membership administration",
+        "Session scheduling",
+        "Class bookings"
+      ],
+      "examples": [
+        "Gym"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-primary-school",
+      "family": "business",
+      "categoryId": "business-education",
+      "sectorId": "schools-education",
+      "title": "Primary school digital operations",
+      "summary": "A proposed connected solution for primary school: combine Admissions, School administration, Guardian access, Fees and bursar to coordinate its activities.",
+      "tools": [
+        "Admissions",
+        "School administration",
+        "Guardian access",
+        "Fees and bursar"
+      ],
+      "examples": [
+        "Primary school"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-secondary-school",
+      "family": "business",
+      "categoryId": "business-education",
+      "sectorId": "schools-education",
+      "title": "Secondary school digital operations",
+      "summary": "A proposed connected solution for secondary school: combine Learning portal, Assessment, School administration, Guardian access to coordinate its activities.",
+      "tools": [
+        "Learning portal",
+        "Assessment",
+        "School administration",
+        "Guardian access"
+      ],
+      "examples": [
+        "Secondary school"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-private-tutor",
+      "family": "business",
+      "categoryId": "business-education",
+      "sectorId": "training-certification",
+      "title": "Private tutor digital operations",
+      "summary": "A proposed connected solution for private tutor: combine Course delivery, Cohort management, Assessment engine to coordinate its activities.",
+      "tools": [
+        "Course delivery",
+        "Cohort management",
+        "Assessment engine"
+      ],
+      "examples": [
+        "Private tutor"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-vocational-training-centre",
+      "family": "business",
+      "categoryId": "business-education",
+      "sectorId": "training-certification",
+      "title": "Vocational training centre digital operations",
+      "summary": "A proposed connected solution for vocational training centre: combine Course delivery, Certificates, Instructor workspace to coordinate its activities.",
+      "tools": [
+        "Course delivery",
+        "Certificates",
+        "Instructor workspace"
+      ],
+      "examples": [
+        "Vocational training centre"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-recruitment-agency",
+      "family": "business",
+      "categoryId": "business-education",
+      "sectorId": "careers-employment-skills",
+      "title": "Recruitment agency digital operations",
+      "summary": "A proposed connected solution for recruitment agency: combine Candidate onboarding, Skills-gap assessment, Job opportunity directory to coordinate its activities.",
+      "tools": [
+        "Candidate onboarding",
+        "Skills-gap assessment",
+        "Job opportunity directory"
+      ],
+      "examples": [
+        "Recruitment agency"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-clinic",
+      "family": "business",
+      "categoryId": "business-health",
+      "sectorId": "healthcare-clinics",
+      "title": "Clinic digital operations",
+      "summary": "A proposed connected solution for clinic: combine Appointment booking, Front-desk scheduling, Patient communication to coordinate its activities.",
+      "tools": [
+        "Appointment booking",
+        "Front-desk scheduling",
+        "Patient communication"
+      ],
+      "examples": [
+        "Clinic"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-maternity-clinic",
+      "family": "business",
+      "categoryId": "business-health",
+      "sectorId": "maternal-newborn-family-care",
+      "title": "Maternity clinic digital operations",
+      "summary": "A proposed connected solution for maternity clinic: combine Visit scheduling, Maternal education, Staff service workflows to coordinate its activities.",
+      "tools": [
+        "Visit scheduling",
+        "Maternal education",
+        "Staff service workflows"
+      ],
+      "examples": [
+        "Maternity clinic"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-nutritionist",
+      "family": "business",
+      "categoryId": "business-health",
+      "sectorId": "nutrition-food-planning-dietetics",
+      "title": "Nutritionist digital operations",
+      "summary": "A proposed connected solution for nutritionist: combine Dietitian workspace, Meal planner, Shopping lists to coordinate its activities.",
+      "tools": [
+        "Dietitian workspace",
+        "Meal planner",
+        "Shopping lists"
+      ],
+      "examples": [
+        "Nutritionist"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-meal-preparation-business",
+      "family": "business",
+      "categoryId": "business-health",
+      "sectorId": "nutrition-food-planning-dietetics",
+      "title": "Meal preparation business digital operations",
+      "summary": "A proposed connected solution for meal preparation business: combine Menu cost estimator, Meal planner, Food-provider storefront to coordinate its activities.",
+      "tools": [
+        "Menu cost estimator",
+        "Meal planner",
+        "Food-provider storefront"
+      ],
+      "examples": [
+        "Meal preparation business"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-bus-operator",
+      "family": "business",
+      "categoryId": "business-mobility",
+      "sectorId": "passenger-transport",
+      "title": "Bus operator digital operations",
+      "summary": "A proposed connected solution for bus operator: combine Trip schedules, Seat reservations, Tickets, Passenger check-in to coordinate its activities.",
+      "tools": [
+        "Trip schedules",
+        "Seat reservations",
+        "Tickets",
+        "Passenger check-in"
+      ],
+      "examples": [
+        "Bus operator"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-courier-company",
+      "family": "business",
+      "categoryId": "business-mobility",
+      "sectorId": "logistics-courier-warehousing",
+      "title": "Courier company digital operations",
+      "summary": "A proposed connected solution for courier company: combine Delivery booking, Dispatch console, Shipment tracking, Proof of delivery to coordinate its activities.",
+      "tools": [
+        "Delivery booking",
+        "Dispatch console",
+        "Shipment tracking",
+        "Proof of delivery"
+      ],
+      "examples": [
+        "Courier company"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-fleet-owner",
+      "family": "business",
+      "categoryId": "business-mobility",
+      "sectorId": "fleet-services-equipment",
+      "title": "Fleet owner digital operations",
+      "summary": "A proposed connected solution for fleet owner: combine Vehicle registry, Maintenance scheduler, Fleet expense log to coordinate its activities.",
+      "tools": [
+        "Vehicle registry",
+        "Maintenance scheduler",
+        "Fleet expense log"
+      ],
+      "examples": [
+        "Fleet owner"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-car-dealership",
+      "family": "business",
+      "categoryId": "business-mobility",
+      "sectorId": "car-sales-dealerships",
+      "title": "Car dealership digital operations",
+      "summary": "A proposed connected solution for car dealership: combine Dealer storefront, Vehicle marketplace, Sales CRM, Test-drive booking to coordinate its activities.",
+      "tools": [
+        "Dealer storefront",
+        "Vehicle marketplace",
+        "Sales CRM",
+        "Test-drive booking"
+      ],
+      "examples": [
+        "Car dealership"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-property-manager",
+      "family": "business",
+      "categoryId": "business-construction",
+      "sectorId": "real-estate-property",
+      "title": "Property manager digital operations",
+      "summary": "A proposed connected solution for property manager: combine Property listings, Tenant portal, Lease and maintenance tracker to coordinate its activities.",
+      "tools": [
+        "Property listings",
+        "Tenant portal",
+        "Lease and maintenance tracker"
+      ],
+      "examples": [
+        "Property manager"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-building-contractor",
+      "family": "business",
+      "categoryId": "business-construction",
+      "sectorId": "construction-contractors",
+      "title": "Building contractor digital operations",
+      "summary": "A proposed connected solution for building contractor: combine Project milestones, Quotations and job costing, Materials tracking to coordinate its activities.",
+      "tools": [
+        "Project milestones",
+        "Quotations and job costing",
+        "Materials tracking"
+      ],
+      "examples": [
+        "Building contractor"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-cleaning-service",
+      "family": "business",
+      "categoryId": "business-services",
+      "sectorId": "home-domestic-services",
+      "title": "Cleaning service digital operations",
+      "summary": "A proposed connected solution for cleaning service: combine Service directory, Booking and scheduling, Technician dispatch to coordinate its activities.",
+      "tools": [
+        "Service directory",
+        "Booking and scheduling",
+        "Technician dispatch"
+      ],
+      "examples": [
+        "Cleaning service"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-plumber",
+      "family": "business",
+      "categoryId": "business-services",
+      "sectorId": "home-domestic-services",
+      "title": "Plumber digital operations",
+      "summary": "A proposed connected solution for plumber: combine Booking and scheduling, Quotes, Service job orders to coordinate its activities.",
+      "tools": [
+        "Booking and scheduling",
+        "Quotes",
+        "Service job orders"
+      ],
+      "examples": [
+        "Plumber"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-hair-salon",
+      "family": "business",
+      "categoryId": "business-services",
+      "sectorId": "beauty-personal-services",
+      "title": "Hair salon digital operations",
+      "summary": "A proposed connected solution for hair salon: combine Appointment booking, Salon POS, Staff calendars to coordinate its activities.",
+      "tools": [
+        "Appointment booking",
+        "Salon POS",
+        "Staff calendars"
+      ],
+      "examples": [
+        "Hair salon"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-law-firm",
+      "family": "business",
+      "categoryId": "business-services",
+      "sectorId": "legal-professional-services",
+      "title": "Law firm digital operations",
+      "summary": "A proposed connected solution for law firm: combine Client intake, Case or matter tracking, Secure document workspace to coordinate its activities.",
+      "tools": [
+        "Client intake",
+        "Case or matter tracking",
+        "Secure document workspace"
+      ],
+      "examples": [
+        "Law firm"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-accounting-firm",
+      "family": "business",
+      "categoryId": "business-services",
+      "sectorId": "legal-professional-services",
+      "title": "Accounting firm digital operations",
+      "summary": "A proposed connected solution for accounting firm: combine Client intake, Billing records, Deadline calendar to coordinate its activities.",
+      "tools": [
+        "Client intake",
+        "Billing records",
+        "Deadline calendar"
+      ],
+      "examples": [
+        "Accounting firm"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-microfinance-institution",
+      "family": "business",
+      "categoryId": "business-finance",
+      "sectorId": "banking-credit-facilitation",
+      "title": "Microfinance institution digital operations",
+      "summary": "A proposed connected solution for microfinance institution: combine Applicant readiness, Consent-based loan dossier, Partner reporting to coordinate its activities.",
+      "tools": [
+        "Applicant readiness",
+        "Consent-based loan dossier",
+        "Partner reporting"
+      ],
+      "examples": [
+        "Microfinance institution"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-tontine-group",
+      "family": "business",
+      "categoryId": "business-finance",
+      "sectorId": "cooperatives-tontines",
+      "title": "Tontine group digital operations",
+      "summary": "A proposed connected solution for tontine group: combine Group membership, Contribution schedule, Payout approval workflow to coordinate its activities.",
+      "tools": [
+        "Group membership",
+        "Contribution schedule",
+        "Payout approval workflow"
+      ],
+      "examples": [
+        "Tontine group"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-insurance-broker",
+      "family": "business",
+      "categoryId": "business-finance",
+      "sectorId": "insurance-risk-services",
+      "title": "Insurance broker digital operations",
+      "summary": "A proposed connected solution for insurance broker: combine Coverage discovery, Application preparation, Renewal notices to coordinate its activities.",
+      "tools": [
+        "Coverage discovery",
+        "Application preparation",
+        "Renewal notices"
+      ],
+      "examples": [
+        "Insurance broker"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-savings-advisor",
+      "family": "business",
+      "categoryId": "business-finance",
+      "sectorId": "personal-household-finance",
+      "title": "Savings advisor digital operations",
+      "summary": "A proposed connected solution for savings advisor: combine Budget planner, Savings scenarios, Affordability calculator to coordinate its activities.",
+      "tools": [
+        "Budget planner",
+        "Savings scenarios",
+        "Affordability calculator"
+      ],
+      "examples": [
+        "Savings advisor"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-venture-incubator",
+      "family": "business",
+      "categoryId": "business-technology",
+      "sectorId": "business-formation-advisory",
+      "title": "Venture incubator digital operations",
+      "summary": "A proposed connected solution for venture incubator: combine Business opportunity discovery, Regulatory KPI planning, Readiness dashboard to coordinate its activities.",
+      "tools": [
+        "Business opportunity discovery",
+        "Regulatory KPI planning",
+        "Readiness dashboard"
+      ],
+      "examples": [
+        "Venture incubator"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-startup-investor-network",
+      "family": "business",
+      "categoryId": "business-finance",
+      "sectorId": "investment-preparation-opportunities",
+      "title": "Startup investor network digital operations",
+      "summary": "A proposed connected solution for startup investor network: combine Opportunity screening, Venture-readiness evidence, Funding package preparation to coordinate its activities.",
+      "tools": [
+        "Opportunity screening",
+        "Venture-readiness evidence",
+        "Funding package preparation"
+      ],
+      "examples": [
+        "Startup investor network"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-ngo",
+      "family": "business",
+      "categoryId": "business-communities",
+      "sectorId": "ngos-charities-social-projects",
+      "title": "NGO digital operations",
+      "summary": "A proposed connected solution for ngo: combine Beneficiary needs intake, Aid delivery tracking, Donor transparency to coordinate its activities.",
+      "tools": [
+        "Beneficiary needs intake",
+        "Aid delivery tracking",
+        "Donor transparency"
+      ],
+      "examples": [
+        "NGO"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-municipal-service-team",
+      "family": "business",
+      "categoryId": "business-communities",
+      "sectorId": "community-services-public-infrastructure",
+      "title": "Municipal service team digital operations",
+      "summary": "A proposed connected solution for municipal service team: combine Infrastructure project tracking, Notices, Verification workflow to coordinate its activities.",
+      "tools": [
+        "Infrastructure project tracking",
+        "Notices",
+        "Verification workflow"
+      ],
+      "examples": [
+        "Municipal service team"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-church",
+      "family": "business",
+      "categoryId": "business-communities",
+      "sectorId": "churches-faith-communities",
+      "title": "Church digital operations",
+      "summary": "A proposed connected solution for church: combine Devotional learning, Ministry scheduling, Mentorship support to coordinate its activities.",
+      "tools": [
+        "Devotional learning",
+        "Ministry scheduling",
+        "Mentorship support"
+      ],
+      "examples": [
+        "Church"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-software-developer-agency",
+      "family": "business",
+      "categoryId": "business-technology",
+      "sectorId": "software-it-services",
+      "title": "Software developer agency digital operations",
+      "summary": "A proposed connected solution for software developer agency: combine Requirements intake, Application build delivery, Technical maintenance to coordinate its activities.",
+      "tools": [
+        "Requirements intake",
+        "Application build delivery",
+        "Technical maintenance"
+      ],
+      "examples": [
+        "Software developer agency"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-cloud-reseller",
+      "family": "business",
+      "categoryId": "business-technology",
+      "sectorId": "cloud-managed-operations",
+      "title": "Cloud reseller digital operations",
+      "summary": "A proposed connected solution for cloud reseller: combine Managed VPS hosting, Backups, Monitoring, Cloud reseller packs to coordinate its activities.",
+      "tools": [
+        "Managed VPS hosting",
+        "Backups",
+        "Monitoring",
+        "Cloud reseller packs"
+      ],
+      "examples": [
+        "Cloud reseller"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-waste-collector",
+      "family": "business",
+      "categoryId": "business-environment",
+      "sectorId": "waste-collection-environmental-services",
+      "title": "Waste collector digital operations",
+      "summary": "A proposed connected solution for waste collector: combine Pickup scheduling, Route planning, Materials resale marketplace to coordinate its activities.",
+      "tools": [
+        "Pickup scheduling",
+        "Route planning",
+        "Materials resale marketplace"
+      ],
+      "examples": [
+        "Waste collector"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "business-photographer",
+      "family": "business",
+      "categoryId": "business-services",
+      "sectorId": "creative-industries-media",
+      "title": "Photographer digital operations",
+      "summary": "A proposed connected solution for photographer: combine Creative portfolio site, Booking and commission requests, Point of sale to coordinate its activities.",
+      "tools": [
+        "Creative portfolio site",
+        "Booking and commission requests",
+        "Point of sale"
+      ],
+      "examples": [
+        "Photographer"
+      ],
+      "stage": "concept",
+      "format": "business-bundle"
+    },
+    {
+      "id": "aggregation-institutional-onboarding",
+      "family": "institutional",
+      "categoryId": "institutional-formalities",
+      "sectorId": null,
+      "title": "Business and institutional formalities coordinator",
+      "summary": "A managed service that helps new or growing businesses identify registration requirements, assemble documents, follow appointments and retain proof of submissions, with official filings performed through authorized channels.",
+      "tools": [
+        "Intake",
+        "Document & Evidence",
+        "Verification",
+        "Notifications"
+      ],
+      "examples": [
+        "Startup founders",
+        "cooperatives",
+        "business consultants"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "Public guidance, independent preparation and customer-authorized assisted handoff only."
+    },
+    {
+      "id": "aggregation-tax-readiness",
+      "family": "institutional",
+      "categoryId": "institutional-tax",
+      "sectorId": null,
+      "title": "Tax compliance dossier and deadline manager",
+      "summary": "Organize taxpayer obligations, supporting records, returns preparation, filing calendars and correspondence for DGI/DGE/CIME workflows without impersonating the tax authority or issuing official tax documents.",
+      "tools": [
+        "Policy & Correction",
+        "Fiscal Compliance Gateway",
+        "Evidence",
+        "Notifications"
+      ],
+      "examples": [
+        "Accountants",
+        "tax consultants",
+        "SMEs"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "Public guidance, independent preparation and customer-authorized assisted handoff only."
+    },
+    {
+      "id": "aggregation-fiscal-gateway",
+      "family": "institutional",
+      "categoryId": "institutional-tax",
+      "sectorId": null,
+      "title": "Fiscal transaction preparation and authorized submission gateway",
+      "summary": "Prepare transaction and invoicing evidence against applicable rules and coordinate authorized filing, submission status and exceptions where the fiscal authority permits a documented integration.",
+      "tools": [
+        "Fiscal Compliance Gateway",
+        "Commerce/POS",
+        "Policy",
+        "Audit"
+      ],
+      "examples": [
+        "ERP resellers",
+        "POS providers",
+        "certified integrators"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "External protocol and signed partner approval mandatory before execution."
+    },
+    {
+      "id": "aggregation-customs-case",
+      "family": "institutional",
+      "categoryId": "institutional-trade",
+      "sectorId": null,
+      "title": "Import–export trade case coordinator",
+      "summary": "Create trade cases, gather declaration documents, track freight and customs milestones, and coordinate licensed customs professionals and approved official channels.",
+      "tools": [
+        "Trade & Customs Facilitation",
+        "Logistics",
+        "Verification",
+        "Evidence"
+      ],
+      "examples": [
+        "Importers",
+        "exporters",
+        "freight forwarders",
+        "customs agents"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "Accredited intermediary and client representation mandate required for restricted work."
+    },
+    {
+      "id": "aggregation-guce-integration",
+      "family": "institutional",
+      "categoryId": "institutional-trade",
+      "sectorId": null,
+      "title": "GUCE trade-participant onboarding and process integration",
+      "summary": "Assist eligible enterprises and accredited intermediaries with GUCE participation readiness and interoperable trade records, without claiming API access or replacing GUCE's official single window.",
+      "tools": [
+        "Trade & Customs Facilitation",
+        "Contracts & Adapters",
+        "Identity",
+        "Audit"
+      ],
+      "examples": [
+        "Import/export consultants",
+        "authorized systems integrators"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "GUCE authorized partnership/protocol required; no credentials reuse or scraping."
+    },
+    {
+      "id": "aggregation-landed-cost",
+      "family": "institutional",
+      "categoryId": "institutional-trade",
+      "sectorId": null,
+      "title": "Import landed-cost and duty estimation service",
+      "summary": "Combine goods value, freight, approved tariffs and tax assumptions into documented landed-cost estimates that are clearly separate from binding customs assessments.",
+      "tools": [
+        "Landed Cost",
+        "Policy & Correction",
+        "Logistics",
+        "Goods Provenance"
+      ],
+      "examples": [
+        "Importers",
+        "distributors",
+        "manufacturing firms"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "Non-binding computations and administrative preparation; never official assessment."
+    },
+    {
+      "id": "aggregation-export-readiness",
+      "family": "institutional",
+      "categoryId": "institutional-trade",
+      "sectorId": null,
+      "title": "Exporter licensing and documentation readiness service",
+      "summary": "Prepare sector-specific exporter checklists and document packs, identify responsible authorities, and track evidence for trade authorizations and inspections.",
+      "tools": [
+        "Trade & Customs",
+        "Policy & Correction",
+        "Verification",
+        "Evidence"
+      ],
+      "examples": [
+        "Exporters",
+        "processors",
+        "export advisers"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "Public guidance, independent preparation and customer-authorized assisted handoff only."
+    },
+    {
+      "id": "aggregation-goods-provenance",
+      "family": "institutional",
+      "categoryId": "institutional-standards",
+      "sectorId": null,
+      "title": "Goods origin, certification and provenance dossier operator",
+      "summary": "Record source, batch, inspection and certification evidence for agricultural, forest and industrial goods and coordinate authorized validation where required.",
+      "tools": [
+        "Goods Provenance",
+        "Processing",
+        "Verification",
+        "Audit"
+      ],
+      "examples": [
+        "Wood processors",
+        "produce exporters",
+        "supply-chain operators"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "Competent authority retains certification or approval and controls integration access."
+    },
+    {
+      "id": "aggregation-standards-readiness",
+      "family": "institutional",
+      "categoryId": "institutional-standards",
+      "sectorId": null,
+      "title": "Product standards and homologation preparation service",
+      "summary": "Help producers identify applicable quality or homologation requirements, submit supporting test and product information through approved channels, and track outstanding reviews.",
+      "tools": [
+        "Policy & Correction",
+        "Product & Listing Onboarding",
+        "Evidence"
+      ],
+      "examples": [
+        "Manufacturers",
+        "importers",
+        "laboratories"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "Competent authority retains certification or approval and controls integration access."
+    },
+    {
+      "id": "aggregation-agri-permits",
+      "family": "institutional",
+      "categoryId": "institutional-licensing",
+      "sectorId": null,
+      "title": "Agricultural and phytosanitary procedure coordinator",
+      "summary": "Organize plant/animal product inspection, traceability and permit documents, with handoffs to competent public authorities or accredited inspection partners.",
+      "tools": [
+        "Agriculture",
+        "Goods Provenance",
+        "Verification",
+        "Trade & Customs"
+      ],
+      "examples": [
+        "Farm exporters",
+        "food processors",
+        "producer cooperatives"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "Accredited sector professional and authority-approved handoff required."
+    },
+    {
+      "id": "aggregation-environmental-compliance",
+      "family": "institutional",
+      "categoryId": "institutional-licensing",
+      "sectorId": null,
+      "title": "Environmental permitting and regulatory reporting assistant",
+      "summary": "Track environmental obligations, inspection calendars, supporting reports and permit applications for processing, recycling and industrial operators.",
+      "tools": [
+        "Policy",
+        "Evidence",
+        "Scheduling",
+        "Audit"
+      ],
+      "examples": [
+        "Industrial facilities",
+        "recyclers",
+        "environmental consultants"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "Formal approval/appropriate professional accreditation where regulated."
+    },
+    {
+      "id": "aggregation-construction-approvals",
+      "family": "institutional",
+      "categoryId": "institutional-licensing",
+      "sectorId": null,
+      "title": "Construction and property approvals coordinator",
+      "summary": "Maintain project documentation and permit-readiness checklists, route requests to the competent local authorities and track decision records.",
+      "tools": [
+        "Project Management",
+        "Verification",
+        "Document & Evidence"
+      ],
+      "examples": [
+        "Builders",
+        "property developers",
+        "professional advisers"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "The public authority or its authorized representative controls any submission."
+    },
+    {
+      "id": "aggregation-health-licenses",
+      "family": "institutional",
+      "categoryId": "institutional-licensing",
+      "sectorId": null,
+      "title": "Healthcare licensing and facility readiness assistant",
+      "summary": "Provide documented checklists for facility and practitioner administrative requirements, renewal tracking and verified institutional correspondence without asserting licensure.",
+      "tools": [
+        "Health",
+        "Verification",
+        "Policy",
+        "Notifications"
+      ],
+      "examples": [
+        "Clinics",
+        "care facilities",
+        "licensed advisers"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "Clinical licensing/authorization solely with competent authorities."
+    },
+    {
+      "id": "aggregation-transport-licenses",
+      "family": "institutional",
+      "categoryId": "institutional-licensing",
+      "sectorId": null,
+      "title": "Transport operator permits and compliance coordinator",
+      "summary": "Track fleet/operator registration records, licence renewal schedules, inspection requirements and regulator-specific documents for passenger and commercial fleets.",
+      "tools": [
+        "Transport",
+        "Fleet Guard",
+        "Policy",
+        "Verification"
+      ],
+      "examples": [
+        "Bus companies",
+        "haulage operators",
+        "fleet advisers"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "The public authority or its authorized representative controls any submission."
+    },
+    {
+      "id": "aggregation-bank-finance-broker",
+      "family": "institutional",
+      "categoryId": "institutional-banking",
+      "sectorId": null,
+      "title": "Bank financing application packaging service",
+      "summary": "With explicit customer consent, assemble verifiable business profiles, operational evidence and credit application packages for review by partner banks; financing decisions remain with licensed institutions.",
+      "tools": [
+        "Funding",
+        "VentureWorks",
+        "Verification",
+        "Banking"
+      ],
+      "examples": [
+        "SMEs",
+        "loan advisory agencies",
+        "bank referral partners"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "Bank partner agreement and informed customer consent; no credit decisions or custody."
+    },
+    {
+      "id": "aggregation-trade-domiciliation",
+      "family": "institutional",
+      "categoryId": "institutional-banking",
+      "sectorId": null,
+      "title": "Trade domiciliation and bank documentation coordinator",
+      "summary": "Collect and track required trade, banking, and shipping evidence across a transaction and hand cases to authorized financial and trade professionals.",
+      "tools": [
+        "Trade & Customs",
+        "Funding",
+        "Banking",
+        "Documents"
+      ],
+      "examples": [
+        "Import/export advisers",
+        "bank partners",
+        "logistics providers"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "Licensed banks and permitted trade stakeholders own restricted activities."
+    },
+    {
+      "id": "aggregation-payments-merchant-onboarding",
+      "family": "institutional",
+      "categoryId": "institutional-banking",
+      "sectorId": null,
+      "title": "Merchant payment-provider onboarding coordinator",
+      "summary": "Support merchants in preparing KYC, business and technical integration packs for licensed payment providers; transactions and customer funds remain with those providers.",
+      "tools": [
+        "Verification",
+        "Payments/PSP Boundary",
+        "Identity"
+      ],
+      "examples": [
+        "Payment integrators",
+        "retail network operators",
+        "PSP agents"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "Licensed PSP/bank partnership for regulated payment processing, no fund custody by ADS."
+    },
+    {
+      "id": "aggregation-insurance-intermediation",
+      "family": "institutional",
+      "categoryId": "institutional-insurance",
+      "sectorId": null,
+      "title": "Insurance document and referral aggregator",
+      "summary": "Help businesses organize risk profiles, supporting documents and policy enquiries for participating insurers while reserving underwriting, claims and intermediary activity to appropriately authorized parties.",
+      "tools": [
+        "AfriCover",
+        "Verification",
+        "Evidence",
+        "Policy"
+      ],
+      "examples": [
+        "Insurance brokers",
+        "logistics operators",
+        "producer networks"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "Licensed insurance professionals and carriers control regulated intermediation."
+    },
+    {
+      "id": "aggregation-regulatory-monitoring",
+      "family": "institutional",
+      "categoryId": "institutional-multiagency",
+      "sectorId": null,
+      "title": "Multi-sector regulatory requirements and renewal tracker",
+      "summary": "Maintain a sourced directory of applicable obligations, official updates, filing deadlines and renewal alerts that operators can manage without direct regulator system access.",
+      "tools": [
+        "Policy & Correction",
+        "Notifications",
+        "RAG Gateway",
+        "Audit"
+      ],
+      "examples": [
+        "Accountants",
+        "compliance firms",
+        "SMEs",
+        "sector associations"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "Sources limited to public official regulatory information until permission is granted."
+    },
+    {
+      "id": "aggregation-institutional-service-desk",
+      "family": "institutional",
+      "categoryId": "institutional-multiagency",
+      "sectorId": null,
+      "title": "Multi-agency case preparation and coordination desk",
+      "summary": "Let an authorized professional coordinate checklists, client mandates, document requests, staff tasks and correspondence involving several independent agencies from one business dashboard.",
+      "tools": [
+        "Workflow",
+        "Document & Evidence",
+        "Identity",
+        "Audit",
+        "Verification"
+      ],
+      "examples": [
+        "Business service centres",
+        "SME associations",
+        "professional advisers"
+      ],
+      "stage": "proposal",
+      "format": "institutional-bundle",
+      "gate": "Case coordination with lawful, explicit scope of representation and authorization."
+    }
+  ]
+}

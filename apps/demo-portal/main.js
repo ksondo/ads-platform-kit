@@ -1,3 +1,4 @@
+import * as ADSOpportunities from "./opportunities-v2.js";
 const app = document.getElementById("root");
 const i18n = {
   en: {
@@ -161,8 +162,8 @@ function render(){
  if(path==="/") main=landing();
  else if(path==="/platforms") main=platformDirectory();
  else if(path.startsWith("/platforms/")) {const p=catalogue.platforms.find(x=>x.id===path.split("/")[2]);main=p?platformDetail(p):platformDirectory();}
- else if(path==="/opportunities") main=toolDirectory();
- else if(path.startsWith("/opportunities/")) {const x=catalogue.tools.find(y=>y.id===path.split("/")[2]);main=x?toolDetail(x):toolDirectory();}
+ else if(path==="/opportunities") main=ADSOpportunities.directoryShell();
+ else if(path.startsWith("/opportunities/")) {const legacy=catalogue.tools.find(y=>y.id===path.split("/")[2]);main=legacy?toolDetail(legacy):ADSOpportunities.detailShell();}
  else if(path==="/demo-access") main=demoAccessGuide();
  else if(path==="/cloud") main=cloud();
  else main=platformDirectory();
@@ -170,6 +171,7 @@ function render(){
  const menu=app.querySelector(".menu-toggle"),nav=app.querySelector(".nav-links");
  menu.addEventListener("click",()=>{const open=nav.classList.toggle("is-open");menu.setAttribute("aria-expanded",String(open));});
  app.querySelectorAll("[data-lang]").forEach(btn=>btn.addEventListener("click",()=>{lang=btn.dataset.lang;localStorage.setItem("ads-portal-lang",lang);render();}));
+ if(path==="/opportunities" || path.startsWith("/opportunities/")) ADSOpportunities.hydrate(path,lang);
 }
 async function start(){
  try {
