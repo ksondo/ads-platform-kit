@@ -138,7 +138,7 @@ function pagination(state,pageInfo,t){
 function resultBody(data,state,t,cats,modules,sectors,businesses,labels){
  const title=cats.find(x=>x.id===state.category)?.name||t.results;
  const filtered=state.sort==='name'?[...data.data].sort((a,b)=>a.title.localeCompare(b.title)):data.data;
- return '<div class="container opp-layout">'+aside(cats,state,modules,t)+'<section class="opp-content">'+
+ return '<div class="container opp-layout">'+aside(cats,state,modules,t,sectors,businesses,labels)+'<section class="opp-content">'+
  categoryCards(cats,state,t)+sectorDirectory(sectors,state,t,labels)+businessPanel(state,businesses,t,labels)+
  (state.family==='institutional'?'<p class="opp-regulatory-guard">'+L(labels.regs)+'</p>':'')+
  '<div class="opp-results-bar"><div><h2>'+data.total+' '+L(t.results)+' · '+L(title)+'</h2><p>'+L(t.english)+'</p></div><div class="opp-result-tools">'+
