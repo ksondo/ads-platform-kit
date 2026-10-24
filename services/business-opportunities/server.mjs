@@ -4,6 +4,7 @@
 import http from 'node:http';
 import {fileURLToPath} from 'node:url';
 import {Pool} from 'pg';
+import {handleDiscovery} from './discovery.mjs';
 const BASE='/api/opportunities/v1';
 const send=(res,code,payload)=>{
  res.writeHead(code,{'content-type':'application/json; charset=utf-8','cache-control':'public, max-age=30','x-content-type-options':'nosniff'});
@@ -21,6 +22,7 @@ export function createHandler(pool){
    if(url.pathname==='/health')return send(res,200,{status:'ok',service:'opportunities'});
    if(!url.pathname.startsWith(BASE+'/'))return send(res,404,{error:'Not found'});
    const route=url.pathname.slice(BASE.length);
+   if(route.startsWith('/discovery/'))return await handleDiscovery(pool,url,res,send);
    if(route==='/sectors'){
     const r=await pool.query(
       'SELECT s.id,s.name_en AS name,s.business_examples,COUNT(o.id)::int AS opportunity_count FROM opportunities.sectors s LEFT JOIN opportunities.sector_opportunities o ON o.sector_id=s.id AND o.published=true WHERE s.published=true GROUP BY s.id ORDER BY s.name_en');
