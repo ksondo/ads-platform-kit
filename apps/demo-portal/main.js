@@ -1,4 +1,4 @@
-import * as ADSOpportunities from "./opportunities-page.js";
+import * as ADSOpportunities from "./opportunities-v2.js";
 const app = document.getElementById("root");
 const i18n = {
   en: {
