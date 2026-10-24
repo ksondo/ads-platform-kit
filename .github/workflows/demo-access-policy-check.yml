@@ -1,0 +1,47 @@
+name: ADS Demo Access Policy — Source Audit
+on:
+  pull_request:
+    paths:
+      - 'config/demo-access-policy.v1.json'
+      - 'packages/demo-access-policy/**'
+      - 'scripts/audit-demo-access.mjs'
+      - 'docs/security/ADS_DEMO_ACCESS_POLICY_V1.md'
+      - '.github/workflows/demo-access-policy-check.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'config/demo-access-policy.v1.json'
+      - 'packages/demo-access-policy/**'
+      - 'scripts/audit-demo-access.mjs'
+      - 'docs/security/ADS_DEMO_ACCESS_POLICY_V1.md'
+      - '.github/workflows/demo-access-policy-check.yml'
+permissions:
+  contents: read
+jobs:
+  source-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Test fail-closed role and tenant decisions
+        run: |
+          set -euo pipefail
+          node --test packages/demo-access-policy/test/policy.test.mjs
+      - name: Publish read-only source finding report
+        run: |
+          set -euo pipefail
+          node scripts/audit-demo-access.mjs --json > /tmp/ads-demo-access-source-audit.json
+          node -e "const x=require('/tmp/ads-demo-access-source-audit.json');if(x.products!==25||!x.findings.length||x.launchReady!==false)process.exit(1);console.log('ADS_DEMO_ACCESS_AUDIT=RECORDED products='+x.products+' high_findings='+x.high)"
+      - name: Verify portal and identity code are untouched by this PR
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --depth=1
+          changed="$(git diff --name-only origin/main...HEAD)"
+          if printf '%s\n' "$changed" | grep -E '^(apps/demo-portal/|services/identity/src/|config/clients.demo.json$|config/demo-personas.json$)'; then
+            echo 'Forbidden demo policy PR modification to existing page or identity behavior' >&2
+            exit 1
+          fi
+          echo 'ADS_DEMO_EXISTING_PAGES_UNCHANGED=PASS'
