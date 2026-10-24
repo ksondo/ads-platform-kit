@@ -56,11 +56,9 @@ class IngressSourceTest(unittest.TestCase):
 
     def test_refuses_unrelated_api_mapping(self):
         bad = NORMAL.replace("location / {", "location ^~ /api/opportunities/v1/ {\n proxy_pass http://127.0.0.1:9999;\n}\nlocation / {", 1)
-        # The location was injected into HTTP-only block; since the installer
-        # only changes HTTPS, it does not silently adopt this unauthorized path.
-        x, mode = api.find_approved_server(bad)
-        self.assertEqual(mode, "new")
-        self.assertIn("127.0.0.1:9999", x)
+        # Refuse an unexpected existing route in the ADS HTTPS block.
+        with self.assertRaises(api.Refused):
+            api.find_approved_server(bad)
 
     def test_counts_contract(self):
         self.assertEqual([n for _,n in api.CHECKS], [50,333,13,8,102,20])
