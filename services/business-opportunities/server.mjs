@@ -59,7 +59,7 @@ export function createHandler(pool){
     const params=[sector||null,q?like(q):null,category||null];
     const where="o.published=true AND s.published=true AND ($1::text IS NULL OR s.id=$1) AND ($2::text IS NULL OR o.title_en ILIKE $2 ESCAPE '\\' OR o.summary_en ILIKE $2 ESCAPE '\\' OR s.name_en ILIKE $2 ESCAPE '\\') AND ($3::text IS NULL OR EXISTS (SELECT 1 FROM opportunities.discovery_solutions d WHERE d.source_kind='sector-bundle' AND d.sector_id=s.id AND d.category_id=$3 AND d.published=true))";
     const count=await pool.query('SELECT COUNT(*)::int AS total FROM opportunities.sector_opportunities o JOIN opportunities.sectors s ON s.id=o.sector_id WHERE '+where,params);
-    const rows=await pool.query('SELECT '+rowFields+' FROM opportunities.sector_opportunities o JOIN opportunities.sectors s ON s.id=o.sector_id WHERE '+where+' ORDER BY s.name_en,o.title_en LIMIT $5 OFFSET $6',[...params,limit,(page-1)*limit]);
+    const rows=await pool.query('SELECT '+rowFields+' FROM opportunities.sector_opportunities o JOIN opportunities.sectors s ON s.id=o.sector_id WHERE '+where+' ORDER BY s.name_en,o.title_en LIMIT $4 OFFSET $5',[...params,limit,(page-1)*limit]);
     return send(res,200,{data:rows.rows,total:count.rows[0].total,page,limit});
    }
    return send(res,404,{error:'Not found'});
