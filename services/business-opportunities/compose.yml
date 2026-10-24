@@ -1,13 +1,50 @@
-# API only. Database is a separately provisioned, isolated PostgreSQL database.
-# Do not attach this container to Commerce or Identity networks.
+# Isolated ADS Business Opportunities. Separate from Commerce and demo Identity.
+# Dedicated PostgreSQL has NO host-published port. No database reset service.
 name: ads-business-opportunities
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: ads-business-opportunities-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: opportunities_owner
+      POSTGRES_DB: ads_opportunities
+      POSTGRES_PASSWORD: ${OPPORTUNITIES_DB_OWNER_PASSWORD:?Set in protected /etc/ads-demo/opportunities.env}
+    volumes:
+      - opportunities-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U opportunities_owner -d ads_opportunities"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [private]
+    security_opt:
+      - no-new-privileges:true
+
+  seed:
+    profiles: [operator-seed]
+    build:
+      context: ../..
+      dockerfile: services/business-opportunities/Dockerfile.seed
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      OPPORTUNITIES_MIGRATION_DATABASE_URL: postgres://opportunities_owner:${OPPORTUNITIES_DB_OWNER_PASSWORD}@db:5432/ads_opportunities
+    networks: [private]
+    security_opt:
+      - no-new-privileges:true
+    restart: "no"
+
   public-read-api:
     build:
       context: ../..
       dockerfile: services/business-opportunities/Dockerfile
     container_name: ads-business-opportunities-api
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     env_file:
       - /etc/ads-demo/opportunities-api.env
     ports:
@@ -18,3 +55,13 @@ services:
     tmpfs:
       - /tmp
     mem_limit: 256m
+    networks: [private]
+
+networks:
+  private:
+    name: ads-business-opportunities-private
+    # No attachment to Commerce or Identity networks.
+
+volumes:
+  opportunities-db-data:
+    name: ads-business-opportunities-db-data
