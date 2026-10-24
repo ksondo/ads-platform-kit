@@ -67,7 +67,7 @@ jobs:
         if: always()
         with:
           name: opportunities-interactive-browser
-          path: /tmp/ads-opportunities-interactive-smoke.png
+          path: /tmp/ads-opportunities-*.png
           if-no-files-found: ignore
 
   publish:
