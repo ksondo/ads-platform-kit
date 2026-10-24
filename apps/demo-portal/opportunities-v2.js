@@ -195,6 +195,7 @@ export async function hydrate(path,lang){
   if(state.category&&!categories.some(c=>c.id===state.category))state.category='';
   const p=new URLSearchParams({page:String(state.page),limit:'12'});
   if(state.q)p.set('q',state.q);
+  if(state.sort==='name')p.set('sort','name');
   if(state.category)p.set('category',state.category);
   if(state.module)p.set('tool',state.module);
   const isTools=state.view==='tools';
