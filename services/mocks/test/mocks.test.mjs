@@ -157,8 +157,12 @@ describe('mobile money (MTN MoMo / Orange Money)', () => {
     hookStatus = 200;
     const replayed = await post(`/_control/webhooks/${record.id}/replay`, {});
     assert.equal(replayed.body.attempts.at(-1).status, 200);
-    assert.equal(hooks.length, 2);
-    assert.equal(hooks[0].body.event_id, hooks[1].body.event_id);
+    // An asynchronous automatic retry can race the explicit replay; both
+    // are valid deliveries of the SAME webhook event, not duplicate events.
+    const delivered = hooks.filter(h => h.body.data.id === created.body.id);
+    assert.ok(delivered.length >= 2, 'at least initial delivery and manual replay');
+    assert.ok(delivered.every(h => h.body.event_id === delivered[0].body.event_id),
+      'all retries and replays retain the original event id');
   });
 
   it('unavailable returns 503 for degraded-path tests', async () => {
