@@ -395,7 +395,7 @@ export async function resetDemo(pool, settings, passwords, doc, opts = {}) {
     await c.query(`DELETE FROM platform.product_roles WHERE user_id = ANY($1::uuid[]) AND tenant_id IN (${foreign})`, [ids]);
     n.foreignMemberships = (await c.query(`DELETE FROM platform.memberships WHERE user_id = ANY($1::uuid[]) AND tenant_id IN (${foreign})`, [ids])).rowCount;
     // Demo organisations hold only the demo accounts.
-    const demoTenants = "SELECT t.id FROM platform.tenants t JOIN platform.organizations o ON o.id=t.organization_id WHERE o.is_demo AND o.demo_key NOT LIKE '%/%'";
+    const demoTenants = "SELECT t.id FROM platform.tenants t JOIN platform.organizations o ON o.id=t.organization_id WHERE o.is_demo AND coalesce(o.demo_key, '') NOT LIKE '%/%'";
     await c.query(`DELETE FROM platform.product_roles WHERE NOT (user_id = ANY($1::uuid[])) AND tenant_id IN (${demoTenants})`, [ids]);
     n.outsiders = (await c.query(`DELETE FROM platform.memberships WHERE NOT (user_id = ANY($1::uuid[])) AND tenant_id IN (${demoTenants})`, [ids])).rowCount;
     n.invitations = (await c.query(`UPDATE platform.invitations SET revoked_at=now() WHERE accepted_at IS NULL AND revoked_at IS NULL AND tenant_id IN (${demoTenants})`)).rowCount;
