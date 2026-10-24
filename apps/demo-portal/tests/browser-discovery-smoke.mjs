@@ -95,6 +95,7 @@ test('Chromium discovers 50 sectors, 52 local businesses, regulator services and
   await page.locator('#opp-select-business').waitFor();
   assert.equal(await page.locator('#opp-select-sector option').count(),51);
   assert.equal(await page.locator('#opp-select-business option').count(),53);
+  await page.screenshot({path:'/tmp/ads-opportunities-business-sectors.png',fullPage:true});
   await page.locator('#opp-select-business').selectOption('wood-processor-sawmill');
   await page.locator('.opp-business-context').waitFor();
   assert.match(await page.locator('.opp-business-context').innerText(),/Processing ERP/);
@@ -102,11 +103,17 @@ test('Chromium discovers 50 sectors, 52 local businesses, regulator services and
   await page.locator('button[data-family="institutional"]').click();
   await page.locator('[data-category="institutional-tax"]').waitFor();
   assert.equal(await page.locator('button[data-category^="institutional-"]').count(),8);
+  await page.screenshot({path:'/tmp/ads-opportunities-regulator-services.png',fullPage:true});
   await page.locator('button[data-category="institutional-standards"]').click();
   await page.locator('.opp-detail-open').first().click();
   await page.locator('.opp-permit').waitFor();
   assert.match(await page.locator('.opp-permit').innerText(),/authority|certification|approval/i);
   assert.deepEqual(errors,[],errors.join('; '));
+  await page.setViewportSize({width:390,height:844});
+  await page.goto('http://127.0.0.1:'+server.address().port+'/opportunities');
+  await page.locator('#opp-select-business').waitFor();
+  assert.equal(await page.locator('#opp-select-sector option').count(),51);
+  await page.screenshot({path:'/tmp/ads-opportunities-mobile.png',fullPage:true});
   await page.screenshot({path:'/tmp/ads-opportunities-interactive-smoke.png',fullPage:true});
  }finally{
   await browser?.close();
