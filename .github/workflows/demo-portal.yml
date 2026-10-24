@@ -47,6 +47,29 @@ jobs:
           curl --fail -s http://127.0.0.1:18888/cloud | grep -q 'ADS Digital Ecosystem'
           curl --fail -s http://127.0.0.1:18888/catalogue.json | grep -q '"ecommerce"'
 
+  browser-discovery:
+    name: Chromium opportunity discovery acceptance
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install real Chromium test harness
+        run: |
+          set -euo pipefail
+          npm install --prefix apps/demo-portal --no-save --no-audit --no-fund playwright@1.56.1
+          node apps/demo-portal/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Interact with all sectors, local businesses and regulators
+        run: node --test apps/demo-portal/tests/browser-discovery-smoke.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: opportunities-interactive-browser
+          path: /tmp/ads-opportunities-interactive-smoke.png
+          if-no-files-found: ignore
+
   publish:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: test
