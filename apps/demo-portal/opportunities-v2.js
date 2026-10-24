@@ -70,7 +70,7 @@ function goto(update){
 }
 const opts=(items,selected)=>items.map(x=>'<option value="'+L(x.id)+'"'+(x.id===selected?' selected':'')+'>'+L(x.name)+'</option>').join('');
 function frame(t,body){
- return '<section class="opp-hero"><div class="container opp-hero-body"><div class="opp-hero-copy"><h1>'+L(t.title)+'</h1><h2>'+L(t.allFamilies)+'</h2><p>'+L(t.desc)+'</p><div class="opp-hero-facts"><span>◈ '+L(t.business)+'</span><span>▦ '+L(t.suggested)+'</span><span>✦ '+L(t.institutional)+'</span></div></div><div class="opp-hero-image" aria-hidden="true"></div></div></section>'+body;
+ return '<section class="opp-hero"><div class="container opp-hero-body"><div class="opp-hero-copy"><h1>'+L(t.title)+'</h1><h2>'+L(t.allFamilies)+'</h2><p>'+L(t.desc)+'</p><div class="opp-hero-facts"><span>◈ '+L(t.business)+'</span><span>▦ '+L(t.suggested)+'</span><span>✦ '+L(t.institutional)+'</span></div></div><div class="opp-hero-image" aria-hidden="true"></div><div class="opp-hero-pathways"><div><span>↗</span><strong>Digitalize Your Business</strong><small>Explore tools that support your organisation</small></div><div><span>▥</span><strong>Start a Digital Business</strong><small>Discover reusable digital service opportunities</small></div><div><span>♧</span><strong>Partner with ADS</strong><small>Partnership enquiries via WhatsApp for now</small></div></div></div></section>'+body;
 }
 function families(t,state){
  return '<div class="opp-families container" role="group" aria-label="Discovery families">'+
