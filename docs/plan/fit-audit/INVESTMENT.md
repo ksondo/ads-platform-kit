@@ -107,6 +107,7 @@ Sweep of the 10 investor pages at 360/768/1280 in EN and FR (60 page checks + me
 | Whole page changes language | **Pass** for UI strings, except the raw readiness keys on the demo venture pages (seed data, see item 4). Listing titles and summaries are the founder's words (EN). |
 | No horizontal scroll | **Pass** except **Profile at 360 px: 39 px** (the investor-type fieldset keeps a 170 px minimum column plus padding; `s-360-fr-_profile`). |
 | Switch visible | **Pass** in the top bar; **Fail inside the phone menu** (the drawer covers it, `s-360-fr-menu-open`). |
+| Phone menu | Opens and reaches every page, but tapping the page already open leaves the drawer covering the screen (found by the demo-journeys suite). |
 | Language kept through sign-in | **Fail for the shared demo accounts:** after sign-in "the saved language wins" (IIP-AC-003-1). The previous tester's choice is saved on the shared account, so a tester who chose French on the front door is switched back to English (and the other way round). Seen twice: tablet FR walk (FR before sign-in, English after) and tablet EN walk (English browser, French after, `t-08-lang-forced-fr`). |
 | First visit with `de-DE` gives French | **Fail**: English |
 
@@ -165,7 +166,7 @@ Nightly reset: the suite runs kit `demo-reset` + `demo-seed --reset` and then th
 | --- | --- |
 | Shared demo accounts: the language chosen on the page wins after sign-in and is saved (real accounts keep IIP-AC-003-1: the saved language follows the account) | `src/App.tsx`, `src/identity.ts` (`isDemoSession`, kit `demo` claim) |
 | French is the default for every browser language except English | `src/i18n.ts` |
-| Language switch inside the phone menu (`drawer-lang-en/fr`) | `src/App.tsx`, `src/styles.css` |
+| Language switch inside the phone menu (`drawer-lang-en/fr`); the menu closes when the current page is tapped | `src/App.tsx`, `src/styles.css` |
 | Profile page no longer scrolls sideways at 360 px, and a long e-mail wraps instead of covering Save | `src/styles.css` |
 | Review queue keeps its "Saved." confirmation (with the venture name) after an action | `src/screens/ReviewQueue.tsx` |
 | Seed sends VentureWorks' readiness dimensions; the venture page never shows a raw key for an unknown dimension | `scripts/demo-seed.mjs`, `src/screens/VentureDetail.tsx` |
