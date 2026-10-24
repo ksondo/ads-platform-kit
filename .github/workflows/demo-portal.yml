@@ -50,17 +50,17 @@ jobs:
   browser-discovery:
     name: Chromium opportunity discovery acceptance
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install real Chromium test harness
-        run: |
-          set -euo pipefail
-          npm install --prefix apps/demo-portal --no-save --no-audit --no-fund playwright@1.56.1
-          node apps/demo-portal/node_modules/playwright/cli.js install --with-deps chromium
+      - name: Install browser test library (Chromium provided by verified image)
+        run: npm install --prefix apps/demo-portal --no-save --no-audit --no-fund playwright@1.56.1
       - name: Interact with all sectors, local businesses and regulators
         run: node --test apps/demo-portal/tests/browser-discovery-smoke.mjs
       - uses: actions/upload-artifact@v4
