@@ -2,6 +2,8 @@
 import importlib.util
 from pathlib import Path
 import unittest
+from unittest.mock import patch
+from types import SimpleNamespace
 
 SOURCE = Path(__file__).resolve().parents[1] / "scripts" / "publish-https-ingress.py"
 spec = importlib.util.spec_from_file_location("ads_opportunities_ingress", SOURCE)
@@ -59,6 +61,38 @@ class IngressSourceTest(unittest.TestCase):
         # Refuse an unexpected existing route in the ADS HTTPS block.
         with self.assertRaises(api.Refused):
             api.find_approved_server(bad)
+
+    def test_https_json_valid_and_html_rejected_with_safe_metadata(self):
+        ok = SimpleNamespace(returncode=0,
+                             stdout='{"total":50}\n__ADS_HTTP__200|application/json')
+        html = SimpleNamespace(returncode=0,
+                               stdout='<!doctype html><title>ADS</title>\n__ADS_HTTP__200|text/html')
+        moved = SimpleNamespace(returncode=0,
+                                stdout='<html>redirect</html>\n__ADS_HTTP__302|text/html')
+        with patch.object(api.subprocess, "run", return_value=ok) as request:
+            self.assertEqual(api.fetch("/sectors", public=True)["total"], 50)
+            self.assertIn("--resolve", request.call_args.args[0])
+        with patch.object(api.subprocess, "run", return_value=html):
+            with self.assertRaisesRegex(api.Refused, "status=200 type=text/html body_kind=html"):
+                api.fetch("/sectors", public=True)
+        with patch.object(api.subprocess, "run", return_value=moved):
+            with self.assertRaisesRegex(api.Refused, "status=302"):
+                api.fetch("/sectors", public=True)
+
+    def test_nginx_reload_bounded_retry_and_still_fails_closed(self):
+        with patch.object(api, "verify_api", side_effect=[
+                api.Refused("status=200 type=text/html"), None]) as verify:
+            with patch.object(api.time, "sleep") as sleep:
+                api.verify_https_after_reload(attempts=3)
+                self.assertEqual(verify.call_count, 2)
+                sleep.assert_called_once_with(1)
+
+        with patch.object(api, "verify_api",
+                          side_effect=api.Refused("status=404 type=text/html")):
+            with patch.object(api.time, "sleep") as sleep:
+                with self.assertRaisesRegex(api.Refused, "after 3 checks: status=404"):
+                    api.verify_https_after_reload(attempts=3)
+                self.assertEqual(sleep.call_count, 2)
 
     def test_counts_contract(self):
         self.assertEqual([n for _,n in api.CHECKS], [50,333,13,8,102,20])

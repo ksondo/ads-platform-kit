@@ -15,6 +15,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 
 HOST = "demo.africadigitalsynergy.com"
 SITE = Path("/etc/nginx/sites-enabled/demo.africadigitalsynergy.com")
@@ -58,11 +59,30 @@ def run(*args):
                           stderr=subprocess.PIPE, text=True).stdout
 
 def fetch(path, *, public=False):
+    """Return a public read API JSON document, with bounded, secret-free errors."""
     url = ("https://" + HOST if public else LOCAL) + PREFIX.rstrip("/") + path
-    args = ["curl", "--noproxy", "*", "-fsS", "--max-time", "12"]
+    args = ["curl", "--noproxy", "*", "-sS", "--max-time", "12",
+            "--write-out", "\\n__ADS_HTTP__%{http_code}|%{content_type}"]
     if public:
         args += ["--resolve", HOST + ":443:127.0.0.1"]
-    return json.loads(run(*args, url))
+    result = subprocess.run([*args, url], capture_output=True, text=True)
+    if result.returncode != 0:
+        raise Refused("API " + ("HTTPS" if public else "LOCAL") +
+                      " request failed (curl exit " + str(result.returncode) + ")")
+    body, marker, meta = result.stdout.rpartition("\n__ADS_HTTP__")
+    require(bool(marker) and "|" in meta,
+            "API response missing status/content-type metadata")
+    status, content_type = meta.split("|", 1)
+    kind = ("html" if body.lstrip().lower().startswith(("<!doctype html", "<html"))
+            else "json-like" if body.lstrip().startswith(("{", "[")) else "other")
+    require(status == "200" and "application/json" in content_type.lower(),
+            "API " + ("HTTPS" if public else "LOCAL") + " " + path +
+            ": status=" + status + " type=" + content_type[:70] + " body_kind=" + kind)
+    try:
+        return json.loads(body)
+    except json.JSONDecodeError:
+        raise Refused("API " + ("HTTPS" if public else "LOCAL") + " " + path +
+                      ": HTTP 200 application/json but response is not JSON") from None
 
 def verify_api(public=False):
     for path, expected in CHECKS:
@@ -71,6 +91,24 @@ def verify_api(public=False):
                 ("HTTPS" if public else "LOCAL") + " catalogue mismatch " + path)
     print("ADS_OPPORTUNITIES_" + ("HTTPS" if public else "LOCAL") +
           "_COUNTS=PASS 50/333/13/8/102/20", flush=True)
+
+def verify_https_after_reload(attempts=12):
+    """Nginx workers may serve an earlier config briefly after reload.
+
+    Never claim deployment or retain a new site file without full live JSON
+    evidence. A failed verification is fatal and caller restores the backup.
+    """
+    last = "unknown"
+    for attempt in range(attempts):
+        try:
+            verify_api(public=True)
+            return
+        except Refused as error:
+            last = str(error)
+            if attempt < attempts - 1:
+                time.sleep(1)
+    raise Refused("HTTPS route remained unverified after " + str(attempts) +
+                  " checks: " + last)
 
 def find_approved_server(original):
     # No changes to the HTTP redirect or other server blocks. Refuse nonstandard layouts.
@@ -149,7 +187,7 @@ def main():
         return
 
     if mode == "existing":
-        verify_api(public=True)
+        verify_https_after_reload()
         print("ADS_OPPORTUNITIES_NGINX=ALREADY_ACTIVE")
         return
     BACKUPS.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -162,7 +200,7 @@ def main():
         replace_file(actual, updated)
         run("nginx", "-t")
         run("systemctl", "reload", "nginx")
-        verify_api(public=True)
+        verify_https_after_reload()
     except Exception:
         print("ADS_OPPORTUNITIES_NGINX=ROLLING_BACK", file=sys.stderr)
         replace_file(actual, original)
