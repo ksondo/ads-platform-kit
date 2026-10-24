@@ -38,12 +38,13 @@ export async function handleDiscovery(pool,url,res,send){
   const category=clean(url.searchParams.get('category'));
   const search=clean(url.searchParams.get('q'));
   const tool=clean(url.searchParams.get('tool'));
+  const sort=url.searchParams.get('sort')==='name'?'title_en':'sort_order,title_en';
   const page=limitNumber(url.searchParams.get('page'),1,10000);
   const limit=limitNumber(url.searchParams.get('limit'),12,24);
   const f=[family,category||null,search?like(search):null,tool||null];
   const where="family=$1 AND published=true AND ($2::text IS NULL OR category_id=$2) AND ($3::text IS NULL OR title_en ILIKE $3 ESCAPE '\\' OR summary_en ILIKE $3 ESCAPE '\\' OR examples::text ILIKE $3 ESCAPE '\\' OR tools::text ILIKE $3 ESCAPE '\\') AND ($4::text IS NULL OR tools @> jsonb_build_array($4::text))";
   const totals=await pool.query('SELECT count(*)::int AS total FROM opportunities.discovery_solutions WHERE '+where,f);
-  const r=await pool.query('SELECT '+columns+' FROM opportunities.discovery_solutions WHERE '+where+' ORDER BY sort_order,title_en LIMIT $5 OFFSET $6',
+  const r=await pool.query('SELECT '+columns+' FROM opportunities.discovery_solutions WHERE '+where+' ORDER BY '+sort+' LIMIT $5 OFFSET $6',
     [...f,limit,(page-1)*limit]);
   return send(res,200,{data:r.rows,total:totals.rows[0].total,page,limit});
  }
