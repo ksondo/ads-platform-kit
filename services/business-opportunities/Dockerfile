@@ -3,6 +3,7 @@ WORKDIR /app
 COPY services/business-opportunities/package.json ./package.json
 RUN npm install --omit=dev --no-audit --no-fund
 COPY services/business-opportunities/server.mjs ./server.mjs
+COPY services/business-opportunities/discovery.mjs ./discovery.mjs
 USER node
 ENV PORT=31090
 EXPOSE 31090
