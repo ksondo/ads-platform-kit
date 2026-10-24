@@ -81,18 +81,18 @@ class IngressSourceTest(unittest.TestCase):
 
     def test_nginx_reload_bounded_retry_and_still_fails_closed(self):
         with patch.object(api, "verify_api", side_effect=[
-                api.Refused("status=200 type=text/html"), None]) as verify, \\
-             patch.object(api.time, "sleep") as sleep:
-            api.verify_https_after_reload(attempts=3)
-            self.assertEqual(verify.call_count, 2)
-            sleep.assert_called_once_with(1)
+                api.Refused("status=200 type=text/html"), None]) as verify:
+            with patch.object(api.time, "sleep") as sleep:
+                api.verify_https_after_reload(attempts=3)
+                self.assertEqual(verify.call_count, 2)
+                sleep.assert_called_once_with(1)
 
         with patch.object(api, "verify_api",
-                          side_effect=api.Refused("status=404 type=text/html")), \\
-             patch.object(api.time, "sleep") as sleep:
-            with self.assertRaisesRegex(api.Refused, "after 3 checks: status=404"):
-                api.verify_https_after_reload(attempts=3)
-            self.assertEqual(sleep.call_count, 2)
+                          side_effect=api.Refused("status=404 type=text/html")):
+            with patch.object(api.time, "sleep") as sleep:
+                with self.assertRaisesRegex(api.Refused, "after 3 checks: status=404"):
+                    api.verify_https_after_reload(attempts=3)
+                self.assertEqual(sleep.call_count, 2)
 
     def test_counts_contract(self):
         self.assertEqual([n for _,n in api.CHECKS], [50,333,13,8,102,20])
