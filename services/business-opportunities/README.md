@@ -18,7 +18,7 @@ Browser /opportunities → GET /api/opportunities/v1/... → separate read-only 
    - node validate-seed.mjs
    - OPPORTUNITIES_MIGRATION_DATABASE_URL=<operator-only migration connection> node seed.mjs
 6. Verify SELECT count(*) from opportunities.sector_opportunities equals 333, sectors 50, businesses 52. Repeated seeding is additive/idempotent (ON CONFLICT DO NOTHING); **there is no reset**. Schema migrations are forward-only.
-7. Launch server.mjs with OPPORTUNITIES_DATABASE_URL=<read-only runtime connection>; bind the service to loopback port 18090 through a root-owned systemd or isolated compose process and route only the path prefix /api/opportunities/v1/ from the existing HTTPS vhost to http://127.0.0.1:18090. Preserve all current vhost routes and identity endpoints.
+7. Launch server.mjs with OPPORTUNITIES_DATABASE_URL=<read-only runtime connection>; bind the service to loopback port 18190 (after checking it is free) through a root-owned systemd or isolated compose process and route only the path prefix /api/opportunities/v1/ from the existing HTTPS vhost to http://127.0.0.1:18190. Preserve all current vhost routes and identity endpoints.
 8. Gate portal promotion on real database/API checks: /api/opportunities/v1/sectors has 50 rows, /api/opportunities/v1/opportunities?limit=1 returns total 333, /api/opportunities/v1/businesses/suggest?q=sawmill returns matches, /api/opportunities/v1/opportunities/{id} returns its summary. Confirm all other pages and new-tab Commerce and POS links are still correct.
 
 ## Routes and user journeys
