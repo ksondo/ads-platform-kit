@@ -64,11 +64,11 @@ class IngressSourceTest(unittest.TestCase):
 
     def test_https_json_valid_and_html_rejected_with_safe_metadata(self):
         ok = SimpleNamespace(returncode=0,
-                             stdout='{"total":50}\\n__ADS_HTTP__200|application/json')
+                             stdout='{"total":50}\n__ADS_HTTP__200|application/json')
         html = SimpleNamespace(returncode=0,
-                               stdout='<!doctype html><title>ADS</title>\\n__ADS_HTTP__200|text/html')
+                               stdout='<!doctype html><title>ADS</title>\n__ADS_HTTP__200|text/html')
         moved = SimpleNamespace(returncode=0,
-                                stdout='<html>redirect</html>\\n__ADS_HTTP__302|text/html')
+                                stdout='<html>redirect</html>\n__ADS_HTTP__302|text/html')
         with patch.object(api.subprocess, "run", return_value=ok) as request:
             self.assertEqual(api.fetch("/sectors", public=True)["total"], 50)
             self.assertIn("--resolve", request.call_args.args[0])
