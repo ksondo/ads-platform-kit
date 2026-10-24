@@ -34,6 +34,17 @@ test('filters, discoverable bundles and modal content are dynamically retrieved'
  assert.ok(ux.includes('https://wa.me/237654035075'));
  assert.ok(ux.includes('location.pathname.startsWith'));
 });
+test('full sector and local business discovery are actually wired to database API',()=>{
+ for(const endpoint of ['/sectors', '/businesses?limit=100'])assert.ok(ux.includes(endpoint),endpoint);
+ for(const selector of ['opp-select-sector','opp-select-business','opp-sector-grid','opp-business-context','data-action=sector'])
+  assert.ok(ux.includes(selector),selector);
+ assert.ok(ux.includes("p.set('sector',state.sector)"));
+ assert.ok(ux.includes("p.set('business',s.business)"));
+ assert.ok(ux.includes('recommended_tools'));
+ assert.ok(ux.includes('data.required_permission_summary'));
+ assert.ok(ux.includes("'/discovery/categories?family='+state.family"));
+ assert.ok(ux.includes('institutional'));
+});
 test('new display does not invent demos, require login or expose private instructions',()=>{
  assert.ok(!ux.includes('localStorage.setItem('));
  assert.ok(!ux.includes('window.open('));
