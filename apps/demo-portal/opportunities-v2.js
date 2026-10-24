@@ -196,8 +196,8 @@ async function openModal(id,kind,t,opts={}){
 }
 function wire(el,state,cats,modules,t,sectors,businesses){
  el.querySelectorAll('[data-family]').forEach(b=>b.addEventListener('click',()=>goto({family:b.dataset.family,category:'',sector:'',business:'',view:'bundles',page:1,q:'',module:''})));
- el.querySelectorAll('[data-category]').forEach(b=>b.addEventListener('click',()=>goto({category:b.dataset.category,sector:'',business:'',page:1,module:''})));
- el.querySelector('#opp-select-category').addEventListener('change',e=>goto({category:e.target.value,sector:'',business:'',page:1,module:''}));
+ el.querySelectorAll('[data-category]').forEach(b=>b.addEventListener('click',()=>goto({category:b.dataset.category,sector:'',business:'',view:'bundles',page:1,module:''})));
+ el.querySelector('#opp-select-category').addEventListener('change',e=>goto({category:e.target.value,sector:'',business:'',view:'bundles',page:1,module:''}));
  const sector=el.querySelector('#opp-select-sector');
  if(sector)sector.addEventListener('change',e=>goto({sector:e.target.value,business:'',category:'',view:'tools',page:1,module:''}));
  const business=el.querySelector('#opp-select-business');
@@ -244,13 +244,13 @@ export async function hydrate(path,lang){
   }
   if(requestId!==seq)return;
   if(state.category&&!categories.some(c=>c.id===state.category))state.category='';
+  const isTools=state.view==='tools';
   const p=new URLSearchParams({page:String(state.page),limit:'12'});
   if(state.q)p.set('q',state.q);
   if(state.sort==='name')p.set('sort','name');
   if(state.category)p.set('category',state.category);
   if(state.sector&&isTools)p.set('sector',state.sector);
   if(state.module)p.set('tool',state.module);
-  const isTools=state.view==='tools';
   const endpoint=isTools?'/opportunities?':'/discovery/solutions?family='+state.family+'&';
   const result=await fetchJSON(endpoint+p.toString());
   const modules=isTools?[]:(await fetchJSON('/discovery/modules?family='+state.family+(state.category?'&category='+encodeURIComponent(state.category):''))).data;
