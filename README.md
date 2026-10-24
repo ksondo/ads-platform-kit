@@ -68,13 +68,14 @@ Guides: [email setup (SPF/DKIM)](docs/EMAIL_SETUP.md) · [Google sign-in setup](
 | `DEMO_MODE=1` | Demo accounts work only when `ADS_ENV=demo` **and** `DEMO_MODE=1`. Anywhere else they are refused at sign-in and cannot be created; in production `DEMO_MODE=1` stops the start |
 | `DEMO_EMAIL_DOMAIN`, `DEMO_USER_EMAIL`, `DEMO_USER2_EMAIL`, `DEMO_ADMIN_EMAIL` | Demo addresses (default `demo.user@`, `demo.checker@`, `demo.admin@demo.africadigitalsynergy.com`). The domain is reserved: nobody can register under it |
 | `DEMO_USER_PASSWORD`, `DEMO_USER2_PASSWORD`, `DEMO_ADMIN_PASSWORD` (or `*_FILE`) | Demo passwords, from server secrets. Never printed |
-| `DEMO_SHOW_CREDENTIALS=1` | Demo mode only: the sign-in page shows the demo **user** (never the admin) with a "Use demo account" button |
+| `DEMO_PERSONA_PASSWORD` (or `_FILE`) | One shared password for every demo persona (below). Must differ from the checker's and the admin's. Without it, personas are skipped |
+| `DEMO_SHOW_CREDENTIALS=1` | Demo mode only: the sign-in page shows the demo **user** (never the admin) with a "Use demo account" button, and the personas of the product the tester came from |
 
 Demo set-up, inside the identity container (`ADS_ENV=demo DEMO_MODE=1`):
 
 ```bash
 node scripts/apply-clients.mjs --secrets-out /run/secrets-out/client-secrets.json   # config/clients.demo.json; secrets only in that file (0600)
-node src/cli.mjs demo-bootstrap                          # demo user, second demo user (maker-checker), demo admin
+node src/cli.mjs demo-bootstrap                          # demo user, second demo user (maker-checker), demo admin, demo personas
 node src/cli.mjs demo-orgs --out /tmp/demo-tenants.json   # demo + ADS staff organisations; product -> tenant ids and settings
 node src/cli.mjs demo-reset --out /tmp/demo-tenants.json  # nightly (cron): restore accounts, sign-ins, memberships and roles
 ```
@@ -82,6 +83,42 @@ node src/cli.mjs demo-reset --out /tmp/demo-tenants.json  # nightly (cron): rest
 `register-client` (and `apply-clients`) accepts `https://` redirect URIs, `http://localhost:<port>/`, and, when `ADS_ENV` is not `production`, `http://127.0.0.1:<port>/`. Production refuses `127.0.0.1`.
 
 Tokens carry `demo: true` for demo accounts and organisations and `ads_staff: true` for organisations an operator marked as ADS staff (`cli.mjs mark-staff-org --tenant <id>`, ACC-04).
+
+#### Demo personas
+
+`config/demo-personas.json` lists, per product of `config/clients.demo.json`, single-job demo accounts ("Cashier", "Bank agent", "Driver", "Teacher", ...): `{key, label:{en,fr}, hint:{en,fr}, org, roles}`. `org` is one of the product's `demo_orgs` keys or `personal` (the account's own workspace, which holds exactly the product's self-service roles). Products extend their list there; `demo-bootstrap`, `demo-orgs` and `demo-reset` validate it against the client list.
+
+- Accounts `demo.<product>.<key>@<DEMO_EMAIL_DOMAIN>`, all `is_demo`, password `DEMO_PERSONA_PASSWORD` (never printed). Each persona is a plain member of **exactly one** workspace with **exactly** its roles; `demo-reset` restores that, its password and its language, ends its sign-ins, and disables personas removed from the file. The demo user, checker and admin are unchanged.
+- The demo sign-in page (`DEMO_SHOW_CREDENTIALS=1`) shows the personas of the product the tester came from (`client_id`), labelled in the page language, each with **Use this account** (fills the form; then Continue). The demo admin is never shown.
+- Seeds read the subs from the tenants file (`--out`):
+
+```json
+{
+  "generated_at": "…",
+  "demo_accounts": { "user": "<sub>", "user2": "<sub>", "admin": "<sub>" },
+  "products": {
+    "commerce": {
+      "client_id": "commerce-web",
+      "tenants": { "main": "<tenant>", "bank": "<tenant>", "staff": "<tenant>" },
+      "staff_tenants": ["<tenant>"], "settings": {}, "operator_setup": [],
+      "personas": {
+        "cashier": { "sub": "<sub>", "email": "demo.commerce.cashier@…", "org": "main", "tenant_id": "<tenant>", "roles": ["commerce_cashier"], "label": { "en": "Cashier", "fr": "Caissier" } },
+        "shopper": { "sub": "<sub>", "email": "demo.commerce.shopper@…", "org": "personal", "tenant_id": "<personal tenant>", "roles": ["commerce_buyer"], "label": { "en": "Shopper", "fr": "Client" } }
+      }
+    }
+  },
+  "personas": { "commerce.cashier": "<sub>", "commerce.shopper": "<sub>" }
+}
+```
+
+Persona subs and tenant ids stay the same across `demo-reset`. A `personal` persona's workspace is created by `demo-orgs`, so seeds know its tenant id before anyone signs in.
+
+- Playwright: `signInAsPersona(page, 'cashier', { startUrl, lang })` from `@ads/e2e-kit/playwright` opens the real sign-in page from the product, presses **Use this account** and Continue (no password in the test). Without `button` it forces the sign-in page (`prompt=login`), so two personas can take turns in one browser.
+- Reuse for other demo sets (e.g. a per-tester sandbox): `personaAccounts(settings, personasDoc, clientsDoc, { set })`, `ensurePersonaAccounts(pool, settings, personas, password, { set })`, `ensureDemoOrgs(pool, settings, clientsDoc, { personas, set, ownerId })` and `placePersonas(c, personas, map, { set })` in `services/identity/src/demo.mjs`. A named set gets its own organisations (`<set>/<product>:<org>`, owned by `ownerId`) and personas (`demo.<set>.<product>.<key>@…`); the global `demo-reset` and the global sign-in page leave it alone.
+
+#### Sign-in language
+
+The sign-in page uses, in order: the language chosen on the page, the product's `ui_locales` (`adsIdentity.signIn({ lang })`; lists and region tags such as `fr-CM en` are understood), then the browser. The language of the sign-in is returned in the token claim `locale` (`en`/`fr`) and is **never saved on the account**. Products must not let a language saved for a demo account (`demo: true`) override the visible choice: use their own switch, or the `locale` claim.
 
 ## Develop
 

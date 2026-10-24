@@ -92,8 +92,8 @@ describe('demo-orgs and demo-reset with the reviewed client list', () => {
     const m = decode(shop.access_token);
     assert.ok(m.roles.includes('commerce_cashier'));
     assert.equal(m.ads_staff, undefined);
-    // Staff-only product: the demo user gets in through the demo organisation.
-    const tontine = await signInTokens(svc, clientOf('tontine'), { email: email('user'), password: PW.user });
+    // Staff-only product: the demo user gets in through the demo organisation (main; the cooperative and partner ones exist too).
+    const tontine = await signInTokens(svc, clientOf('tontine'), { email: email('user'), password: PW.user, extra: { tenant_hint: map.tontine.tenants.main } });
     assert.ok(decode(tontine.access_token).roles.includes('payout_approver'));
     const admin = await signInTokens(svc, clientOf('fleetguard'), { email: email('admin'), password: PW.admin, extra: { tenant_hint: map.fleetguard.tenants.main } });
     assert.deepEqual(decode(admin.access_token).roles, ['owner_admin']);

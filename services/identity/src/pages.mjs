@@ -30,6 +30,9 @@ const T = {
     openProduct: 'Open {product}', inviteInvalid: 'This invitation is invalid or has expired', inviteInvalidBody: 'Ask the person who invited you to send a new one.',
     demoTitle: 'Try the ADS demo', demoBody: 'Use the shared demo account. Everything you see is sample data, and it is reset every night.',
     demoUse: 'Use demo account', demoFilled: 'Demo account filled in. Select Continue to sign in.', demoBadge: 'Demo environment',
+    personasBody: 'Choose who you want to be. Each person sees only their own job. Everything is sample data, and it is reset every night.',
+    personasList: 'Demo people', personaPassword: 'Password for every person below', personaUse: 'Use this account',
+    personaFilled: 'Account "{name}" filled in. Select Continue to sign in.', personasAll: 'Or use the demo user, who holds every role:',
     errors: {
       INVALID_CREDENTIALS: 'Email or password is incorrect.',
       EMAIL_NOT_VERIFIED: 'Please confirm your email first. We just sent you a new link.',
@@ -74,6 +77,9 @@ const T = {
     openProduct: 'Ouvrir {product}', inviteInvalid: 'Cette invitation est invalide ou a expiré', inviteInvalidBody: "Demandez à la personne qui vous a invité d'en envoyer une nouvelle.",
     demoTitle: 'Essayer la démo ADS', demoBody: 'Utilisez le compte de démonstration partagé. Toutes les données sont fictives et remises à zéro chaque nuit.',
     demoUse: 'Utiliser le compte démo', demoFilled: 'Compte de démonstration saisi. Sélectionnez Continuer pour vous connecter.', demoBadge: 'Environnement de démonstration',
+    personasBody: 'Choisissez qui vous voulez être. Chaque personne ne voit que son propre travail. Toutes les données sont fictives et remises à zéro chaque nuit.',
+    personasList: 'Personnes de démonstration', personaPassword: 'Mot de passe de toutes les personnes ci-dessous', personaUse: 'Utiliser ce compte',
+    personaFilled: 'Compte « {name} » saisi. Sélectionnez Continuer pour vous connecter.', personasAll: 'Ou utilisez le compte démo qui a tous les rôles :',
     errors: {
       INVALID_CREDENTIALS: 'E-mail ou mot de passe incorrect.',
       EMAIL_NOT_VERIFIED: "Confirmez d'abord votre e-mail. Nous venons de vous envoyer un nouveau lien.",
@@ -94,8 +100,19 @@ const T = {
   },
 };
 
+// 'en' or 'fr' from a language value: a plain code, a tag ('fr-CM') or a list (OIDC ui_locales 'fr-CM en').
+// The first English or French entry wins; anything else is null.
+export const langOf = value => {
+  for (const tag of String(value ?? '').split(/[\s,]+/)) {
+    const primary = tag.split(/[-_;]/)[0].toLowerCase();
+    if (primary === 'fr' || primary === 'en') return primary;
+  }
+  return null;
+};
+
 export const pickLocale = (query, acceptLanguage, fallback = 'en') => {
-  if (query === 'fr' || query === 'en') return query;
+  const asked = langOf(query);
+  if (asked) return asked;
   if (/^fr\b/i.test(String(acceptLanguage ?? ''))) return 'fr';
   return fallback === 'fr' ? 'fr' : 'en';
 };
@@ -148,7 +165,7 @@ ${body}
 // demo USER (never the demo admin). Approved landing look: navy #0B1F33, gold #C9A227, Fraunces + Manrope.
 export const DEMO_FONTS = 'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Manrope:wght@400;600;700&display=swap';
 const jsString = v => JSON.stringify(String(v)).replace(/</g, '\\u003c');
-const demoPanel = (t, demo, nonce) => `<section class="demo" aria-labelledby="demo-title">
+const demoPanel = (t, demo, nonce, personas, locale) => (personas?.list?.length ? personaPanel(t, demo, nonce, personas, locale) : `<section class="demo" aria-labelledby="demo-title">
 <span class="demo-badge">${esc(t.demoBadge)}</span>
 <h2 id="demo-title">${esc(t.demoTitle)}</h2><p id="demo-body">${esc(t.demoBody)}</p>
 <dl><dt>${esc(t.email)}</dt><dd><code id="demo-email">${esc(demo.email)}</code></dd><dt>${esc(t.password)}</dt><dd><code id="demo-password">${esc(demo.password)}</code></dd></dl>
@@ -158,13 +175,47 @@ const demoPanel = (t, demo, nonce) => `<section class="demo" aria-labelledby="de
 <script nonce="${nonce}">(function(){var b=document.getElementById('demo-use');if(!b)return;b.addEventListener('click',function(){
 var e=document.getElementById('email'),p=document.getElementById('password');e.value=document.getElementById('demo-email').textContent;
 p.value=document.getElementById('demo-password').textContent;document.getElementById('demo-status').textContent=${jsString(t.demoFilled)};
-var s=document.getElementById('signin-submit');if(s)s.focus();});})();</script>`;
+var s=document.getElementById('signin-submit');if(s)s.focus();});})();</script>`);
+
+// BRIEF16 persona picker: the personas of the product the tester came from (client_id), labels in the
+// page language, one shared persona password, "Use this account" fills the form. The demo user (every
+// role) stays available underneath; the demo admin is never shown.
+const personaPanel = (t, demo, nonce, personas, locale) => `<section class="demo" aria-labelledby="demo-title">
+<span class="demo-badge">${esc(t.demoBadge)}</span>
+<h2 id="demo-title">${esc(t.demoTitle)}</h2><p id="demo-body">${esc(t.personasBody)}</p>
+<p class="persona-pw"><span id="persona-password-label">${esc(t.personaPassword)}</span> <code id="persona-password">${esc(personas.password)}</code></p>
+<ul class="personas" aria-label="${esc(t.personasList)}">
+${personas.list.map(p => {
+  const name = p.label?.[locale] ?? p.label?.en ?? p.key;
+  const hint = p.hint?.[locale] ?? p.hint?.en ?? '';
+  return `<li class="persona" data-persona="${esc(p.key)}"><div class="persona-text"><span class="persona-name">${esc(name)}</span>${hint ? `<span class="persona-hint">${esc(hint)}</span>` : ''}<code class="persona-email">${esc(p.email)}</code></div>
+<button type="button" class="persona-use" data-email="${esc(p.email)}" data-name="${esc(name)}" aria-pressed="false" aria-label="${esc(`${t.personaUse}: ${name}`)}">${esc(t.personaUse)}</button></li>`;
+}).join('\n')}
+</ul>
+${demo ? `<div class="demo-all"><p>${esc(t.personasAll)}</p><dl><dt>${esc(t.email)}</dt><dd><code id="demo-email">${esc(demo.email)}</code></dd><dt>${esc(t.password)}</dt><dd><code id="demo-password">${esc(demo.password)}</code></dd></dl>
+<button type="button" id="demo-use" class="demo-use secondary-demo" aria-describedby="demo-body">${esc(t.demoUse)}</button></div>` : ''}
+<p class="demo-status" id="demo-status" role="status" aria-live="polite"></p>
+</section>
+<script nonce="${nonce}">(function(){var st=document.getElementById('demo-status');
+function fill(email,password,message,button){var e=document.getElementById('email'),p=document.getElementById('password');e.value=email;p.value=password;
+var all=document.querySelectorAll('.persona-use');for(var i=0;i<all.length;i++)all[i].setAttribute('aria-pressed',all[i]===button?'true':'false');
+st.textContent=message;var s=document.getElementById('signin-submit');if(s)s.focus();}
+var pw=document.getElementById('persona-password').textContent,tpl=${jsString(t.personaFilled)},bs=document.querySelectorAll('.persona-use');
+for(var i=0;i<bs.length;i++)bs[i].addEventListener('click',function(){fill(this.getAttribute('data-email'),pw,tpl.replace('{name}',this.getAttribute('data-name')),this);});
+var d=document.getElementById('demo-use');if(d)d.addEventListener('click',function(){fill(document.getElementById('demo-email').textContent,document.getElementById('demo-password').textContent,${jsString(t.demoFilled)},null);});})();</script>`;
 const demoStyles = `.demo{margin:0 0 24px;padding:20px;border-radius:12px;background:#0B1F33;color:#fff;font-family:Manrope,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
 .demo h2{font-family:Fraunces,Georgia,"Times New Roman",serif;font-weight:600;font-size:22px;margin:8px 0 6px;color:#fff}
 .demo p{color:#dfe7ef;margin:0 0 12px;font-size:15px}.demo dl{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0 0 14px;font-size:14px}
 .demo dt{color:#C9A227;font-weight:600}.demo dd{margin:0;min-width:0}.demo code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;word-break:break-all;color:#fff}
 .demo-badge{display:inline-block;padding:2px 10px;border-radius:999px;border:1px solid #C9A227;color:#C9A227;font-size:12px;font-weight:600;letter-spacing:.02em}
 .demo .demo-use{min-height:44px;min-width:44px;margin-top:4px;background:#C9A227;color:#0B1F33;font-family:Manrope,system-ui,sans-serif;font-weight:700}
+.personas{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:8px}.persona-pw{font-size:14px}.persona-pw code{color:#C9A227;font-weight:700}
+.persona{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:10px 12px;border:1px solid rgba(201,162,39,.45);border-radius:10px;background:rgba(255,255,255,.04)}
+.persona-text{flex:1 1 170px;min-width:0;display:flex;flex-direction:column;gap:2px}.persona-name{font-weight:700;color:#fff;font-size:15px}.persona-hint{font-size:13px;color:#dfe7ef}
+.demo code.persona-email{font-size:12px;color:#d9c27a}
+.demo .persona-use{display:inline-block;width:auto;flex:0 0 auto;margin:0;min-height:44px;min-width:44px;padding:8px 14px;font-size:14px;background:#C9A227;color:#0B1F33;font-family:Manrope,system-ui,sans-serif;font-weight:700}
+.demo .persona-use:hover{background:#d8b43a}.demo .persona-use:focus{outline:3px solid #fff;outline-offset:2px}.demo .persona-use[aria-pressed=true]{box-shadow:0 0 0 3px #fff}
+.demo-all{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.2)}.demo .demo-all p{font-size:14px;margin-bottom:8px}
 .demo .demo-use:hover{background:#d8b43a}.demo .demo-use:focus{outline:3px solid #fff;outline-offset:2px}.demo .demo-status{margin:8px 0 0;min-height:1em;color:#fff;font-size:14px}
 body.demo-mode{font-family:Manrope,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}body.demo-mode h1{font-family:Fraunces,Georgia,"Times New Roman",serif;font-weight:600}`;
 
@@ -184,7 +235,7 @@ export function renderPage(view, ctx) {
   const csrfField = hidden('csrf', csrf) + hidden('req', req) + hidden('lang', locale) + hidden('next', ctx.next);
   switch (view) {
     case 'login':
-      return layout({ ...base, demo: Boolean(ctx.demo), title: t.signIn, body: `${ctx.demo ? demoPanel(t, ctx.demo, nonce) : ''}<h1>${fill(t.signInTo, { product })}</h1>${errorBox(locale, error)}
+      return layout({ ...base, demo: Boolean(ctx.demo || ctx.personas), title: t.signIn, body: `${ctx.demo || ctx.personas ? demoPanel(t, ctx.demo, nonce, ctx.personas, locale) : ''}<h1>${fill(t.signInTo, { product })}</h1>${errorBox(locale, error)}
 <form method="post" action="/login" novalidate>${csrfField}
 <label for="email">${esc(t.email)}</label><input id="email" name="email" type="email" autocomplete="email" required value="${esc(values.email)}">
 <label for="password">${esc(t.password)}</label><input id="password" name="password" type="password" autocomplete="current-password" required>
