@@ -39,7 +39,9 @@ jobs:
           node --check services/business-opportunities/server.mjs
           node --check services/business-opportunities/seed.mjs
           node --check apps/demo-portal/main.js
-          node --check apps/demo-portal/opportunities-page.js
+          node --check apps/demo-portal/opportunities-v2.js
+          node --check services/business-opportunities/discovery.mjs
+          node --check services/business-opportunities/seed-discovery.mjs
           node --test apps/demo-portal/tests/*.test.mjs
       - name: Install isolated API dependencies and apply real Postgres schema
         env:
@@ -48,6 +50,7 @@ jobs:
           set -euo pipefail
           npm install --prefix services/business-opportunities --no-audit --no-fund
           psql "$PGURL" -v ON_ERROR_STOP=1 -f services/business-opportunities/db/001_catalogue.sql
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f services/business-opportunities/db/002_discovery.sql
           psql "$PGURL" -v ON_ERROR_STOP=1 -c 'CREATE ROLE ads_opportunities_reader LOGIN; GRANT USAGE ON SCHEMA opportunities TO ads_opportunities_reader; GRANT SELECT ON ALL TABLES IN SCHEMA opportunities TO ads_opportunities_reader;'
       - name: Seed twice to prove idempotence and assert 50/333/52
         env:
@@ -57,6 +60,8 @@ jobs:
           cd services/business-opportunities
           node seed.mjs
           node seed.mjs
+          node seed-discovery.mjs
+          node seed-discovery.mjs
           node --test tests/*.test.mjs
           psql "$OPPORTUNITIES_MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -Atc "SELECT (SELECT count(*) FROM opportunities.sectors)::text || '/' || (SELECT count(*) FROM opportunities.sector_opportunities)::text || '/' || (SELECT count(*) FROM opportunities.business_types)::text" | grep -x '50/333/52'
       - name: Smoke actual HTTP read API and keep homepage source unchanged
@@ -74,4 +79,9 @@ jobs:
           curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/sectors' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total!==50)process.exit(1)})"
           curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/opportunities?limit=1' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total!==333)process.exit(1)})"
           curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/businesses/suggest?q=sawmill' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total<1)process.exit(1)})"
+          curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/discovery/categories?family=business' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total!==13)process.exit(1)})"
+          curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/discovery/categories?family=institutional' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total!==8)process.exit(1)})"
+          curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/discovery/solutions?family=business&limit=1' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total!==102)process.exit(1)})"
+          curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/discovery/solutions?family=institutional&limit=1' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total!==20)process.exit(1)})"
+          curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/discovery/solutions/business-wood-processor-sawmill' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{let d=JSON.parse(s).data;if(!d || d.tools.length<4)process.exit(1)})"
           echo 'ADS_BUSINESS_OPPORTUNITIES_POSTGRES_API=PASS'
