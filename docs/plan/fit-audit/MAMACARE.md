@@ -167,6 +167,9 @@ Branch `build/demo-journeys-20261023`, PR ksondo/Mama-care-and-intelligent-servi
 - content-review dates and titles in the reader's language;
 - `e2e/demo-journeys/` suite (desktop EN, phone FR, main journey also tablet 768 EN/FR), `scripts/demo-journeys.sh`, CI job `demo-journeys`; kit pin moved to kit main.
 
+CI on the PR run for `6385da9`: verify green, e2e green, **demo-journeys 23 passed, 1 skipped** (the phone-only menu check on desktop), all journeys of section 7 except J-28's answer. The push-event e2e run of the same commit failed twice in the regular suite; `main` itself (`91b70d9`) also fails e2e, so this is a pre-existing flaky test, not this branch. The last commit (`a3c40d0`, GitHub reporter for the regular suite so the flaky test shows as an annotation) could not run: **GitHub Actions stopped starting jobs ("recent account payments have failed or your spending limit needs to be increased")**.
+- `106c420`: the helper and seed use the kit persona keys from kit PR #20 (`mother`, `health-worker`, `parent`, `facility-admin`, `content-author`, `content-steward`) and `signInAsPersona` from the product page. **CI blocked by billing** (startup failure). A local re-run on 24 Oct passed the mother journeys (J-02, J-31/J-01/J-32/J-30, J-21/J-28, J-18/J-30) but the two-person journeys timed out at 3 minutes with the machine at load average 47–77; it was stopped. The CI run of `6385da9` remains the proof. Note: kit personas have no ADS support persona, matching gap 1.
+
 ## 9. Method notes and limits
 
 - The machine running the walks was heavily shared (load average above 100); a few local Playwright steps timed out and were re-run. CI is the reference for the demo-journeys suite.
