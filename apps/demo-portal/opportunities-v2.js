@@ -41,14 +41,16 @@ const fetchJSON=async path=>{
 const L=x=>escapeHtml(x);
 const tFor=lang=>langText[lang]||langText.en;
 const photo=id=>'https://images.unsplash.com/'+(photos[id]||'photo-1497366811353-6870744d04b2')+'?auto=format&fit=crop&w=740&q=70';
-const button=(label,action,cls='')=>'<button type="button" class="'+cls+'" data-action="'+action+'">'+L(label)+'</button>';
+const button=(label,action,cls='',attrs='')=>'<button type="button" class="'+L(cls)+'" data-action="'+L(action)+'" '+attrs+'>'+L(label)+'</button>';
 const contact=t=>'<a class="btn btn-gold opp-whatsapp" href="'+wa+'" rel="noopener noreferrer" target="_blank">'+L(t.contact)+' ↗</a>';
 export const directoryShell=()=>'<div id="opportunities-app"></div>';
 export const detailShell=directoryShell;
 function stateFromURL(){
  const p=new URLSearchParams(location.search);
  const family=p.get('family')==='institutional'?'institutional':'business';
- return {family,category:p.get('category')||'',view:p.get('view')==='tools'&&family==='business'?'tools':'bundles',
+ const platform=p.get('platform')||'';
+ const platformCategory={commerce:'business-commerce',education:'business-education',healthcare:'business-health',agriculture:'business-agriculture',finance:'business-finance',transport:'business-mobility',ventureworks:'business-technology',morphoo:'business-communities'}[platform]||'';
+ return {family,category:p.get('category')||platformCategory,view:p.get('view')==='tools'&&family==='business'?'tools':'bundles',
   q:p.get('q')||'',module:p.get('module')||'',sort:p.get('sort')==='name'?'name':'relevance',
   page:Math.max(1,Math.min(1000,Number(p.get('page'))||1))};
 }
@@ -93,7 +95,7 @@ function solutionCard(x,t,view){
  const tags=view==='tools'?[]:x.tools;
  return '<article class="opp-solution"><div class="opp-solution-cover" style="background-image:url('+photo(x.category_id||'business-processing')+')"><span>'+L(x.readiness==='verified_demo'?'Verified demo':t.proposed)+'</span></div>'+
  '<div class="opp-solution-body"><small>'+L(x.sector_name||x.category_name||t.results)+'</small><h3>'+L(x.title)+'</h3><p>'+L(x.summary)+'</p>'+
- pillTags(tags)+'<div class="opp-card-actions">'+button(t.see+' →','detail','btn btn-outline opp-detail-open" data-id="'+L(x.id)+'" data-kind="'+kind)+
+ pillTags(tags)+'<div class="opp-card-actions">'+button(t.see+' →','detail','btn btn-outline opp-detail-open','data-id="'+L(x.id)+'" data-kind="'+kind+'"')+
  '<a class="btn btn-navy" href="'+wa+'" target="_blank" rel="noopener noreferrer">'+L(t.contact)+'</a></div></div></article>';
 }
 function pagination(state,pageInfo,t){
