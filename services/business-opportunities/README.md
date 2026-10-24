@@ -33,3 +33,32 @@ Browser /opportunities → GET /api/opportunities/v1/... → separate read-only 
 Do NOT deploy the updated portal before API ingress and DB provisioning. If the API is unavailable the opportunity area shows an error rather than claims about available tools; other portal pages remain functional. The new public read API must never expose a database password, arbitrary SQL, mutation routes, private contact data, unverified demo links, or an internal admin write endpoint.
 
 Before public publication: integration tests against real PostgreSQL, negative auth/permission testing, browser responsive and EN/FR tests, URL and new-tab checks, Commerce portal acceptance, load/rate-limit checks, and review of opportunity summaries. EN/FR navigation is present but per-opportunity summaries are currently English-only with an explicit note, so bilingual content completion is still pending. An approval/audit-backed admin editor and publication workflow may be added separately after secure authorization review.
+
+
+## Discovery v2 — public page build (24 October 2026)
+
+**User-approved scope:** preserve every existing page and navigation label. In particular, do not display "ADS website" beside About ADS or Partners. Both corporate-site links remain gated/inactive until the corporate site is relaunched; Contact remains the existing WhatsApp link.
+
+**Front end:** `apps/demo-portal/opportunities-v2.js` and `opportunities-v2.css`, rendered only at `/opportunities` and new `/opportunities/:id` identifiers. Two distinct dynamic families (Business Sectors and Institutional & Regulatory Services) populate a category rail above responsive listings, with search + filters in the left column, optionally showing individual tools. `View details` opens a keyboard-accessible, dismissible **summary-only** dialog, including reusable tools and an explicit proposal/readiness label. No private business plan, integration API credentials, regulator technical protocol or fee assumptions are exposed. Nothing meaningful shown in a browser can be made impossible to copy; the safe protection is to limit public detail and retain the full implementation blueprints privately. WhatsApp opens only by explicit visitor action.
+
+**Catalogue:** `seed/discovery.v1.json` maps 50 business sectors and 52 business types into 13 public business category groups and 102 business solution previews, plus eight institutional categories and 20 proposed institutional service previews. This results in 21 browsing groups and 122 solution previews. It does **not** change the underlying 333 mapped individual tool opportunities. Dynamic sector counts must be calculated by SQL, not pasted from illustration/mock screenshots. All new items remain `concept` or `proposal`, and verified demo buttons must never be inferred from readiness labels.
+
+**Database provisioning order:**
+```sh
+psql "$OPPORTUNITIES_MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -f services/business-opportunities/db/001_catalogue.sql
+psql "$OPPORTUNITIES_MIGRATION_DATABASE_URL" -v ON_ERROR_STOP=1 -f services/business-opportunities/db/002_discovery.sql
+(cd services/business-opportunities && node seed.mjs && node seed-discovery.mjs)
+```
+Only run this as an authorized operator on the **separate opportunity catalogue database**, never on Commerce or shared ADS Identity. Repeating a seed does not truncate or reset records. The API runtime database role must have SELECT only on the `opportunities` tables, including the two new discovery tables.
+
+**Read API paths (public, read-only, paginated):**
+- `/api/opportunities/v1/discovery/categories?family=business|institutional`
+- `/api/opportunities/v1/discovery/solutions?family=...&category=...&q=...&tool=...&sort=...&page=...`
+- `/api/opportunities/v1/discovery/solutions/:id`
+- `/api/opportunities/v1/discovery/suggest?q=...&family=...`
+- `/api/opportunities/v1/discovery/modules?family=...&category=...`
+- Legacy `/api/opportunities/v1/opportunities` with optional `category` provides all 333 underlying mappings.
+
+**Integration:** An existing platform can still open a demo in a *new* tab and delegate authentication to shared ADS sign-in. The existing `/opportunities/{pos,ecommerce,bnpl,inventory,...}` legacy tool detail routes are preserved, not hijacked by the new modal. The portal's three main browsing paths (Home, Platforms, Business Opportunities) are verified as source routes, but actual browser acceptance must run against the deployed instance.
+
+**Deployment guard:** Portal promotion must wait until the isolated PostgreSQL database, read-only API process, API ingress and HTTPS proxy are configured and 50/333/52 as well as 21/122 validated. Do not replace the running Portal image prematurely, alter Commerce, reset accounts or activate the corporate Partners/About links. Keep old portal image available for rollback. Acceptance: Home ↔ Platforms ↔ Opportunities; family switching; search/filter/category; popup opens/closes/keyboard; WhatsApp; Commerce/POS new tabs; shared demo sign-in and return; EN/FR controls; mobile widths; no unverified live status.
