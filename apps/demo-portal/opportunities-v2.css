@@ -117,3 +117,13 @@ body.opp-modal-open{overflow:hidden}
 .opp-business-context p{margin:6px 0 10px;color:#36546f}
 .opp-regulatory-guard{margin:12px 0;padding:11px 14px;border-left:4px solid #4176ad;background:#f3f7fc;color:#24476b}
 @media(max-width:700px){.opp-sector-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.opp-sector-chip{padding:9px;font-size:11px}}
+
+/* Reveal the complete primary business and regulator category hierarchy on
+   desktop instead of hiding most categories in a horizontal scroller. */
+@media(min-width:960px){
+ #opportunities-app .opp-category-rail{
+   display:grid;grid-template-columns:repeat(auto-fill,minmax(127px,1fr));
+   overflow:visible;scroll-snap-type:none;align-items:stretch
+ }
+ #opportunities-app .opp-category{width:auto;min-width:0;flex:auto}
+}
