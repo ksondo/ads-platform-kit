@@ -163,7 +163,7 @@ function render(){
  else if(path==="/platforms") main=platformDirectory();
  else if(path.startsWith("/platforms/")) {const p=catalogue.platforms.find(x=>x.id===path.split("/")[2]);main=p?platformDetail(p):platformDirectory();}
  else if(path==="/opportunities") main=ADSOpportunities.directoryShell();
- else if(path.startsWith("/opportunities/")) main=ADSOpportunities.detailShell();
+ else if(path.startsWith("/opportunities/")) {const legacy=catalogue.tools.find(y=>y.id===path.split("/")[2]);main=legacy?toolDetail(legacy):ADSOpportunities.detailShell();}
  else if(path==="/demo-access") main=demoAccessGuide();
  else if(path==="/cloud") main=cloud();
  else main=platformDirectory();
