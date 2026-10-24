@@ -207,7 +207,7 @@ export async function hydrate(path,lang){
   wire(el,state,categories,modules,t);
   if(path.startsWith('/opportunities/')){
     const id=decodeURIComponent(path.slice('/opportunities/'.length));
-    await openModal(id,'solution',t,{deepLink:true,restore:'/opportunities'+location.search});
+    await openModal(id,state.view==='tools'?'tool':'solution',t,{deepLink:true,restore:'/opportunities'+location.search});
   }
  }catch(e){
   if(requestId!==seq)return;
