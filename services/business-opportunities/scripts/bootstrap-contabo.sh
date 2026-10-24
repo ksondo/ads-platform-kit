@@ -26,7 +26,8 @@ fi
 for name in ads-demo-portal ads-demo-identity ads-commerce-demo-db-1; do
  docker inspect "$name" >/dev/null 2>&1 || fail "Existing ADS service is missing: $name"
 done
-install -d -o root -g root -m 0700 "$CONF"
+if [ ! -d "$CONF" ]; then install -d -o root -g root -m 0700 "$CONF"; fi
+[ "$(stat -c %u "$CONF")" = 0 ] || fail "Existing ADS demo config directory must be root-owned"
 if [ ! -e "$OWN" ] && [ ! -e "$API" ]; then
   owner_pw="$(openssl rand -hex 32)"
   reader_pw="$(openssl rand -hex 32)"
