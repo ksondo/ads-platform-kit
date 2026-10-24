@@ -81,6 +81,7 @@ jobs:
           done
           curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/sectors' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total!==50)process.exit(1)})"
           curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/opportunities?limit=1' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total!==333)process.exit(1)})"
+          curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/businesses?limit=100' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{const j=JSON.parse(s);if(j.total!==52||j.data.length!==52||!j.data.some(x=>/sawmill/i.test(x.name)))process.exit(1)})"
           curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/businesses/suggest?q=sawmill' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total<1)process.exit(1)})"
           curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/discovery/categories?family=business' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total!==13)process.exit(1)})"
           curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/discovery/categories?family=institutional' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total!==8)process.exit(1)})"
