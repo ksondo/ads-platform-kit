@@ -28,6 +28,21 @@ export function createHandler(pool){
       'SELECT s.id,s.name_en AS name,s.business_examples,COUNT(o.id)::int AS opportunity_count FROM opportunities.sectors s LEFT JOIN opportunities.sector_opportunities o ON o.sector_id=s.id AND o.published=true WHERE s.published=true GROUP BY s.id ORDER BY s.name_en');
     return send(res,200,{data:r.rows,total:r.rows.length});
    }
+   // Public directory of existing, approved discovery profiles; no private contact data.
+   // This exposes the catalogue's 52 business types to the actual UI, not only to
+   // API callers who already know what to search for.
+   if(route==='/businesses'){
+    const q=queryText(url.searchParams.get('q'));
+    const sector=queryText(url.searchParams.get('sector'));
+    const page=positive(url.searchParams.get('page'),1,10000);
+    const limit=positive(url.searchParams.get('limit'),52,100);
+    const params=[q?like(q):null,sector||null];
+    const where="published=true AND ($1::text IS NULL OR display_name ILIKE $1 ESCAPE '\\\\' OR sector_name ILIKE $1 ESCAPE '\\\\') AND ($2::text IS NULL OR sector_id=$2)";
+    const count=await pool.query('SELECT count(*)::int AS total FROM opportunities.business_types WHERE '+where,params);
+    const rows=await pool.query('SELECT id,display_name AS name,sector_id,sector_name,recommended_tools,visitor_pathway,readiness FROM opportunities.business_types WHERE '+where+' ORDER BY display_name LIMIT $3 OFFSET $4',
+      [...params,limit,(page-1)*limit]);
+    return send(res,200,{data:rows.rows,total:count.rows[0].total,page,limit});
+   }
    if(route==='/businesses/suggest'){
     const q=queryText(url.searchParams.get('q'));
     if(q.length<2)return send(res,200,{data:[],total:0});
