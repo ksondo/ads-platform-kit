@@ -42,6 +42,7 @@ jobs:
           node --check apps/demo-portal/opportunities-v2.js
           node --check services/business-opportunities/discovery.mjs
           node --check services/business-opportunities/seed-discovery.mjs
+          bash -n services/business-opportunities/scripts/bootstrap-contabo.sh
           node --test apps/demo-portal/tests/*.test.mjs
       - name: Install isolated API dependencies and apply real Postgres schema
         env:
