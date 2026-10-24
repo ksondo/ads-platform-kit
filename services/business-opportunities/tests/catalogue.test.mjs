@@ -31,6 +31,19 @@ test('API rejects unknown routes and writes without touching the DB',async()=>{
  assert.equal((await invoke('/elsewhere','GET',reject)).code,404);
  assert.equal((await invoke('/api/opportunities/v1/opportunities/%22bad','GET',reject)).code,400);
 });
+test('public local-business directory returns all 52 approved profiles and paginates safely',async()=>{
+ let calls=[];
+ const r=await invoke('/api/opportunities/v1/businesses?limit=500&page=1', 'GET', async(sql,params)=>{
+  calls.push({sql,params});
+  return sql.includes('count(*)')?{rows:[{total:52}]}:{rows:[{id:'wood-processor-sawmill',name:'Wood processor / sawmill',sector_id:'wood-forest-processing',recommended_tools:['Processing ERP','POS']}]};
+ });
+ assert.equal(r.code,200);
+ assert.equal(r.response.total,52);
+ assert.equal(r.response.limit,100);
+ assert.equal(r.response.data[0].name,'Wood processor / sawmill');
+ assert.ok(calls[1].sql.includes('WHERE published=true'));
+ assert.deepEqual(calls[1].params.slice(-2),[100,0]);
+});
 test('business suggestions require at least two characters and use parameterized query',async()=>{
  const nope=()=>{throw Error('short query should not access DB')};
  assert.equal((await invoke('/api/opportunities/v1/businesses/suggest?q=a','GET',nope)).response.total,0);
