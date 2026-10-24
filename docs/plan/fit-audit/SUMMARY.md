@@ -39,7 +39,8 @@ A blank audited score **does not mean zero working journeys**. It means the sour
 | Transport | Audit pending | Not yet verified | Finish journeys; fail on skipped tests; audit and CI |
 | Home Services | Audit pending | Refund currently blocked | Fix `originalRequestId` versus kit mock `paymentId`; refund test; audit and CI |
 | Leisure / Recreation / Events | Audit pending | Not yet verified | Create branch; demo journey infrastructure; audit and CI |
-| Morphoo / `go-ahead-guesser` | Audit pending | Ten spec files exist; pass count unknown | Confirm T-21 and T-27 refer to the same product before duplicate work; formation-alone D-9 EN/FR; fixtures, demo suite and audit |
+| Morphoo (T-21, `morphoo`) | Audit pending | Not yet verified | D-9 formation-alone wording EN/FR; demo fixtures; fit audit and PR |
+| Go-Ahead Guesser (T-27, `go-ahead-guesser`) | Audit pending | Six existing branch commits reported; journey pass count unknown | Report those six commits; finish demo journeys; fit audit and PR |
 
 ## Acceptance and reporting gate
 
