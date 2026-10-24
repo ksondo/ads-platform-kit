@@ -13,6 +13,12 @@ What the yardstick asks for does not exist yet: **a front door that routes each 
 - The sector grid component (`src/components/site/Sectors.tsx`, "available / coming soon") exists but is not shown anywhere.
 - Single sign-on works between products. Opening Logistics in the same browser after signing in to the Hub asked for no password, only "Choose a workspace". The Hub simply never hands the visitor over (HUB-US-002 / EP-GATE not built).
 
+**Note (24 Oct).** Kit main now ships `apps/demo-portal`. It is a single ADS demo portal with a platform catalogue (`catalogue.json`), "Try Demo" buttons that open each verified platform demo in its own tab, and a guide to demo sign-in. The "route to each sector" duty is therefore being built in the kit, not in this repository. Fix #1 below should then be decided as one of:
+- (a) the Hub links to, or embeds, that catalogue (S once the catalogue URLs are final); or
+- (b) one front door replaces the other.
+
+Today the Hub and the demo portal do not link to each other.
+
 ## Set-up and commits tested
 
 | Item | Value |
