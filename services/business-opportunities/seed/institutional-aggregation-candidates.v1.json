@@ -1,0 +1,493 @@
+{
+  "status": "proposed-not-published",
+  "proposalDate": "2026-10-24",
+  "catalogueRelation": "Extension candidates separate from the existing 333 mappings; no count increment until deduplication and sector approval.",
+  "owner": "ADS Business Opportunities",
+  "umbrella": "Institutional Access, Regulatory Services and Aggregation",
+  "boundary": "ADS is not a government office, GUCE, customs broker, licensed bank, payment institution, insurer or granting authority; clients and authorized operators remain responsible for regulated acts.",
+  "existingSources": [
+    "retail-connect-kit: CoreStack master architecture v1.2 (shared engines; Trade & Customs designed/not built)",
+    "ads-platform-kit: shared identity and mocks (bank/regulator/PSP mock only)",
+    "Banking-platforms: mock bank connections, no lending or funds custody",
+    "Africa-Digital-Synergy-VentureWorks: partner-formation and evidence-based venture model"
+  ],
+  "statuses": {
+    "guidance_and_assisted_preparation": "Public guidance, independent preparation and customer-authorized assisted handoff only.",
+    "guidance_and_estimation": "Non-binding computations and administrative preparation; never official assessment.",
+    "partner_integration_required": "External protocol and signed partner approval mandatory before execution.",
+    "licensed_professional_or_mandate_required": "Accredited intermediary and client representation mandate required for restricted work.",
+    "formal_guce_agreement_required": "GUCE authorized partnership/protocol required; no credentials reuse or scraping.",
+    "official_validation_agreement_required": "Competent authority retains certification or approval and controls integration access.",
+    "accredited_partner_required": "Accredited sector professional and authority-approved handoff required.",
+    "authority_or_consultant_approval_required": "Formal approval/appropriate professional accreditation where regulated.",
+    "authorized_submission_required": "The public authority or its authorized representative controls any submission.",
+    "professional_or_authority_validation_required": "Clinical licensing/authorization solely with competent authorities.",
+    "bank_partner_agreement_required": "Bank partner agreement and informed customer consent; no credit decisions or custody.",
+    "bank_and_trade_partner_agreements_required": "Licensed banks and permitted trade stakeholders own restricted activities.",
+    "licensed_provider_partner_required": "Licensed PSP/bank partnership for regulated payment processing, no fund custody by ADS.",
+    "insurer_or_licensed_intermediary_required": "Licensed insurance professionals and carriers control regulated intermediation.",
+    "public_information_only": "Sources limited to public official regulatory information until permission is granted.",
+    "mandated_professional_coordination": "Case coordination with lawful, explicit scope of representation and authorization."
+  },
+  "candidates": [
+    {
+      "id": "aggregation-institutional-onboarding",
+      "name": "Business and institutional formalities coordinator",
+      "sector": "Business registration and administrative services",
+      "summaryEn": "A managed service that helps new or growing businesses identify registration requirements, assemble documents, follow appointments and retain proof of submissions, with official filings performed through authorized channels.",
+      "operatorProfiles": [
+        "Startup founders",
+        "cooperatives",
+        "business consultants"
+      ],
+      "reusableEngines": [
+        "Intake",
+        "Document & Evidence",
+        "Verification",
+        "Notifications"
+      ],
+      "integrationGate": "guidance_and_assisted_preparation",
+      "demoStatus": "none",
+      "commercialModel": "business registration and administrative case fees or organizational subscriptions",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-tax-readiness",
+      "name": "Tax compliance dossier and deadline manager",
+      "sector": "Tax and fiscal compliance",
+      "summaryEn": "Organize taxpayer obligations, supporting records, returns preparation, filing calendars and correspondence for DGI/DGE/CIME workflows without impersonating the tax authority or issuing official tax documents.",
+      "operatorProfiles": [
+        "Accountants",
+        "tax consultants",
+        "SMEs"
+      ],
+      "reusableEngines": [
+        "Policy & Correction",
+        "Fiscal Compliance Gateway",
+        "Evidence",
+        "Notifications"
+      ],
+      "integrationGate": "guidance_and_assisted_preparation",
+      "demoStatus": "none",
+      "commercialModel": "monthly compliance service and authorized accounting support",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-fiscal-gateway",
+      "name": "Fiscal transaction preparation and authorized submission gateway",
+      "sector": "Tax and fiscal compliance",
+      "summaryEn": "Prepare transaction and invoicing evidence against applicable rules and coordinate authorized filing, submission status and exceptions where the fiscal authority permits a documented integration.",
+      "operatorProfiles": [
+        "ERP resellers",
+        "POS providers",
+        "certified integrators"
+      ],
+      "reusableEngines": [
+        "Fiscal Compliance Gateway",
+        "Commerce/POS",
+        "Policy",
+        "Audit"
+      ],
+      "integrationGate": "partner_integration_required",
+      "demoStatus": "none",
+      "commercialModel": "authorized business API integration and ongoing compliance operations",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-customs-case",
+      "name": "Import–export trade case coordinator",
+      "sector": "Foreign trade and customs",
+      "summaryEn": "Create trade cases, gather declaration documents, track freight and customs milestones, and coordinate licensed customs professionals and approved official channels.",
+      "operatorProfiles": [
+        "Importers",
+        "exporters",
+        "freight forwarders",
+        "customs agents"
+      ],
+      "reusableEngines": [
+        "Trade & Customs Facilitation",
+        "Logistics",
+        "Verification",
+        "Evidence"
+      ],
+      "integrationGate": "licensed_professional_or_mandate_required",
+      "demoStatus": "none",
+      "commercialModel": "per-trade-case document management and licensed professional services",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-guce-integration",
+      "name": "GUCE trade-participant onboarding and process integration",
+      "sector": "Foreign trade and customs",
+      "summaryEn": "Assist eligible enterprises and accredited intermediaries with GUCE participation readiness and interoperable trade records, without claiming API access or replacing GUCE's official single window.",
+      "operatorProfiles": [
+        "Import/export consultants",
+        "authorized systems integrators"
+      ],
+      "reusableEngines": [
+        "Trade & Customs Facilitation",
+        "Contracts & Adapters",
+        "Identity",
+        "Audit"
+      ],
+      "integrationGate": "formal_guce_agreement_required",
+      "demoStatus": "none",
+      "commercialModel": "contracted enterprise integration and support",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-landed-cost",
+      "name": "Import landed-cost and duty estimation service",
+      "sector": "Foreign trade and customs",
+      "summaryEn": "Combine goods value, freight, approved tariffs and tax assumptions into documented landed-cost estimates that are clearly separate from binding customs assessments.",
+      "operatorProfiles": [
+        "Importers",
+        "distributors",
+        "manufacturing firms"
+      ],
+      "reusableEngines": [
+        "Landed Cost",
+        "Policy & Correction",
+        "Logistics",
+        "Goods Provenance"
+      ],
+      "integrationGate": "guidance_and_estimation",
+      "demoStatus": "none",
+      "commercialModel": "per-estimate and distributor subscription",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-export-readiness",
+      "name": "Exporter licensing and documentation readiness service",
+      "sector": "Foreign trade and customs",
+      "summaryEn": "Prepare sector-specific exporter checklists and document packs, identify responsible authorities, and track evidence for trade authorizations and inspections.",
+      "operatorProfiles": [
+        "Exporters",
+        "processors",
+        "export advisers"
+      ],
+      "reusableEngines": [
+        "Trade & Customs",
+        "Policy & Correction",
+        "Verification",
+        "Evidence"
+      ],
+      "integrationGate": "guidance_and_assisted_preparation",
+      "demoStatus": "none",
+      "commercialModel": "exporter onboarding and documentation support",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-goods-provenance",
+      "name": "Goods origin, certification and provenance dossier operator",
+      "sector": "Trade, manufacturing and processing",
+      "summaryEn": "Record source, batch, inspection and certification evidence for agricultural, forest and industrial goods and coordinate authorized validation where required.",
+      "operatorProfiles": [
+        "Wood processors",
+        "produce exporters",
+        "supply-chain operators"
+      ],
+      "reusableEngines": [
+        "Goods Provenance",
+        "Processing",
+        "Verification",
+        "Audit"
+      ],
+      "integrationGate": "official_validation_agreement_required",
+      "demoStatus": "none",
+      "commercialModel": "traceability SaaS and evidence management",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-standards-readiness",
+      "name": "Product standards and homologation preparation service",
+      "sector": "Quality and product compliance",
+      "summaryEn": "Help producers identify applicable quality or homologation requirements, submit supporting test and product information through approved channels, and track outstanding reviews.",
+      "operatorProfiles": [
+        "Manufacturers",
+        "importers",
+        "laboratories"
+      ],
+      "reusableEngines": [
+        "Policy & Correction",
+        "Product & Listing Onboarding",
+        "Evidence"
+      ],
+      "integrationGate": "official_validation_agreement_required",
+      "demoStatus": "none",
+      "commercialModel": "product dossier preparation and compliance subscription",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-agri-permits",
+      "name": "Agricultural and phytosanitary procedure coordinator",
+      "sector": "Agriculture and agro-processing",
+      "summaryEn": "Organize plant/animal product inspection, traceability and permit documents, with handoffs to competent public authorities or accredited inspection partners.",
+      "operatorProfiles": [
+        "Farm exporters",
+        "food processors",
+        "producer cooperatives"
+      ],
+      "reusableEngines": [
+        "Agriculture",
+        "Goods Provenance",
+        "Verification",
+        "Trade & Customs"
+      ],
+      "integrationGate": "accredited_partner_required",
+      "demoStatus": "none",
+      "commercialModel": "export compliance support and per-shipment coordination",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-environmental-compliance",
+      "name": "Environmental permitting and regulatory reporting assistant",
+      "sector": "Environmental and industrial compliance",
+      "summaryEn": "Track environmental obligations, inspection calendars, supporting reports and permit applications for processing, recycling and industrial operators.",
+      "operatorProfiles": [
+        "Industrial facilities",
+        "recyclers",
+        "environmental consultants"
+      ],
+      "reusableEngines": [
+        "Policy",
+        "Evidence",
+        "Scheduling",
+        "Audit"
+      ],
+      "integrationGate": "authority_or_consultant_approval_required",
+      "demoStatus": "none",
+      "commercialModel": "monthly monitoring and project compliance service",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-construction-approvals",
+      "name": "Construction and property approvals coordinator",
+      "sector": "Construction and property services",
+      "summaryEn": "Maintain project documentation and permit-readiness checklists, route requests to the competent local authorities and track decision records.",
+      "operatorProfiles": [
+        "Builders",
+        "property developers",
+        "professional advisers"
+      ],
+      "reusableEngines": [
+        "Project Management",
+        "Verification",
+        "Document & Evidence"
+      ],
+      "integrationGate": "authorized_submission_required",
+      "demoStatus": "none",
+      "commercialModel": "per-project administrative coordination",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-health-licenses",
+      "name": "Healthcare licensing and facility readiness assistant",
+      "sector": "Healthcare and professional licensing",
+      "summaryEn": "Provide documented checklists for facility and practitioner administrative requirements, renewal tracking and verified institutional correspondence without asserting licensure.",
+      "operatorProfiles": [
+        "Clinics",
+        "care facilities",
+        "licensed advisers"
+      ],
+      "reusableEngines": [
+        "Health",
+        "Verification",
+        "Policy",
+        "Notifications"
+      ],
+      "integrationGate": "professional_or_authority_validation_required",
+      "demoStatus": "none",
+      "commercialModel": "facility administrative service subscription",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-transport-licenses",
+      "name": "Transport operator permits and compliance coordinator",
+      "sector": "Transport and mobility",
+      "summaryEn": "Track fleet/operator registration records, licence renewal schedules, inspection requirements and regulator-specific documents for passenger and commercial fleets.",
+      "operatorProfiles": [
+        "Bus companies",
+        "haulage operators",
+        "fleet advisers"
+      ],
+      "reusableEngines": [
+        "Transport",
+        "Fleet Guard",
+        "Policy",
+        "Verification"
+      ],
+      "integrationGate": "authorized_submission_required",
+      "demoStatus": "none",
+      "commercialModel": "operator compliance subscription",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-bank-finance-broker",
+      "name": "Bank financing application packaging service",
+      "sector": "Banking and enterprise finance",
+      "summaryEn": "With explicit customer consent, assemble verifiable business profiles, operational evidence and credit application packages for review by partner banks; financing decisions remain with licensed institutions.",
+      "operatorProfiles": [
+        "SMEs",
+        "loan advisory agencies",
+        "bank referral partners"
+      ],
+      "reusableEngines": [
+        "Funding",
+        "VentureWorks",
+        "Verification",
+        "Banking"
+      ],
+      "integrationGate": "bank_partner_agreement_required",
+      "demoStatus": "none",
+      "commercialModel": "disclosed advisory and authorized referral services",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-trade-domiciliation",
+      "name": "Trade domiciliation and bank documentation coordinator",
+      "sector": "Banking and foreign trade",
+      "summaryEn": "Collect and track required trade, banking, and shipping evidence across a transaction and hand cases to authorized financial and trade professionals.",
+      "operatorProfiles": [
+        "Import/export advisers",
+        "bank partners",
+        "logistics providers"
+      ],
+      "reusableEngines": [
+        "Trade & Customs",
+        "Funding",
+        "Banking",
+        "Documents"
+      ],
+      "integrationGate": "bank_and_trade_partner_agreements_required",
+      "demoStatus": "none",
+      "commercialModel": "enterprise trade-case management subscription",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-payments-merchant-onboarding",
+      "name": "Merchant payment-provider onboarding coordinator",
+      "sector": "Payments and merchant services",
+      "summaryEn": "Support merchants in preparing KYC, business and technical integration packs for licensed payment providers; transactions and customer funds remain with those providers.",
+      "operatorProfiles": [
+        "Payment integrators",
+        "retail network operators",
+        "PSP agents"
+      ],
+      "reusableEngines": [
+        "Verification",
+        "Payments/PSP Boundary",
+        "Identity"
+      ],
+      "integrationGate": "licensed_provider_partner_required",
+      "demoStatus": "none",
+      "commercialModel": "authorized technical integration and merchant onboarding",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-insurance-intermediation",
+      "name": "Insurance document and referral aggregator",
+      "sector": "Insurance and risk services",
+      "summaryEn": "Help businesses organize risk profiles, supporting documents and policy enquiries for participating insurers while reserving underwriting, claims and intermediary activity to appropriately authorized parties.",
+      "operatorProfiles": [
+        "Insurance brokers",
+        "logistics operators",
+        "producer networks"
+      ],
+      "reusableEngines": [
+        "AfriCover",
+        "Verification",
+        "Evidence",
+        "Policy"
+      ],
+      "integrationGate": "insurer_or_licensed_intermediary_required",
+      "demoStatus": "none",
+      "commercialModel": "authorized broker service and enterprise risk administration",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-regulatory-monitoring",
+      "name": "Multi-sector regulatory requirements and renewal tracker",
+      "sector": "Cross-sector compliance",
+      "summaryEn": "Maintain a sourced directory of applicable obligations, official updates, filing deadlines and renewal alerts that operators can manage without direct regulator system access.",
+      "operatorProfiles": [
+        "Accountants",
+        "compliance firms",
+        "SMEs",
+        "sector associations"
+      ],
+      "reusableEngines": [
+        "Policy & Correction",
+        "Notifications",
+        "RAG Gateway",
+        "Audit"
+      ],
+      "integrationGate": "public_information_only",
+      "demoStatus": "none",
+      "commercialModel": "regulatory information and compliance tracking subscription",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    },
+    {
+      "id": "aggregation-institutional-service-desk",
+      "name": "Multi-agency case preparation and coordination desk",
+      "sector": "Cross-sector institutional services",
+      "summaryEn": "Let an authorized professional coordinate checklists, client mandates, document requests, staff tasks and correspondence involving several independent agencies from one business dashboard.",
+      "operatorProfiles": [
+        "Business service centres",
+        "SME associations",
+        "professional advisers"
+      ],
+      "reusableEngines": [
+        "Workflow",
+        "Document & Evidence",
+        "Identity",
+        "Audit",
+        "Verification"
+      ],
+      "integrationGate": "mandated_professional_coordination",
+      "demoStatus": "none",
+      "commercialModel": "service-centre subscription and per-case preparation",
+      "publicSummaryApproved": false,
+      "relationToExistingCatalogue": "pending-dedupe-and-business-approval",
+      "publicCallToAction": "Discuss this opportunity with ADS"
+    }
+  ]
+}
