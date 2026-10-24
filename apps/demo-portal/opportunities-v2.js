@@ -156,7 +156,7 @@ async function openModal(id,kind,t,opts={}){
    }
  });
  el.querySelector('.opp-scrim').addEventListener('click',event=>{
-   if(event.target.classList.contains('opp-scrim')||event.target.closest('[data-action=dismiss]'))closeModal();
+   if(event.target===el.querySelector('.opp-scrim')||event.target.closest('button[data-action=dismiss]'))closeModal();
  });
 }
 function wire(el,state,cats,modules,t){
