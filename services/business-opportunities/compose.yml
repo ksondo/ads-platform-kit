@@ -11,7 +11,7 @@ services:
     env_file:
       - /etc/ads-demo/opportunities-api.env
     ports:
-      - "127.0.0.1:18090:31090"
+      - "127.0.0.1:18190:31090"
     read_only: true
     security_opt:
       - no-new-privileges:true
