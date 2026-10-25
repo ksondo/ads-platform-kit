@@ -162,6 +162,23 @@ test('Chromium discovers 49 sectors, 52 local businesses, regulator services and
   await page.locator('.opp-business-context').waitFor();
   assert.match(await page.locator('.opp-business-context').innerText(),/Processing ERP/);
   assert.match(page.url(),/sector=wood-forest-processing/);
+  // Photo regression: the 11 Processing opportunity summaries must no
+  // longer display one repeated sector cover across the entire result set.
+  await page.locator('#opp-select-category').selectOption('business-processing');
+  await page.waitForFunction(()=>document.querySelector('.opp-solutions')?.querySelectorAll('.opp-cover-img').length===11);
+  const processingPhotos=await page.locator('.opp-solutions .opp-cover-img').evaluateAll(
+    els=>els.map(el=>el.getAttribute('src')));
+  assert.equal(new Set(processingPhotos).size,11,'Processing uses repeated sector photograph');
+  await page.locator('#opp-select-category').selectOption('business-commerce');
+  await page.waitForFunction(()=>document.querySelector('.opp-solutions')?.querySelectorAll('.opp-cover-img').length===12);
+  const retailPhotos=await page.locator('.opp-solutions .opp-cover-img').evaluateAll(
+    els=>els.map(el=>el.getAttribute('src')));
+  assert.equal(new Set(retailPhotos).size,12,'Retail sector uses repeated photographs');
+  await page.locator('[data-action=next]').click();
+  await page.waitForFunction(()=>document.querySelector('.opp-pages')?.textContent.includes('2 / 2'));
+  const lastPhoto=await page.locator('.opp-solutions .opp-cover-img').first().getAttribute('src');
+  assert.ok(lastPhoto&&!retailPhotos.includes(lastPhoto),'13th retail opportunity duplicates an existing photo');
+  await page.locator('[data-action=reset]').click();
   await page.locator('button[data-family="institutional"]').click();
   await page.locator('[data-category="institutional-tax"]').waitFor();
   assert.equal(await page.locator('button[data-category^="institutional-"]').count(),8);
