@@ -70,6 +70,38 @@ jobs:
           path: /tmp/ads-opportunities-*.png
           if-no-files-found: ignore
 
+  ux-screenshots:
+    name: UX before-after EN-FR 360-768-1280
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: baseline-demo
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install matching Chromium test library
+        run: npm install --prefix apps/demo-portal --no-save --no-audit --no-fund playwright@1.56.1
+      - name: Capture 60 before-after screenshots without secrets or live accounts
+        run: node --test apps/demo-portal/tests/browser-ux-screenshots.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ads-portal-ux-before-after
+          path: ux-screenshots/*.png
+          retention-days: 30
+          if-no-files-found: error
+
   publish:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: test
