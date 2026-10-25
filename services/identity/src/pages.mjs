@@ -318,11 +318,11 @@ ${values.productUrl ? `<a class="button" href="${esc(values.productUrl)}">${fill
     case 'invite_invalid':
       return layout({ ...base, title: t.inviteInvalid, body: `<h1>${esc(t.inviteInvalid)}</h1><p>${esc(t.inviteInvalidBody)}</p>` });
     case 'no_access':
-      return layout({ ...base, title: t.noAccessTitle, body: `<h1>${esc(t.noAccessTitle)}</h1><p>${fill(t.noAccessBody, { product })}</p>
+      return layout({ ...base, title: t.noAccessTitle, body: `<section data-ads-no-access="true"><h1>${esc(t.noAccessTitle)}</h1><p>${fill(t.noAccessBody, { product })}</p>
 <form method="post" action="/logout">
 ${csrfField}${hidden('client_id', client?.client_id)}
 ${hidden('switch_account', '1')}
-<button type="submit">${esc(t.switchAccount)}</button></form>` });
+<button type="submit">${esc(t.switchAccount)}</button></form></section>` });
     default:
       return layout({ ...base, title: t.errorTitle, body: `<h1>${esc(t.errorTitle)}</h1>${errorBox(locale, error)}` });
   }
