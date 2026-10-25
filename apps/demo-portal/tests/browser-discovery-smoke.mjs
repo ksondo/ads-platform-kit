@@ -133,9 +133,20 @@ test('Chromium discovers 49 sectors, 52 local businesses, regulator services and
   await page.waitForFunction(()=>document.activeElement?.id==='opp-results-title'&&
     document.querySelector('#opp-results-title')?.textContent.includes('Processing'));
   await page.waitForFunction(()=>{
-    const y=document.querySelector('#opp-results-title')?.getBoundingClientRect().top;
-    return Number.isFinite(y)&&y>=0&&y<innerHeight*.6;
+    const sector=document.querySelector('.opp-category-strip')?.getBoundingClientRect();
+    const title=document.querySelector('#opp-results-title')?.getBoundingClientRect();
+    return sector&&title&&Math.abs(sector.top)<4&&
+      title.top>=sector.bottom-4&&title.top<innerHeight*.7;
   });
+  // Scrolling results must NOT lose the sticky, selected-sector context.
+  await page.evaluate(()=>window.scrollBy(0,220));
+  await page.waitForFunction(()=>{
+    const bar=document.querySelector('.opp-category-strip')?.getBoundingClientRect();
+    return bar&&Math.abs(bar.top)<4&&bar.bottom<innerHeight*.6;
+  });
+  assert.equal(await page.locator('.opp-category.selected').count(),1);
+  assert.ok(await page.locator('.opp-category-rail').evaluate(el=>el.scrollLeft)>30,
+    'changing category must preserve carousel browsing position');
   assert.doesNotMatch(await page.locator('#opp-results-title').innerText(),/Opportunities · Opportunities/);
   await page.locator('#opp-select-sector').waitFor();
   assert.ok((await page.locator('#opp-select-sector option').count())>2);
@@ -161,10 +172,26 @@ test('Chromium discovers 49 sectors, 52 local businesses, regulator services and
   const rowMobile=await page.locator('.opp-category-rail .opp-category').evaluateAll(cards=>cards.map(x=>Math.round(x.getBoundingClientRect().top)));
   assert.equal(new Set(rowMobile).size,1,'mobile business sectors wrapped');
   await page.locator('button[data-category="business-processing"]').click();
-  await page.waitForFunction(()=>document.activeElement?.id==='opp-results-title');
+  await page.waitForFunction(()=>{
+    const sticky=document.querySelector('.opp-category-strip')?.getBoundingClientRect();
+    const heading=document.querySelector('#opp-results-title')?.getBoundingClientRect();
+    return document.activeElement?.id==='opp-results-title'&&sticky&&heading&&
+      Math.abs(sticky.top)<4&&heading.top>=sticky.bottom-4&&heading.top<innerHeight*.75;
+  });
   await page.locator('#opp-select-sector option[value="wood-forest-processing"]').waitFor({state:'attached'});
   await page.screenshot({path:'/tmp/ads-opportunities-mobile.png',fullPage:true});
   await page.screenshot({path:'/tmp/ads-opportunities-interactive-smoke.png',fullPage:true});
+  await page.setViewportSize({width:768,height:900});
+  await page.goto('http://127.0.0.1:'+server.address().port+'/opportunities');
+  await page.locator('#opp-select-business').waitFor();
+  await page.locator('button[data-category="business-processing"]').click();
+  await page.waitForFunction(()=>{
+    const sticky=document.querySelector('.opp-category-strip')?.getBoundingClientRect();
+    const heading=document.querySelector('#opp-results-title')?.getBoundingClientRect();
+    return sticky&&heading&&Math.abs(sticky.top)<4&&
+      heading.top>=sticky.bottom-4&&heading.top<innerHeight*.75;
+  });
+  await page.screenshot({path:'/tmp/ads-opportunities-tablet-sticky.png'});
  }finally{
   await browser?.close();
   await new Promise(resolve=>server.close(resolve));
