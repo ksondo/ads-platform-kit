@@ -151,14 +151,14 @@ function demoAccessGuide() {
    '<article class="cloud-card"><span class="demo-step">'+s(num)+'</span><h2>'+s(name)+'</h2><p>'+s(explain)+'</p></article>'
  ).join("")+'</div><p class="detail-note">'+s(t("demoGuideNotLive"))+'</p></div></section>';
 }
-function partnerBanner(){return '<section class="partner-banner"><div class="container"><div><span class="eyebrow">ADS PARTNERSHIPS</span><h2>'+s(t("partnerTitle"))+'</h2><p>'+s(t("partnerCopy"))+'</p></div>'+companyAction("/partners",t("becomePartner"),"btn btn-gold")+'</div></section>';}
+function partnerBanner(){return '<section class="partner-banner"><div class="container"><div><span class="eyebrow">ADS PARTNERSHIPS</span><h2 >'+s(t("partnerTitle"))+'</h2><p>'+s(t("partnerCopy"))+'</p></div>'+companyAction("/partners",t("becomePartner"),"btn btn-gold")+'</div></section>';}
 function chip(href,text,active){return link(href,s(text),"filter-chip"+(active?" selected":""));}
 function platformDirectory(){
   const q=(new URLSearchParams(location.search).get("q")||"").toLowerCase().trim();
   const items=catalogue.platforms.filter(p=>matches(p,q));
   return '<section class="directory-intro"><div class="container"><span class="eyebrow">ADS DIGITAL ECOSYSTEM</span><h1>'+s(t("catalogPlatforms"))+'</h1><p>'+s(t("discoverCopy"))+'</p>'+searchBar(q)+'</div></section>'+
   '<section class="section"><div class="container"><div class="section-head"><h2>'+items.length+' '+s(t("platformsCount"))+'</h2>'+link("/opportunities",s(t("catalogTools"))+' →',"text-link")+'</div>'+
-   (items.length?'<div class="platform-grid">'+items.map(platformCard).join("")+'</div>':'<p class="empty">'+s(t("noResults"))+'</p>')+'</div></section>'+partnerBanner();
+   (items.length?'<div class="platform-grid">'+items.map(platformCard).join("")+'</div>':'<p class="empty">'+s(t("noResults"))+'</p>')+'</div></section>';
 }
 function toolDirectory(){
   const params=new URLSearchParams(location.search), platform=params.get("platform")||"all";
@@ -167,27 +167,32 @@ function toolDirectory(){
   const filters=chip("/opportunities",t("all"),platform==="all")+catalogue.platforms.filter(p=>catalogue.tools.some(x=>x.platformId===p.id)).map(p=>chip("/opportunities?platform="+encodeURIComponent(p.id),title(p),platform===p.id)).join("");
   return '<section class="directory-intro"><div class="container"><span class="eyebrow">BUSINESS DISCOVERY</span><h1>'+s(t("catalogTools"))+'</h1><p>'+s(t("catalogCopy"))+'</p></div></section>'+
     '<section class="section"><div class="container"><div class="filters">'+filters+'</div><div class="section-head"><h2>'+items.length+' '+s(t("toolsCount"))+'</h2></div>'+
-   (items.length?'<div class="tool-grid directory-tools">'+items.map(toolCard).join("")+'</div>':'<p class="empty">'+s(t("noResults"))+'</p>')+'</div></section>'+partnerBanner();
+   (items.length?'<div class="tool-grid directory-tools">'+items.map(toolCard).join("")+'</div>':'<p class="empty">'+s(t("noResults"))+'</p>')+'</div></section>';
 }
 function platformDetail(p){
   const items=catalogue.tools.filter(x=>x.platformId===p.id);
-  return '<section class="detail-hero" style="background-image:linear-gradient(90deg,rgba(3,18,35,.98),rgba(3,18,35,.72)),url('+s(photo(p.image,1300))+')"><div class="container">'+link("/platforms","← "+s(t("back")),"back-link")+'<div class="eyebrow">'+s(t("platforms"))+'</div><h1>'+s(title(p))+'</h1><p>'+s(p.summary)+'</p><div class="detail-actions">'+launch(p.demoUrl,t("visitPlatform"))+companyAction("/partners",t("becomePartner"),"btn btn-outline-light")+link("/demo-access",s(t("demoHelp"))+" →","btn btn-outline-light")+'</div></div></section>'+
+  return '<section class="detail-hero" data-portal-hero="platform"><img class="detail-hero-photo" src="'+s(photo(p.image,1300))+'" alt="" loading="lazy" width="1300" height="420"/><div class="container">'+link("/platforms","← "+s(t("back")),"back-link")+'<div class="eyebrow">'+s(t("platforms"))+'</div><h1>'+s(title(p))+'</h1><p>'+s(summary(p))+'</p><div class="detail-actions">'+launch(p.demoUrl,t("visitPlatform"))+companyAction("/partners",t("becomePartner"),"btn btn-outline-light")+link("/demo-access",s(t("demoHelp"))+" →","btn btn-outline-light")+'</div></div></section>'+
   '<section class="section"><div class="container">'+sectionTitle(t("toolsInside"),"/opportunities?platform="+encodeURIComponent(p.id),t("allTools"))+
   (items.length?'<div class="tool-grid directory-tools">'+items.map(toolCard).join("")+'</div>':'<p class="empty">'+s(t("noResults"))+'</p>')+
-  '<p class="detail-note">'+s(t("statusNote"))+'</p></div></section>'+partnerBanner();
+  '<p class="detail-note">'+s(t("statusNote"))+'</p></div></section>';
 }
 function toolDetail(x){
  const p=catalogue.platforms.find(p=>p.id===x.platformId);
- return '<section class="detail-hero" style="background-image:linear-gradient(90deg,rgba(3,18,35,.98),rgba(3,18,35,.65)),url('+s(photo(x.image,1400))+')"><div class="container">'+link("/opportunities","← "+s(t("returnTools")),"back-link")+'<div class="eyebrow">'+s(p?title(p):t("platforms"))+' / '+s(t("opportunities"))+'</div><h1>'+s(x.name)+'</h1><p>'+s(x.summary)+'</p><div class="detail-actions">'+launch(x.demoUrl,t("tryDemo"))+link(platformUrl(p),s(t("explore"))+' '+s(title(p))+' →',"btn btn-outline-light")+'</div></div></section>'+
- '<section class="section"><div class="container detail-content"><div><span class="kicker-dark">ADS BUSINESS OPPORTUNITY</span><h2>'+s(t("howWorks"))+'</h2><p>'+s(x.model)+'</p></div><aside class="detail-aside"><h3>'+s(t("audience"))+'</h3><p>'+s(x.summary)+'</p><div class="divider"></div><h3>'+s(t("demos"))+'</h3><p>'+s(t("statusNote"))+'</p></aside></div></section>'+partnerBanner();
+ return '<section class="detail-hero" data-portal-hero="tool"><img class="detail-hero-photo" src="'+s(photo(x.image,1400))+'" alt="" loading="lazy" width="1300" height="420"/><div class="container">'+link("/opportunities","← "+s(t("returnTools")),"back-link")+'<div class="eyebrow">'+s(p?title(p):t("platforms"))+' / '+s(t("opportunities"))+'</div><h1>'+s(title(x))+'</h1><p>'+s(summary(x))+'</p><div class="detail-actions">'+launch(x.demoUrl,t("tryDemo"))+link(platformUrl(p),s(t("explore"))+' '+s(title(p))+' →',"btn btn-outline-light")+'</div></div></section>'+
+ '<section class="section"><div class="container detail-content"><div><span class="kicker-dark">ADS BUSINESS OPPORTUNITY</span><h2>'+s(t("howWorks"))+'</h2><p>'+s(model(x))+'</p></div><aside class="detail-aside"><h3>'+s(t("audience"))+'</h3><p>'+s(summary(x))+'</p><div class="divider"></div><h3>'+s(t("demos"))+'</h3><p>'+s(t("statusNote"))+'</p></aside></div></section>';
 }
 function cloud(){
  const parts=[["☁",t("cloudFeature1"),t("cloudFeature1Text")],["⚙",t("cloudFeature2"),t("cloudFeature2Text")],["◇",t("cloudFeature3"),t("cloudFeature3Text")]];
  return '<section class="directory-intro cloud-top"><div class="container"><span class="eyebrow">ADS INFRASTRUCTURE</span><h1>'+s(t("cloudTitle"))+'</h1><p>'+s(t("cloudText"))+'</p>'+companyAction("/partners",t("askCloud"),"btn btn-gold")+'</div></section>'+
-  '<section class="section"><div class="container"><div class="cloud-grid">'+parts.map(x=>'<article class="cloud-card"><span>'+x[0]+'</span><h2>'+s(x[1])+'</h2><p>'+s(x[2])+'</p></article>').join("")+'</div><p class="detail-note">'+s(t("cloudNote"))+'</p></div></section>'+partnerBanner();
+  '<section class="section"><div class="container"><div class="cloud-grid">'+parts.map(x=>'<article class="cloud-card"><span>'+x[0]+'</span><h2>'+s(x[1])+'</h2><p>'+s(x[2])+'</p></article>').join("")+'</div><p class="detail-note">'+s(t("cloudNote"))+'</p></div></section>';
 }
 function footer(){
- return '<footer class="footer"><div class="container footer-inner"><div><a class="brand" href="/"><span class="brand-mark">✺</span><span class="brand-text"><span class="brand-full">AFRICA DIGITAL SYNERGY</span><span class="brand-short">ADS</span><small>PEOPLE · PLATFORMS · PROSPERITY</small></span></a><p>'+s(t("footer"))+'</p></div><div class="footer-links">'+link("/platforms",s(t("platforms")),"footer-link")+link("/opportunities",s(t("opportunities")),"footer-link")+link("/cloud",s(t("cloud")),"footer-link")+companyAction("/about",t("about"),"footer-link")+companyAction("/partners",t("partners"),"footer-link")+whatsAppContact(t("contact"),"footer-link")+'</div></div></footer>';
+ return '<footer class="footer"><div class="container footer-inner"><div><a class="brand" href="/"><span class="brand-mark">✺</span><span class="brand-text"><span class="brand-full">AFRICA DIGITAL SYNERGY</span><span class="brand-short">ADS</span><small>PEOPLE · PLATFORMS · PROSPERITY</small></span></a><p>'+s(t("footer"))+'</p><address>'+s(t("officePending"))+'</address></div><div class="footer-links">'+
+ link("/platforms",s(t("platforms")),"footer-link")+link("/opportunities",s(t("opportunities")),"footer-link")+
+ link("/cloud",s(t("cloud")),"footer-link")+companyNav("/about",t("about"))+
+ companyAction("/partners",t("becomePartner"),"footer-link")+
+ link("mailto:admin@africadigitalsynergy.com","admin@africadigitalsynergy.com","footer-link")+
+ whatsAppContact("WhatsApp","footer-link")+'</div></div></footer>';
 }
 function render(){
  document.documentElement.lang=lang;
@@ -201,6 +206,8 @@ function render(){
  else if(path==="/demo-access") main=demoAccessGuide();
  else if(path==="/cloud") main=cloud();
  else main=platformDirectory();
+ const sectionTitle=path==="/"?"ADS":path==="/platforms"?t("platforms"):path==="/opportunities"?t("opportunities"):path==="/cloud"?t("cloud"):path==="/demo-access"?t("demos"):path.includes("/platforms/")?title(catalogue.platforms.find(p=>p.id===path.split("/")[2])||{name:"ADS"}):path.includes("/opportunities/")?t("opportunities"):t("platforms");
+ document.title=sectionTitle+" · ADS";
  app.innerHTML=header()+'<main id="main">'+main+'</main>'+footer();
  const menu=app.querySelector(".menu-toggle"),nav=app.querySelector(".nav-links");
  menu.addEventListener("click",()=>{const open=nav.classList.toggle("is-open");menu.setAttribute("aria-expanded",String(open));});
