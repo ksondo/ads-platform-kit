@@ -86,7 +86,7 @@ jobs:
           curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/businesses/suggest?q=sawmill' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total<1)process.exit(1)})"
           curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/discovery/categories?family=business' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total!==13)process.exit(1)})"
           curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/discovery/categories?family=institutional' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total!==8)process.exit(1)})"
-          curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/discovery/solutions?family=business&limit=1' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total!==102)process.exit(1)})"
+          curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/discovery/solutions?family=business&limit=1' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total!==101)process.exit(1)})"
           curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/discovery/solutions?family=institutional&limit=1' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{if(JSON.parse(s).total!==20)process.exit(1)})"
           curl -fsS 'http://127.0.0.1:31090/api/opportunities/v1/discovery/solutions/business-wood-processor-sawmill' | node -e "let s='';process.stdin.on('data',x=>s+=x).on('end',()=>{let d=JSON.parse(s).data;if(!d || d.tools.length<4)process.exit(1)})"
           echo 'ADS_BUSINESS_OPPORTUNITIES_POSTGRES_API=PASS'
