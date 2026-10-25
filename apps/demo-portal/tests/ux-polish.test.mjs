@@ -28,7 +28,7 @@ test('P2-3: all public platform and tool catalogue entries have curated French c
  assert.equal(Object.keys(groups.groups).length,13);
 });
 test('P2-4: correct count singular/plural for zero, one and two',()=>{
- const stub={window:{addEventListener:()=>{}},document:{getElementById:()=>({innerHTML:''}),addEventListener:()=>{}},localStorage:{getItem:()=>null},navigator:{language:'fr-CM'}};
+ const stub={imageUrl:()=>"", platformImage:()=>"", credits:[],window:{addEventListener:()=>{}},document:{getElementById:()=>({innerHTML:''}),addEventListener:()=>{}},localStorage:{getItem:()=>null},navigator:{language:'fr-CM'}};
  const source=script.replace(/^import[^\n]*\n/gm, "").replace(/start\(\);\s*$/,'globalThis.__count=countLabel;');
  vm.runInNewContext(source,stub);
  assert.equal(stub.__count(0,'tools'),'0 outils');
