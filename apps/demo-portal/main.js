@@ -1,5 +1,6 @@
 import * as ADSOpportunities from "./opportunities-v2.js";
 import {imageUrl, platformImage, credits} from "./image-library.js";
+import {opportunityCredits} from "./opportunity-image-library.js";
 const app = document.getElementById("root");
 const i18n = {
   en: {
@@ -200,7 +201,7 @@ function footer(){
 function photoCreditsPage(){
   const en=lang!=="fr";
   return '<section class="directory-intro"><div class="container"><h1>'+(en?'Photo credits':'Crédits photographiques')+'</h1><p>'+(en?'Photographs of business and community life in Cameroon, credited to their creators.':'Photographies de la vie économique et communautaire au Cameroun, créditées à leurs auteurs.')+'</p></div></section>'+
-    '<section class="section"><div class="container credit-grid">'+credits.map(x=>
+    '<section class="section"><div class="container credit-grid">'+[...credits,...opportunityCredits].map(x=>
     '<article class="credit-item"><h2>'+s(en?x.en:x.fr)+'</h2><p>© '+s(x.author)+'</p><a href="'+s(x.source)+'" target="_blank" rel="noopener noreferrer">'+(en?'Original photograph':'Photographie originale')+'</a> · <a href="'+s(x.license)+'" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a></article>'
     ).join('')+'<p class="credit-note">'+(en?'Thumbnails are resized by Wikimedia Commons; attribution does not imply endorsement.':'Miniatures redimensionnées par Wikimedia Commons ; l’attribution n’implique aucun soutien à ADS.')+'</p></div></section>';
 }
