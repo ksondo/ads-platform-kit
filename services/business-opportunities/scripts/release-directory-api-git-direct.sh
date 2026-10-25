@@ -31,7 +31,7 @@ for svc in ads-demo-portal ads-demo-identity ads-commerce-demo-db-1; do
  docker inspect "$svc" >/dev/null 2>&1 || fail "existing ADS service missing: $svc"
 done
 ss -ltn | grep -qE ':18190[[:space:]]' || fail "current API port 18190 missing"
-if ss -ltn | grep -qE ':18191[[:space:]]'; then fail "canary port 18191 occupied"; fi
+# Canary has no host-published port; other occupants of port 18191 are untouched.
 
 PROJECT="$ROOT/services/business-opportunities"
 COMPOSE="$PROJECT/compose.yml"
@@ -63,6 +63,28 @@ all_totals(){
  http_total 'discovery/solutions?family=institutional&limit=1' 20 "$origin"
  http_total 'businesses?limit=100' 52 "$origin"
 }
+# Probe the candidate *inside* its Docker network namespace. The canary
+# never publishes 18191 or any other host port and cannot disrupt listeners.
+canary_total(){
+ local path="$1" expected="$2"
+ docker exec "$NAME" node -e '
+ const path=process.argv[1],expected=Number(process.argv[2]);
+ const t=setTimeout(()=>{console.error("canary timeout");process.exit(1)},10000);
+ fetch("http://127.0.0.1:31090/api/opportunities/v1/"+path)
+  .then(async r=>{if(!r.ok)throw Error("HTTP "+r.status);return r.json()})
+  .then(d=>{if(d.total!==expected)throw Error("expected total "+expected+" got "+d.total);clearTimeout(t)})
+  .catch(e=>{console.error("canary API check failed: "+e.message);process.exit(1)})
+ ' "$path" "$expected" >/dev/null
+}
+all_canary_totals(){
+ canary_total sectors 50
+ canary_total 'opportunities?limit=1' 333
+ canary_total 'discovery/categories?family=business' 13
+ canary_total 'discovery/categories?family=institutional' 8
+ canary_total 'discovery/solutions?family=business&limit=1' 102
+ canary_total 'discovery/solutions?family=institutional&limit=1' 20
+ canary_total 'businesses?limit=100' 52
+}
 
 cleanup(){
  local status="$?"
@@ -89,19 +111,19 @@ echo "=== BUILD NEW APPROVED API FROM PINNED GIT ARCHIVE ==="
 compose build public-read-api
 docker image inspect "$TAG" >/dev/null || fail "built image tag missing"
 
-echo "=== CANARY: SAME PRIVATE NETWORK, NEW LOOPBACK PORT 18191 ==="
+echo "=== CANARY: PRIVATE DOCKER NETWORK ONLY, NO HOST PORT ==="
 docker run --rm -d \
  --name "$NAME" --network ads-business-opportunities-private \
  --env-file "$READER" --security-opt no-new-privileges:true \
  --read-only --tmpfs /tmp --memory 256m \
- -p 127.0.0.1:18191:31090 "$TAG" >/dev/null
+ "$TAG" >/dev/null
 ok=0
 for n in $(seq 1 35); do
- if curl --noproxy '*' -fsS --max-time 3 http://127.0.0.1:18191/health >/dev/null 2>&1; then ok=1; break; fi
+ if docker exec "$NAME" node -e   "fetch('http://127.0.0.1:31090/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" >/dev/null 2>&1; then ok=1; break; fi
  sleep 1
 done
 [ "$ok" = 1 ] || fail "canary never became healthy"
-all_totals http://127.0.0.1:18191
+all_canary_totals
 echo "ADS_DIRECTORY_API_CANARY=PASS 52/50/333/13/8/102/20"
 docker rm -f "$NAME" >/dev/null
 
