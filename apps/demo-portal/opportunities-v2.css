@@ -156,3 +156,40 @@ body.opp-modal-open{overflow:hidden}
  #opportunities-app .opp-carousel-arrow{width:36px;height:36px}
 }
 @media(prefers-reduced-motion:reduce){#opportunities-app .opp-category-rail{scroll-behavior:auto}}
+
+/* Keep the selected business sector visible while its opportunities scroll below.
+   The global site header is position:relative (not sticky), so the rail pins
+   to the viewport top without leaving an artificial 78px gap. */
+#opportunities-app .opp-category-strip{
+ position:sticky;
+ top:0;
+ z-index:24;
+ background:#f7f9fd;
+ border-bottom:1px solid #d4e1ee;
+ box-shadow:0 6px 17px rgba(13,40,75,.11);
+}
+#opportunities-app .opp-category-strip .opp-category-rail{
+ scroll-padding-inline:4px;
+}
+#opportunities-app .opp-category-strip .opp-category.selected{
+ border:2px solid #176cee;
+ background:#f0f6ff;
+ box-shadow:0 0 0 2px rgba(23,108,238,.13),0 2px 8px rgba(12,41,86,.12);
+}
+#opportunities-app .opp-update-error{
+ display:block;margin:0 auto 10px;padding:10px 18px;
+ width:min(calc(100% - 32px),var(--max));
+ border-left:4px solid #a34f22;background:#fff6ed;color:#763917;
+}
+#opportunities-app .opp-content[aria-busy="true"]{
+ cursor:progress;
+}
+@media(max-width:570px){
+ #opportunities-app .opp-category-strip{
+  padding-top:7px;
+  padding-bottom:8px;
+  box-shadow:0 4px 12px rgba(13,40,75,.11);
+ }
+ #opportunities-app .opp-category-top{margin-bottom:5px}
+ #opportunities-app .opp-category-hint{font-size:11px}
+}
