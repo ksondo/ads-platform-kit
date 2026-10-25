@@ -155,7 +155,7 @@ async function hostedSignIn(page, { startUrl, button, tenantId, lang, timeout, w
       choseWorkspace = true;
     } else if (await page.locator('form[action="/login"] .error, .card > .error, [role="alert"]').count()) {
       throw new SignInError('LOGIN_FAILED', `signIn failed for ${who}: ${await textOf(page, '[role="alert"]')}`);
-    } else if (await page.locator('h1').count() && !(await page.locator('form').count())) {
+    } else if (await page.locator('[data-ads-no-access="true"]').count() || (await page.locator('h1').count() && !(await page.locator('form').count()))) {
       // A page with no form and still on the identity origin: "No access yet" and similar.
       throw new SignInError('NO_ACCESS', `signIn: ${await textOf(page, 'h1')} - ${await textOf(page, 'p')}`);
     }
