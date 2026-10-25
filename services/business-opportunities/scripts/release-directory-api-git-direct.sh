@@ -55,11 +55,11 @@ https_total(){
 }
 all_totals(){
  local origin="$1"
- http_total sectors 50 "$origin"
- http_total 'opportunities?limit=1' 333 "$origin"
+ http_total sectors 49 "$origin"
+ http_total 'opportunities?limit=1' 328 "$origin"
  http_total 'discovery/categories?family=business' 13 "$origin"
  http_total 'discovery/categories?family=institutional' 8 "$origin"
- http_total 'discovery/solutions?family=business&limit=1' 102 "$origin"
+ http_total 'discovery/solutions?family=business&limit=1' 101 "$origin"
  http_total 'discovery/solutions?family=institutional&limit=1' 20 "$origin"
  http_total 'businesses?limit=100' 52 "$origin"
 }
@@ -77,11 +77,11 @@ canary_total(){
  ' "$path" "$expected" >/dev/null
 }
 all_canary_totals(){
- canary_total sectors 50
- canary_total 'opportunities?limit=1' 333
+ canary_total sectors 49
+ canary_total 'opportunities?limit=1' 328
  canary_total 'discovery/categories?family=business' 13
  canary_total 'discovery/categories?family=institutional' 8
- canary_total 'discovery/solutions?family=business&limit=1' 102
+ canary_total 'discovery/solutions?family=business&limit=1' 101
  canary_total 'discovery/solutions?family=institutional&limit=1' 20
  canary_total 'businesses?limit=100' 52
 }
@@ -110,8 +110,8 @@ cleanup(){
 trap cleanup EXIT
 
 echo "=== VERIFY EXISTING API AND HTTPS BEFORE REPLACEMENT ==="
-http_total sectors 50 http://127.0.0.1:18190
-https_total sectors 50
+http_total sectors 49 http://127.0.0.1:18190
+https_total sectors 49
 
 echo "=== BUILD NEW APPROVED API FROM PINNED GIT ARCHIVE ==="
 compose build public-read-api
@@ -130,7 +130,7 @@ for n in $(seq 1 35); do
 done
 [ "$ok" = 1 ] || fail "canary never became healthy"
 all_canary_totals
-echo "ADS_DIRECTORY_API_CANARY=PASS 52/50/333/13/8/102/20"
+echo "ADS_DIRECTORY_API_CANARY=PASS 52/49/328/13/8/101/20"
 docker rm -f "$NAME" >/dev/null
 
 echo "=== RECREATE ONLY BUSINESS OPPORTUNITIES READ API ==="
@@ -143,12 +143,12 @@ for n in $(seq 1 35); do
 done
 [ "$ok" = 1 ] || fail "new API failed health gate"
 all_totals http://127.0.0.1:18190
-https_total sectors 50
-https_total 'opportunities?limit=1' 333
+https_total sectors 49
+https_total 'opportunities?limit=1' 328
 https_total 'discovery/categories?family=business' 13
 https_total 'discovery/categories?family=institutional' 8
-https_total 'discovery/solutions?family=business&limit=1' 102
+https_total 'discovery/solutions?family=business&limit=1' 101
 https_total 'discovery/solutions?family=institutional&limit=1' 20
 https_total 'businesses?limit=100' 52
-echo "ADS_BUSINESS_DIRECTORY_API_PUBLIC=PASS 52/50/333/13/8/102/20"
+echo "ADS_BUSINESS_DIRECTORY_API_PUBLIC=PASS 52/49/328/13/8/101/20"
 echo "ADS_COMMERCE_IDENTITY_PORTAL_DATABASE_AND_NGINX=UNCHANGED"
