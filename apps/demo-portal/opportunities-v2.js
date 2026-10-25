@@ -1,3 +1,4 @@
+import {sectorFr,categoryFr,businessFr,labelFor} from './opportunities-fr.js';
 // ADS Business Opportunities v2: only /opportunities routes.
 // All listings, families, groups, solutions and module tags come from PostgreSQL API.
 const BASE='/api/opportunities/v1';
@@ -52,7 +53,7 @@ const L=x=>escapeHtml(x);
 const tFor=lang=>langText[lang]||langText.en;
 const photo=id=>'https://images.unsplash.com/'+(photos[id]||'photo-1497366811353-6870744d04b2')+'?auto=format&fit=crop&w=740&q=70';
 const button=(label,action,cls='',attrs='')=>'<button type="button" class="'+L(cls)+'" data-action="'+L(action)+'" '+attrs+'>'+L(label)+'</button>';
-const contact=t=>'<a class="btn btn-gold opp-whatsapp" href="'+wa+'" rel="noopener noreferrer" target="_blank">'+L(t.contact)+' ↗</a>';
+const contact=t=>'<a class="btn btn-gold" href="mailto:admin@africadigitalsynergy.com">admin@africadigitalsynergy.com ↗</a><a class="btn btn-outline" href="'+wa+'" rel="noopener noreferrer" target="_blank">WhatsApp ↗</a>';
 export const directoryShell=()=>'<div id="opportunities-app"></div>';
 export const detailShell=directoryShell;
 function stateFromURL(){
@@ -233,11 +234,12 @@ export async function hydrate(path,lang){
  const requestId=++seq,t=tFor(lang),state=stateFromURL();
  el.innerHTML=frame(t,families(t,state)+'<div class="container opp-loading" role="status">'+L(t.loading)+'</div>');
  try{
-  const categories=(await fetchJSON('/discovery/categories?family='+state.family)).data;
+  const categories=(await fetchJSON('/discovery/categories?family='+state.family)).data.map(c=>({...c,name:labelFor(categoryFr,c.id,c.name,lang)}));
   const labels=catalogueUI[lang]||catalogueUI.en;
   const [sectorsResult,businessesResult]=state.family==='business'?
    await Promise.all([fetchJSON('/sectors'),fetchJSON('/businesses?limit=100')]):[{data:[]},{data:[]}];
-  const sectors=sectorsResult.data||[],businesses=businessesResult.data||[];
+  const sectors=(sectorsResult.data||[]).map(v=>({...v,name:labelFor(sectorFr,v.id,v.name,lang)}));
+  const businesses=(businessesResult.data||[]).map(v=>({...v,name:labelFor(businessFr,v.id,v.name,lang),sector_name:labelFor(sectorFr,v.sector_id,v.sector_name,lang)}));
   if(state.family==='business'){
    if(state.sector&&!sectors.some(s=>s.id===state.sector))state.sector='';
    if(state.business&&!businesses.some(b=>b.id===state.business))state.business='';
@@ -253,6 +255,7 @@ export async function hydrate(path,lang){
   if(state.module)p.set('tool',state.module);
   const endpoint=isTools?'/opportunities?':'/discovery/solutions?family='+state.family+'&';
   const result=await fetchJSON(endpoint+p.toString());
+  if(Array.isArray(result.data))result.data=result.data.map(v=>({...v,sector_name:labelFor(sectorFr,v.sector_id,v.sector_name,lang),category_name:labelFor(categoryFr,v.category_id,v.category_name,lang)}));
   const modules=isTools?[]:(await fetchJSON('/discovery/modules?family='+state.family+(state.category?'&category='+encodeURIComponent(state.category):''))).data;
   if(requestId!==seq)return;
   el.innerHTML=frame(t,families(t,state)+resultBody(result,state,t,categories,modules,sectors,businesses,labels)+'<div id="opp-dialog-host"></div>');
