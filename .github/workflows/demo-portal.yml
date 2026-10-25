@@ -42,10 +42,14 @@ jobs:
             if curl --fail -s http://127.0.0.1:18888/ >/dev/null; then break; fi
             sleep 1
           done
-          curl --fail -s http://127.0.0.1:18888/platforms/commerce | grep -q 'ADS Digital Ecosystem'
-          curl --fail -s http://127.0.0.1:18888/opportunities/pos | grep -q 'ADS Digital Ecosystem'
-          curl --fail -s http://127.0.0.1:18888/cloud | grep -q 'ADS Digital Ecosystem'
-          curl --fail -s http://127.0.0.1:18888/catalogue.json | grep -q '"ecommerce"'
+          # Avoid SIGPIPE from curl | grep -q under pipefail when the
+          # response body is larger than a pipe buffer.
+          for route in /platforms/commerce /opportunities/pos /cloud; do
+            curl --fail --silent --show-error "http://127.0.0.1:18888$route" -o /tmp/ads-demo-route.html
+            grep -Fq 'ADS Digital Ecosystem' /tmp/ads-demo-route.html
+          done
+          curl --fail --silent --show-error http://127.0.0.1:18888/catalogue.json -o /tmp/ads-demo-catalogue.json
+          grep -Fq '"ecommerce"' /tmp/ads-demo-catalogue.json
 
   browser-discovery:
     name: Chromium opportunity discovery acceptance
