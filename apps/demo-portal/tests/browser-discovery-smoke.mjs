@@ -124,7 +124,7 @@ test('Chromium discovers 49 sectors, 52 local businesses, regulator services and
   assert.equal(await page.locator('#opp-select-business option').count(),1);
   // Category cards must stay in one horizontal row, with a usable scroll control.
   const rail=page.locator('.opp-category-rail');
-  const row=await rail.locator('.opp-category').evaluateAll(cards=>cards.map(x=>Math.round(x.getBoundingClientRect().top)));
+  const row=await rail.locator('.opp-category').evaluateAll(cards=>cards.map(x=>x.offsetTop));
   assert.equal(new Set(row).size,1,'desktop business sectors wrapped onto multiple rows');
   assert.ok(await rail.evaluate(el=>el.scrollWidth>el.clientWidth),'sector carousel is not horizontally scrollable');
   await page.locator('[data-action="category-scroll"][data-direction="1"]').click();
@@ -175,7 +175,7 @@ test('Chromium discovers 49 sectors, 52 local businesses, regulator services and
   await page.goto('http://127.0.0.1:'+server.address().port+'/opportunities');
   await page.locator('#opp-select-business').waitFor();
   assert.equal(await page.locator('#opp-select-sector option').count(),1);
-  const rowMobile=await page.locator('.opp-category-rail .opp-category').evaluateAll(cards=>cards.map(x=>Math.round(x.getBoundingClientRect().top)));
+  const rowMobile=await page.locator('.opp-category-rail .opp-category').evaluateAll(cards=>cards.map(x=>x.offsetTop));
   assert.equal(new Set(rowMobile).size,1,'mobile business sectors wrapped');
   await page.locator('button[data-category="business-processing"]').click();
   await page.waitForFunction(()=>{
