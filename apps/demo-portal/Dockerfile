@@ -4,6 +4,8 @@ COPY apps/demo-portal/index.html /usr/share/nginx/html/index.html
 COPY apps/demo-portal/styles.css /usr/share/nginx/html/styles.css
 COPY apps/demo-portal/main.js /usr/share/nginx/html/main.js
 COPY apps/demo-portal/opportunities-v2.js /usr/share/nginx/html/opportunities-v2.js
+COPY apps/demo-portal/opportunities-fr.js /usr/share/nginx/html/opportunities-fr.js
+COPY apps/demo-portal/sector-groups.json /usr/share/nginx/html/sector-groups.json
 COPY apps/demo-portal/opportunities-v2.css /usr/share/nginx/html/opportunities-v2.css
 COPY apps/demo-portal/catalogue.json /usr/share/nginx/html/catalogue.json
 EXPOSE 80
