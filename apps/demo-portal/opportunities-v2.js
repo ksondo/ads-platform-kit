@@ -118,7 +118,8 @@ function aside(cats,state,modules,t,sectors,businesses,labels){
  return '<aside class="opp-aside"><form id="opp-search-form" role="search"><label for="opp-search">'+L(t.search)+'</label><input type="search" id="opp-search" maxlength="100" autocomplete="off" placeholder="'+L(t.searchPlaceholder)+'" value="'+L(state.q)+'"/><button class="btn btn-navy" type="submit">'+L(t.search)+' →</button><small>'+L(t.searchHelp)+'</small><div id="opp-suggestions" role="listbox"></div></form>'+
  '<div class="opp-filter-head"><h2>'+L(t.filters)+'</h2>'+button(t.reset,'reset','opp-reset')+'</div>'+
  '<label for="opp-select-category">'+L(t.category)+'</label><select id="opp-select-category">'+opts([{id:'',name:t.all},...cats],state.category)+'</select>'+
- (state.family==='business'?'<label for="opp-select-sector">'+L(labels.sectors)+'</label><select id="opp-select-sector">'+opts([{id:'',name:labels.allSectors},...sectors],state.sector)+'</select>'+
+ (state.family==='business'?'<label for="opp-activity-search">'+L(labels.sectors)+' — '+L(t.search)+'</label><input id="opp-activity-search" type="search" autocomplete="off" maxlength="80" placeholder="'+L(t.searchPlaceholder)+'"/>'+
+ '<label for="opp-select-sector">'+L(labels.sectors)+'</label><select id="opp-select-sector">'+opts([{id:'',name:labels.allSectors},...sectors],state.sector)+'</select>'+
  '<label for="opp-select-business">'+L(labels.businesses)+'</label><select id="opp-select-business">'+opts([{id:'',name:labels.allBusinesses},...businesses],state.business)+'</select>':'')+
  '<label for="opp-module">'+L(t.module)+'</label><select id="opp-module">'+opts([{id:'',name:t.allModules},...modules.map(m=>({id:m,name:m}))],state.module)+'</select>'+
  '<p class="opp-sidebar-help">'+L(t.step)+'</p></aside>';
@@ -199,6 +200,16 @@ function wire(el,state,cats,modules,t,sectors,businesses){
  el.querySelectorAll('[data-family]').forEach(b=>b.addEventListener('click',()=>goto({family:b.dataset.family,category:'',sector:'',business:'',view:'bundles',page:1,q:'',module:''})));
  el.querySelectorAll('[data-category]').forEach(b=>b.addEventListener('click',()=>goto({category:b.dataset.category,sector:'',business:'',view:'bundles',page:1,module:''})));
  el.querySelector('#opp-select-category').addEventListener('change',e=>goto({category:e.target.value,sector:'',business:'',view:'bundles',page:1,module:''}));
+ const searchActivities=el.querySelector('#opp-activity-search');
+ if(searchActivities)searchActivities.addEventListener('input',()=>{
+  const q=searchActivities.value.trim().toLocaleLowerCase();
+  const filtered=sectors.filter(x=>x.name.toLocaleLowerCase().includes(q));
+  const filteredBiz=businesses.filter(x=>x.name.toLocaleLowerCase().includes(q)||
+    x.sector_name.toLocaleLowerCase().includes(q));
+  const sEl=el.querySelector('#opp-select-sector'),bEl=el.querySelector('#opp-select-business');
+  if(sEl)sEl.innerHTML=opts([{id:'',name:t.all},...filtered],state.sector);
+  if(bEl)bEl.innerHTML=opts([{id:'',name:t.all},...filteredBiz],state.business);
+ });
  const sector=el.querySelector('#opp-select-sector');
  if(sector)sector.addEventListener('change',e=>goto({sector:e.target.value,business:'',category:'',view:'tools',page:1,module:''}));
  const business=el.querySelector('#opp-select-business');
@@ -239,6 +250,13 @@ export async function hydrate(path,lang){
   const [sectorsResult,businessesResult]=state.family==='business'?
    await Promise.all([fetchJSON('/sectors'),fetchJSON('/businesses?limit=100')]):[{data:[]},{data:[]}];
   const sectors=(sectorsResult.data||[]).map(v=>({...v,name:labelFor(sectorFr,v.id,v.name,lang)}));
+  let groups={};
+  if(state.family==='business'){
+   try{
+    const mapping=await fetch('/sector-groups.json',{cache:'no-store'});
+    if(mapping.ok)groups=(await mapping.json()).groups||{};
+   }catch{groups={}}
+  }
   const businesses=(businessesResult.data||[]).map(v=>({...v,name:labelFor(businessFr,v.id,v.name,lang),sector_name:labelFor(sectorFr,v.sector_id,v.sector_name,lang)}));
   if(state.family==='business'){
    if(state.sector&&!sectors.some(s=>s.id===state.sector))state.sector='';
@@ -246,6 +264,8 @@ export async function hydrate(path,lang){
   }
   if(requestId!==seq)return;
   if(state.category&&!categories.some(c=>c.id===state.category))state.category='';
+  const shownSectors=state.category&&groups[state.category]?
+    sectors.filter(v=>groups[state.category].includes(v.id)):sectors;
   const isTools=state.view==='tools';
   const p=new URLSearchParams({page:String(state.page),limit:'12'});
   if(state.q)p.set('q',state.q);
@@ -258,8 +278,8 @@ export async function hydrate(path,lang){
   if(Array.isArray(result.data))result.data=result.data.map(v=>({...v,sector_name:labelFor(sectorFr,v.sector_id,v.sector_name,lang),category_name:labelFor(categoryFr,v.category_id,v.category_name,lang)}));
   const modules=isTools?[]:(await fetchJSON('/discovery/modules?family='+state.family+(state.category?'&category='+encodeURIComponent(state.category):''))).data;
   if(requestId!==seq)return;
-  el.innerHTML=frame(t,families(t,state)+resultBody(result,state,t,categories,modules,sectors,businesses,labels)+'<div id="opp-dialog-host"></div>');
-  wire(el,state,categories,modules,t,sectors,businesses);
+  el.innerHTML=frame(t,families(t,state)+resultBody(result,state,t,categories,modules,shownSectors,businesses,labels)+'<div id="opp-dialog-host"></div>');
+  wire(el,state,categories,modules,t,shownSectors,businesses);
   if(path.startsWith('/opportunities/')){
     const id=decodeURIComponent(path.slice('/opportunities/'.length));
     await openModal(id,state.view==='tools'?'tool':'solution',t,{deepLink:true,restore:'/opportunities'+location.search});
