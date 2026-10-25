@@ -41,3 +41,15 @@ Version 1 uses a Git-tracked JSON discovery catalogue to avoid creating a second
 ## Acceptance gaps
 
 Company-site About/Partners and partnership CTAs are temporarily inert by owner request; WhatsApp Contact remains active. The layout and catalogue are implemented; visual regression testing against the concept, mobile browser acceptance, independent tool demo deployment, full FR catalogue translation, admin backend and Contabo ingress are pending verification.
+
+
+## 25 October 2026 UX review: shared sign-in integration guidance
+
+**P5-2 — Products, not the public portal, perform silent sign-in.**
+On first load, a registered ADS product may initiate the existing **authorization code + PKCE** flow against ADS Identity with `prompt=none`, `ui_locales=fr` or `en` from its own language selection, a freshly generated random `state` and PKCE challenge, and its **pre-registered exact redirect URI**. If there is no shared session or no authorization, the product must handle the normal OAuth redirect error (`login_required` or access denied) by offering its usual interactive sign-in. No token, access cookie, state or password is shared with the portal. This is a **consumer integration pattern**; no products are modified by this PR.
+
+**P5-1 — Incorrect demo account.** The identity service already checks tenant membership and returns a secure `no_access` page. An automatic switch must not happen via a cross-origin GET or uncontrolled redirect: global logout requires an explicit CSRF-protected POST and product-specific OAuth authorization context. A replacement account journey needs a dedicated security review and end-to-end test before activation. The new portal does not bypass role authorization.
+
+**P5-3 — Portal status is intentionally skipped.** The current `/v1/identity/session` endpoint is token-based legacy context, not a CORS-enabled cookie-safe public portal identity read endpoint. Do **not** attempt to read ADS Identity cookies from the portal, store access tokens, or infer sign-in state. Add a product-specific, allowlisted, CSRF-safe minimal display-name endpoint in a later identity work package if explicitly approved.
+
+**Languages.** The portal defaults to French for unrecognized browser languages and saves an explicit EN/FR switch in local storage. Products should propagate their selected language in `ui_locales` during OAuth; portal preferences alone do not configure third-party application language.
