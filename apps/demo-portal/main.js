@@ -94,14 +94,14 @@ function platformCard(p){
  const demo=safeDemo(p.demoUrl),url=demo||platformUrl(p);
  const media=p.image?'<img src="'+s(photo(p.image))+'" alt="'+s(title(p))+'" loading="lazy" width="640" height="360"/>':'<span class="platform-placeholder" aria-hidden="true">◇</span>';
  return '<a class="platform-card" href="'+s(url)+'"'+(demo?' target="_blank" rel="noopener noreferrer"':'')+'><span class="platform-image">'+media+'</span>'+
- '<span class="platform-body"><h3>'+s(title(p))+'</h3><p>'+s(summary(p))+'</p><span class="card-spacer"></span>'+
+ '<div class="platform-body"><h3>'+s(title(p))+'</h3><p>'+s(summary(p))+'</p><span class="card-spacer"></span>'+
  '<span class="platform-meta">'+(n?pill(countLabel(n,"tools")):pill(t("demoPending"),"muted"))+'</span>'+
  '<span class="btn btn-outline card-action">'+s(demo?t("tryDemo"):t("explore"))+' →</span></span></a>';
 }
 function toolCard(x){
  const media=x.image?'<img src="'+s(photo(x.image))+'" alt="'+s(title(x))+'" loading="lazy" width="560" height="315"/>':'<span class="tool-placeholder" aria-hidden="true">◇</span>';
  return '<a class="tool-card" href="'+toolUrl(x)+'"><span class="tool-photo">'+media+(safeDemo(x.demoUrl)?pill(t("live"),"online"):pill(t("demoPending"),"muted"))+'</span>'+
- '<span class="tool-body"><h3>'+s(title(x))+'</h3><p>'+s(summary(x))+'</p><span class="card-spacer"></span>'+
+ '<div class="tool-body"><h3>'+s(title(x))+'</h3><p>'+s(summary(x))+'</p><span class="card-spacer"></span>'+
  '<span class="btn btn-outline card-action">'+s(t("learn"))+' →</span></span></a>';
 }
 function searchBar(value=""){
