@@ -90,13 +90,19 @@ cleanup(){
  local status="$?"
  trap - EXIT
  docker rm -f "$NAME" >/dev/null 2>&1 || :
- if [ "$status" -ne 0 ] && [ "$cutover" -eq 1 ]; then
-  echo "ADS_DIRECTORY_RELEASE=RESTORING_PREVIOUS_API_IMAGE" >&2
-  if docker image tag "$OLD_ID" "$TAG" &&
-     compose up -d --no-build --no-deps --force-recreate public-read-api; then
-   echo "ADS_DIRECTORY_RELEASE_ROLLBACK=ATTEMPTED" >&2
-  else
-   echo "ADS_DIRECTORY_RELEASE_ROLLBACK=MANUAL_REVIEW_REQUIRED" >&2
+ if [ "$status" -ne 0 ]; then
+  # Also restore the image tag when a candidate fails BEFORE live cutover.
+  # The running container is still untouched in that case.
+  if ! docker image tag "$OLD_ID" "$TAG"; then
+   echo "ADS_DIRECTORY_RELEASE_IMAGE_TAG_ROLLBACK=MANUAL_REVIEW_REQUIRED" >&2
+  fi
+  if [ "$cutover" -eq 1 ]; then
+   echo "ADS_DIRECTORY_RELEASE=RESTORING_PREVIOUS_API_CONTAINER" >&2
+   if compose up -d --no-build --no-deps --force-recreate public-read-api; then
+    echo "ADS_DIRECTORY_RELEASE_ROLLBACK=ATTEMPTED" >&2
+   else
+    echo "ADS_DIRECTORY_RELEASE_ROLLBACK=MANUAL_REVIEW_REQUIRED" >&2
+   fi
   fi
  fi
  exit "$status"
