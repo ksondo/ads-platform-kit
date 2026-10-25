@@ -14,6 +14,13 @@ test('ADS homepage visibly links to all sector, local-business and proposed regu
  assert.ok(main.includes('50 industries') && main.includes('52 example business profiles'));
  assert.ok(main.includes('Official authorizations are still required.'));
 });
+test('ADS homepage discovery paths are labelled in both English and French',()=>{
+ for(const phrase of ['Browse 50 industries','Find a local business type','Institutional & regulatory services',
+                      'Explorer 50 secteurs','Trouver une activité locale','Services institutionnels et réglementaires'])
+   assert.ok(main.includes(phrase),phrase);
+ assert.ok(main.includes("'/opportunities?family=institutional'") ||
+           main.includes('"/opportunities?family=institutional"'));
+});
 test('only Business Opportunities routes are replaced; home/platforms/cloud/demo-access stay intact',()=>{
  assert.ok(main.includes('function landing(){'));
  assert.ok(main.includes('main=landing()'));
