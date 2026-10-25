@@ -28,11 +28,13 @@ const catalogueUI={
  en:{sectors:'Specific industries',businesses:'Business type',allSectors:'All industries',allBusinesses:'All business types',
       chooseSector:'Select one of the individual sectors to view its digital tools',directory:'Browse all industries',
       matching:'Recommended digital tools for',available:'Catalogue concepts, not automatically available products',
-      regs:'These are proposed institution-facing services; authorizations and integration agreements are required.'},
+      regs:'These are proposed institution-facing services; authorizations and integration agreements are required.',
+      partnerTitle:'Partner with ADS',partnerDescription:'Discuss your business sector and digital tools with our team.',partnerAction:'Email our team'},
  fr:{sectors:'Activités sectorielles',businesses:"Type d’entreprise",allSectors:'Toutes les activités',allBusinesses:"Tous les types d’entreprise",
       chooseSector:'Choisissez une activité pour voir ses outils numériques',directory:'Explorer toutes les activités',
       matching:'Outils numériques recommandés pour',available:'Propositions du catalogue, non nécessairement disponibles',
-      regs:'Services institutionnels proposés sous réserve d’autorisations et de conventions.'}
+      regs:'Services institutionnels proposés sous réserve d’autorisations et de conventions.',
+      partnerTitle:'Devenir partenaire ADS',partnerDescription:'Parlez-nous de votre secteur et de vos besoins numériques.',partnerAction:'Écrire à notre équipe'}
 };
 const categoryIcons={
 'business-agriculture':'🌱','business-processing':'🏭','business-commerce':'🛒','business-construction':'🏗️','business-mobility':'🚚','business-tourism':'🏨','business-education':'🎓','business-health':'🏥','business-services':'🛠️','business-finance':'🏦','business-communities':'🤝','business-technology':'💻','business-environment':'♻️',
@@ -147,7 +149,9 @@ function resultBody(data,state,t,cats,modules,sectors,businesses,labels){
  (state.family==='business'?'<select id="opp-view" aria-label="'+L(t.view)+'">'+opts([{id:'bundles',name:t.bundles},{id:'tools',name:t.tools}],state.view)+'</select>':'')+
  '<select id="opp-sort" aria-label="'+L(t.sort)+'">'+opts([{id:'relevance',name:t.relevance},{id:'name',name:t.alphabetical}],state.sort)+'</select></div></div>'+
  (filtered.length?'<div class="opp-solutions">'+filtered.map(x=>solutionCard(x,t,state.view)).join('')+'</div>':'<div class="opp-empty">'+L(t.empty)+'</div>')+
- pagination(state,data,t)+'<div class="opp-end-note"><p>'+L(t.step)+'</p><a class="btn btn-outline" href="/platforms">'+L(t.platforms)+' →</a></div></section></div>';
+ pagination(state,data,t)+'<div class="opp-end-note"><p>'+L(t.step)+'</p><a class="btn btn-outline" href="/platforms">'+L(t.platforms)+' →</a></div>'+
+ '<section class="opp-partner-cta"><div><h3>'+L(labels.partnerTitle)+'</h3><p>'+L(labels.partnerDescription)+'</p></div>'+
+ '<a class="btn btn-gold" href="mailto:admin@africadigitalsynergy.com?subject=ADS%20Partnership">'+L(labels.partnerAction)+' →</a></section></section></div>';
 }
 const formatModules=(items)=>Array.isArray(items)?items:[];
 function closeModal(){
