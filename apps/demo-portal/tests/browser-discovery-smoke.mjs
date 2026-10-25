@@ -129,6 +129,11 @@ test('Chromium discovers 49 sectors, 52 local businesses, regulator services and
   assert.ok(await rail.evaluate(el=>el.scrollWidth>el.clientWidth),'sector carousel is not horizontally scrollable');
   await page.locator('[data-action="category-scroll"][data-direction="1"]').click();
   await page.waitForFunction(()=>document.querySelector('.opp-category-rail')?.scrollLeft>50);
+  // Finish the scroll-snap motion before selecting: intermediate smooth-scroll
+  // offsets can legitimately snap back to the nearest card boundary.
+  await page.locator('.opp-category-rail').evaluate(el=>el.scrollTo({left:320,behavior:'instant'}));
+  await page.waitForFunction(()=>document.querySelector('.opp-category-rail')?.scrollLeft>=150);
+  const priorRailPosition=await page.locator('.opp-category-rail').evaluate(el=>el.scrollLeft);
   await page.locator('#opp-select-category').selectOption('business-processing');
   await page.waitForFunction(()=>document.activeElement?.id==='opp-results-title'&&
     document.querySelector('#opp-results-title')?.textContent.includes('Processing'));
@@ -145,8 +150,9 @@ test('Chromium discovers 49 sectors, 52 local businesses, regulator services and
     return bar&&Math.abs(bar.top)<4&&bar.bottom<innerHeight*.6;
   });
   assert.equal(await page.locator('.opp-category.selected').count(),1);
-  assert.ok(await page.locator('.opp-category-rail').evaluate(el=>el.scrollLeft)>30,
-    'changing category must preserve carousel browsing position');
+  const afterRailPosition=await page.locator('.opp-category-rail').evaluate(el=>el.scrollLeft);
+  assert.ok(afterRailPosition>=priorRailPosition-90,
+    'changing category lost the previously browsed carousel position');
   assert.doesNotMatch(await page.locator('#opp-results-title').innerText(),/Opportunities · Opportunities/);
   await page.locator('#opp-select-sector').waitFor();
   assert.ok((await page.locator('#opp-select-sector option').count())>2);
