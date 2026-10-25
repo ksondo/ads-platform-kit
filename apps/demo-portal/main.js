@@ -29,7 +29,7 @@ const i18n = {
 const initialLanguage=()=>{
  const saved=localStorage.getItem("ads-portal-lang");
  if(saved==="en"||saved==="fr")return saved;
- return (navigator.language||"fr").toLowerCase().split("-")[0]==="en"?"en":"fr";
+ return (typeof navigator==="undefined"?"fr":navigator.language||"fr").toLowerCase().split("-")[0]==="en"?"en":"fr";
 };
 let lang=initialLanguage();
 let catalogue = {platforms:[],tools:[],publicSite:"https://africadigitalsynergy.com",companySiteLinksEnabled:false};
