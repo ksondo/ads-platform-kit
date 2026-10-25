@@ -24,6 +24,17 @@ test('operator installer is additive, avoids Nginx and destructive actions',()=>
  assert.match(s,/reader_pw/);
  assert.match(s,/chmod 0600/);
 });
+test('Git-direct API canary is confined to existing private Docker network without public host port',()=>{
+ const src=read('../scripts/release-directory-api-git-direct.sh');
+ assert.match(src,/--network ads-business-opportunities-private/);
+ assert.match(src,/docker exec "\$NAME" node -e/);
+ assert.match(src,/all_canary_totals/);
+ assert.match(src,/canary_total 'businesses\?limit=100' 52/);
+ assert.ok(!src.includes('canary port 18191 occupied'));
+ assert.ok(!src.includes('-p 127.0.0.1:18191:31090'));
+ assert.ok(!src.includes('http://127.0.0.1:18191/health'));
+ for(const prohibited of ['docker volume rm','docker system prune','down -v','--reset','nginx -s reload']) assert.ok(!src.includes(prohibited),prohibited);
+});
 test('read API image cannot perform migrations and operator image is not a service',()=>{
  const api=read('../Dockerfile'),seed=read('../Dockerfile.seed'),compose=read('../compose.yml');
  assert.ok(!api.includes('seed.mjs'));
