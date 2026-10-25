@@ -1,5 +1,6 @@
 import {sectorFr,categoryFr,businessFr,labelFor} from './opportunities-fr.js';
 import {groupImage} from './image-library.js';
+import {opportunityImage} from './opportunity-image-library.js';
 // ADS Business Opportunities v2: only /opportunities routes.
 // All listings, families, groups, solutions and module tags come from PostgreSQL API.
 const BASE='/api/opportunities/v1';
@@ -141,10 +142,10 @@ function aside(cats,state,modules,t,sectors,businesses,labels){
  '<p class="opp-sidebar-help">'+L(t.step)+'</p></aside>';
 }
 function pillTags(items){return '<div class="opp-tags">'+(items||[]).slice(0,5).map(x=>'<span>'+L(x)+'</span>').join('')+'</div>'}
-function solutionCard(x,t,view){
+function solutionCard(x,t,view,index){
  const kind=view==='tools'?'tool':'solution';
  const tags=view==='tools'?[]:x.tools;
- return '<article class="opp-solution"><div class="opp-solution-cover"><img class="opp-cover-img" src="'+L(photo(x.category_id||'business-processing'))+'" width="420" height="190" alt="" loading="lazy"/><span>'+L(x.readiness==='verified_demo'?'Verified demo':t.proposed)+'</span></div>'+
+ return '<article class="opp-solution"><div class="opp-solution-cover"><img class="opp-cover-img" src="'+L(opportunityImage(x,740,index))+'" width="420" height="190" alt="" loading="lazy"/><span>'+L(x.readiness==='verified_demo'?'Verified demo':t.proposed)+'</span></div>'+
  '<div class="opp-solution-body"><small>'+L(x.sector_name||x.category_name||t.results)+'</small><h3>'+L(x.title)+'</h3><p>'+L(x.summary)+'</p>'+
  pillTags(tags)+'<div class="opp-card-actions">'+button(t.see+' →','detail','btn btn-outline opp-detail-open','data-id="'+L(x.id)+'" data-kind="'+kind+'"')+
  '<a class="btn btn-navy" href="mailto:admin@africadigitalsynergy.com">admin@africadigitalsynergy.com</a></div></div></article>';
@@ -162,7 +163,7 @@ function resultBody(data,state,t,cats,modules,sectors,businesses,labels){
  '<div class="opp-results-bar" id="opp-results"><div><h2 id="opp-results-title" tabindex="-1">'+data.total+' '+L(t.results)+(state.category?' · '+L(title):'')+'</h2><p>'+L(t.english)+'</p></div><div class="opp-result-tools">'+
  (state.family==='business'?'<select id="opp-view" aria-label="'+L(t.view)+'">'+opts([{id:'bundles',name:t.bundles},{id:'tools',name:t.tools}],state.view)+'</select>':'')+
  '<select id="opp-sort" aria-label="'+L(t.sort)+'">'+opts([{id:'relevance',name:t.relevance},{id:'name',name:t.alphabetical}],state.sort)+'</select></div></div>'+
- (filtered.length?'<div class="opp-solutions">'+filtered.map(x=>solutionCard(x,t,state.view)).join('')+'</div>':'<div class="opp-empty">'+L(t.empty)+'</div>')+
+ (filtered.length?'<div class="opp-solutions">'+filtered.map((x,index)=>solutionCard(x,t,state.view,index)).join('')+'</div>':'<div class="opp-empty">'+L(t.empty)+'</div>')+
  pagination(state,data,t)+'<div class="opp-end-note"><p>'+L(t.step)+'</p><a class="btn btn-outline" href="/platforms">'+L(t.platforms)+' →</a></div>'+
  '<section class="opp-partner-cta"><div><h3>'+L(labels.partnerTitle)+'</h3><p>'+L(labels.partnerDescription)+'</p></div>'+
  '<a class="btn btn-gold" href="mailto:admin@africadigitalsynergy.com?subject=ADS%20Partnership">'+L(labels.partnerAction)+' →</a></section></section></div>';
@@ -190,7 +191,7 @@ async function openModal(id,kind,t,opts={}){
  modalRestoreUrl=restore;
  if(!opts.deepLink)history.pushState({},'', '/opportunities/'+encodeURIComponent(id)+location.search);
  const tags=formatModules(data.tools);
- el.innerHTML='<div class="opp-scrim" data-action="dismiss"><div role="dialog" aria-modal="true" aria-labelledby="opp-dialog-title" class="opp-dialog"><div class="opp-dialog-heading"><span>'+L(data.sector_name||data.category_name||t.title)+'</span>'+button('×','dismiss','opp-x')+'</div><div class="opp-dialog-cover"><img class="opp-cover-img" src="'+L(photo(data.category_id||'business-processing'))+'" width="620" height="220" alt=""/></div>'+
+ el.innerHTML='<div class="opp-scrim" data-action="dismiss"><div role="dialog" aria-modal="true" aria-labelledby="opp-dialog-title" class="opp-dialog"><div class="opp-dialog-heading"><span>'+L(data.sector_name||data.category_name||t.title)+'</span>'+button('×','dismiss','opp-x')+'</div><div class="opp-dialog-cover"><img class="opp-cover-img" src="'+L(opportunityImage(data,960,0))+'" width="620" height="220" alt=""/></div>'+
  '<div class="opp-dialog-content"><h2 id="opp-dialog-title">'+L(data.title)+'</h2><p class="opp-dialog-state">'+L(t.proposed)+'</p><h3>'+L(t.summary)+'</h3><p>'+L(data.summary)+'</p>'+
  (tags.length?'<h3>'+L(t.suggested)+'</h3>'+pillTags(tags):'')+
  (formatModules(data.examples||data.business_examples).length?'<h3>'+L(t.example)+'</h3><p>'+L(formatModules(data.examples||data.business_examples).slice(0,6).join(', '))+'</p>':'')+
