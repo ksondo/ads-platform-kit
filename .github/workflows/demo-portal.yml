@@ -52,13 +52,14 @@ jobs:
           grep -Fq '"ecommerce"' /tmp/ads-demo-catalogue.json
           # Test assets from the BUILT nginx image. Browser tests that serve the
           # repository directly cannot detect missing Dockerfile COPY directives.
-          for asset in main.js opportunities-v2.js opportunities-fr.js image-library.js styles.css opportunities-v2.css sector-groups.json; do
+          for asset in main.js opportunities-v2.js opportunities-fr.js image-library.js opportunity-image-library.js styles.css opportunities-v2.css sector-groups.json; do
             curl --fail --silent --show-error "http://127.0.0.1:18888/$asset" -o "/tmp/ads-demo-$asset"
           done
           grep -Fq "import * as ADSOpportunities" /tmp/ads-demo-main.js
           grep -Fq "from './opportunities-fr.js'" /tmp/ads-demo-opportunities-v2.js
           grep -Fq "export const sectorFr" /tmp/ads-demo-opportunities-fr.js
           grep -Fq "export const groupImage" /tmp/ads-demo-image-library.js
+          grep -Fq "export function opportunityImage" /tmp/ads-demo-opportunity-image-library.js
           node -e "const fs=require('node:fs'); const d=JSON.parse(fs.readFileSync('/tmp/ads-demo-sector-groups.json','utf8')); if(!d.groups || Object.keys(d.groups).length!==13)process.exit(1)"
           echo 'ADS_PORTAL_DOCKER_RUNTIME_ASSETS=PASS'
 
