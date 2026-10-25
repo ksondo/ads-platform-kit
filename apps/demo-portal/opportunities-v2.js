@@ -87,7 +87,7 @@ function goto(update){
  if(s.page>1)p.set('page',String(s.page));
  const url='/opportunities'+(p.toString()?'?'+p.toString():'');
  history.pushState({},'',url);
- hydrate('/opportunities',window.document.documentElement.lang||'en');
+ hydrate('/opportunities',window.document.documentElement.lang||'en',{revealResults:true});
 }
 const opts=(items,selected)=>items.map(x=>'<option value="'+L(x.id)+'"'+(x.id===selected?' selected':'')+'>'+L(x.name)+'</option>').join('');
 function frame(t,body){
@@ -98,11 +98,21 @@ function families(t,state){
  ['business','institutional'].map(f=>'<button type="button" data-family="'+f+'" aria-pressed="'+String(state.family===f)+'" class="opp-family '+(state.family===f?'active':'')+'"><span class="opp-family-icon">'+familyIcons[f]+'</span><span><strong>'+L(t[f])+'</strong><small>'+L(t[f+'Sub'])+'</small></span></button>').join('')+'</div>';
 }
 function categoryCards(cats,state,t){
- return '<div class="opp-category-top"><h2>'+L(state.family==='business'?t.business:t.institutional)+'</h2><span>'+cats.length+' '+L(t.category.toLowerCase())+'</span></div>'+
- '<div class="opp-category-rail" role="group" aria-label="'+L(t.category)+'">'+cats.map(c=>
+ const fr=document.documentElement.lang==='fr';
+ const title=state.family==='business'?t.business:t.institutional;
+ const previous=fr?'Faire défiler les secteurs vers la gauche':'Scroll sectors left';
+ const next=fr?'Faire défiler les secteurs vers la droite':'Scroll sectors right';
+ const hint=fr?'Choisissez un secteur pour afficher les opportunités correspondantes.':'Choose a sector to view its opportunities.';
+ return '<section class="container opp-category-strip" aria-label="'+L(title)+'">'+
+ '<div class="opp-category-top"><div><h2>'+L(title)+'</h2><p class="opp-category-hint">'+L(hint)+'</p></div>'+
+ '<div class="opp-category-controls">'+
+ '<button type="button" class="opp-carousel-arrow" data-action="category-scroll" data-direction="-1" aria-label="'+L(previous)+'">‹</button>'+
+ '<button type="button" class="opp-carousel-arrow" data-action="category-scroll" data-direction="1" aria-label="'+L(next)+'">›</button></div></div>'+
+ '<div class="opp-category-rail" role="region" tabindex="0" aria-label="'+L(title)+'">'+cats.map(c=>
  '<button type="button" class="opp-category '+(c.id===state.category?'selected':'')+'" data-category="'+L(c.id)+'" aria-pressed="'+String(c.id===state.category)+'">'+
- '<span class="opp-category-photo"><img class="opp-category-img" src="'+L(photo(c.id))+'" width="240" height="140" alt="" loading="lazy"/><span>'+L(categoryIcons[c.id]||'◈')+'</span></span><strong>'+L(c.name)+'</strong><small>'+c.opportunity_count+' '+L(t.results.toLowerCase())+'</small></button>').join('')+'</div>';
+ '<span class="opp-category-photo"><img class="opp-category-img" src="'+L(photo(c.id))+'" width="240" height="140" alt="" loading="lazy"/><span>'+L(categoryIcons[c.id]||'◈')+'</span></span><strong>'+L(c.name)+'</strong><small>'+c.opportunity_count+' '+L(t.results.toLowerCase())+'</small></button>').join('')+'</div></section>';
 }
+
 function sectorDirectory(sectors,state,t,labels){
  if(state.family!=='business'||!sectors.length)return '';
  return '<details class="opp-sector-dir"><summary>'+L(labels.directory)+' · '+sectors.length+' '+L(labels.sectors.toLowerCase())+' ⌄</summary>'+
@@ -143,10 +153,10 @@ function pagination(state,pageInfo,t){
 function resultBody(data,state,t,cats,modules,sectors,businesses,labels){
  const title=cats.find(x=>x.id===state.category)?.name||t.results;
  const filtered=state.sort==='name'?[...data.data].sort((a,b)=>a.title.localeCompare(b.title)):data.data;
- return '<div class="container opp-layout">'+aside(cats,state,modules,t,sectors,businesses,labels)+'<section class="opp-content">'+
- categoryCards(cats,state,t)+sectorDirectory(sectors,state,t,labels)+businessPanel(state,businesses,t,labels)+
+ return categoryCards(cats,state,t)+'<div class="container opp-layout">'+aside(cats,state,modules,t,sectors,businesses,labels)+'<section class="opp-content" aria-labelledby="opp-results-title">'+
+ sectorDirectory(sectors,state,t,labels)+businessPanel(state,businesses,t,labels)+
  (state.family==='institutional'?'<p class="opp-regulatory-guard">'+L(labels.regs)+'</p>':'')+
- '<div class="opp-results-bar"><div><h2>'+data.total+' '+L(t.results)+' · '+L(title)+'</h2><p>'+L(t.english)+'</p></div><div class="opp-result-tools">'+
+ '<div class="opp-results-bar" id="opp-results"><div><h2 id="opp-results-title" tabindex="-1">'+data.total+' '+L(t.results)+(state.category?' · '+L(title):'')+'</h2><p>'+L(t.english)+'</p></div><div class="opp-result-tools">'+
  (state.family==='business'?'<select id="opp-view" aria-label="'+L(t.view)+'">'+opts([{id:'bundles',name:t.bundles},{id:'tools',name:t.tools}],state.view)+'</select>':'')+
  '<select id="opp-sort" aria-label="'+L(t.sort)+'">'+opts([{id:'relevance',name:t.relevance},{id:'name',name:t.alphabetical}],state.sort)+'</select></div></div>'+
  (filtered.length?'<div class="opp-solutions">'+filtered.map(x=>solutionCard(x,t,state.view)).join('')+'</div>':'<div class="opp-empty">'+L(t.empty)+'</div>')+
@@ -204,6 +214,13 @@ async function openModal(id,kind,t,opts={}){
 function wire(el,state,cats,modules,t,sectors,businesses){
  el.querySelectorAll('[data-family]').forEach(b=>b.addEventListener('click',()=>goto({family:b.dataset.family,category:'',sector:'',business:'',view:'bundles',page:1,q:'',module:''})));
  el.querySelectorAll('[data-category]').forEach(b=>b.addEventListener('click',()=>goto({category:b.dataset.category,sector:'',business:'',view:'bundles',page:1,module:''})));
+ const rail=el.querySelector('.opp-category-rail');
+ el.querySelectorAll('[data-action=category-scroll]').forEach(button=>button.addEventListener('click',()=>{
+  const direction=Number(button.dataset.direction);
+  if(!rail||![-1,1].includes(direction))return;
+  const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  rail.scrollBy({left:direction*Math.max(250,rail.clientWidth*.8),behavior:reduced?'instant':'smooth'});
+ }));
  el.querySelector('#opp-select-category').addEventListener('change',e=>goto({category:e.target.value,sector:'',business:'',view:'bundles',page:1,module:''}));
  const searchActivities=el.querySelector('#opp-activity-search');
  if(searchActivities)searchActivities.addEventListener('input',()=>{
@@ -244,7 +261,7 @@ function wire(el,state,cats,modules,t,sectors,businesses){
    }catch{suggestions.innerHTML=''}
  });
 }
-export async function hydrate(path,lang){
+export async function hydrate(path,lang,{revealResults=false}={}){
  const el=document.getElementById('opportunities-app');
  if(!el)return;
  const requestId=++seq,t=tFor(lang),state=stateFromURL();
@@ -288,6 +305,14 @@ export async function hydrate(path,lang){
   if(requestId!==seq)return;
   el.innerHTML=frame(t,families(t,state)+resultBody(result,state,t,categories,modules,shownSectors,shownBusinesses,labels)+'<div id="opp-dialog-host"></div>');
   wire(el,state,categories,modules,t,shownSectors,shownBusinesses);
+  if(revealResults){
+   const heading=el.querySelector('#opp-results-title');
+   if(heading){
+    heading.focus({preventScroll:true});
+    const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    heading.scrollIntoView({behavior:reduced?'instant':'smooth',block:'start'});
+   }
+  }
   if(path.startsWith('/opportunities/')){
     const id=decodeURIComponent(path.slice('/opportunities/'.length));
     await openModal(id,state.view==='tools'?'tool':'solution',t,{deepLink:true,restore:'/opportunities'+location.search});
