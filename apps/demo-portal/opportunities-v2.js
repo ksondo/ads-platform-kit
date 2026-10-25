@@ -88,7 +88,7 @@ function goto(update){
 }
 const opts=(items,selected)=>items.map(x=>'<option value="'+L(x.id)+'"'+(x.id===selected?' selected':'')+'>'+L(x.name)+'</option>').join('');
 function frame(t,body){
- return '<section class="opp-hero"><div class="container opp-hero-body"><div class="opp-hero-copy"><h1>'+L(t.title)+'</h1><h2>'+L(t.allFamilies)+'</h2><p>'+L(t.desc)+'</p><div class="opp-hero-facts"><span>◈ '+L(t.business)+'</span><span>▦ '+L(t.suggested)+'</span><span>✦ '+L(t.institutional)+'</span></div></div><div class="opp-hero-image" aria-hidden="true"></div><div class="opp-hero-pathways"><div><span>↗</span><strong>Digitalize Your Business</strong><small>Explore tools that support your organisation</small></div><div><span>▥</span><strong>Start a Digital Business</strong><small>Discover reusable digital service opportunities</small></div><div><span>♧</span><strong>Partner with ADS</strong><small>Partnership enquiries via WhatsApp for now</small></div></div></div></section>'+body;
+ return '<section class="opp-hero"><div class="container opp-hero-body"><div class="opp-hero-copy"><h1>'+L(t.title)+'</h1><h2>'+L(t.allFamilies)+'</h2><p>'+L(t.desc)+'</p><div class="opp-hero-facts"><span>◈ '+L(t.business)+'</span><span>▦ '+L(t.suggested)+'</span><span>✦ '+L(t.institutional)+'</span></div></div><div class="opp-hero-image" aria-hidden="true"></div></div></section>'+body;
 }
 function families(t,state){
  return '<div class="opp-families container" role="group" aria-label="Discovery families">'+
@@ -98,7 +98,7 @@ function categoryCards(cats,state,t){
  return '<div class="opp-category-top"><h2>'+L(state.family==='business'?t.business:t.institutional)+'</h2><span>'+cats.length+' '+L(t.category.toLowerCase())+'</span></div>'+
  '<div class="opp-category-rail" role="group" aria-label="'+L(t.category)+'">'+cats.map(c=>
  '<button type="button" class="opp-category '+(c.id===state.category?'selected':'')+'" data-category="'+L(c.id)+'" aria-pressed="'+String(c.id===state.category)+'">'+
- '<span class="opp-category-photo" style="background-image:url('+photo(c.id)+')"><span>'+L(categoryIcons[c.id]||'◈')+'</span></span><strong>'+L(c.name)+'</strong><small>'+c.opportunity_count+' '+L(t.results.toLowerCase())+'</small></button>').join('')+'</div>';
+ '<span class="opp-category-photo"><img class="opp-category-img" src="'+L(photo(c.id))+'" width="240" height="140" alt="" loading="lazy"/><span>'+L(categoryIcons[c.id]||'◈')+'</span></span><strong>'+L(c.name)+'</strong><small>'+c.opportunity_count+' '+L(t.results.toLowerCase())+'</small></button>').join('')+'</div>';
 }
 function sectorDirectory(sectors,state,t,labels){
  if(state.family!=='business'||!sectors.length)return '';
@@ -127,10 +127,10 @@ function pillTags(items){return '<div class="opp-tags">'+(items||[]).slice(0,5).
 function solutionCard(x,t,view){
  const kind=view==='tools'?'tool':'solution';
  const tags=view==='tools'?[]:x.tools;
- return '<article class="opp-solution"><div class="opp-solution-cover" style="background-image:url('+photo(x.category_id||'business-processing')+')"><span>'+L(x.readiness==='verified_demo'?'Verified demo':t.proposed)+'</span></div>'+
+ return '<article class="opp-solution"><div class="opp-solution-cover"><img class="opp-cover-img" src="'+L(photo(x.category_id||'business-processing'))+'" width="420" height="190" alt="" loading="lazy"/><span>'+L(x.readiness==='verified_demo'?'Verified demo':t.proposed)+'</span></div>'+
  '<div class="opp-solution-body"><small>'+L(x.sector_name||x.category_name||t.results)+'</small><h3>'+L(x.title)+'</h3><p>'+L(x.summary)+'</p>'+
  pillTags(tags)+'<div class="opp-card-actions">'+button(t.see+' →','detail','btn btn-outline opp-detail-open','data-id="'+L(x.id)+'" data-kind="'+kind+'"')+
- '<a class="btn btn-navy" href="'+wa+'" target="_blank" rel="noopener noreferrer">'+L(t.contact)+'</a></div></div></article>';
+ '<a class="btn btn-navy" href="mailto:admin@africadigitalsynergy.com">admin@africadigitalsynergy.com</a></div></div></article>';
 }
 function pagination(state,pageInfo,t){
  const last=Math.max(1,Math.ceil(pageInfo.total/pageInfo.limit));
@@ -171,7 +171,7 @@ async function openModal(id,kind,t,opts={}){
  modalRestoreUrl=restore;
  if(!opts.deepLink)history.pushState({},'', '/opportunities/'+encodeURIComponent(id)+location.search);
  const tags=formatModules(data.tools);
- el.innerHTML='<div class="opp-scrim" data-action="dismiss"><div role="dialog" aria-modal="true" aria-labelledby="opp-dialog-title" class="opp-dialog"><div class="opp-dialog-heading"><span>'+L(data.sector_name||data.category_name||t.title)+'</span>'+button('×','dismiss','opp-x')+'</div><div class="opp-dialog-cover" style="background-image:url('+photo(data.category_id||'business-processing')+')"></div>'+
+ el.innerHTML='<div class="opp-scrim" data-action="dismiss"><div role="dialog" aria-modal="true" aria-labelledby="opp-dialog-title" class="opp-dialog"><div class="opp-dialog-heading"><span>'+L(data.sector_name||data.category_name||t.title)+'</span>'+button('×','dismiss','opp-x')+'</div><div class="opp-dialog-cover"><img class="opp-cover-img" src="'+L(photo(data.category_id||'business-processing'))+'" width="620" height="220" alt=""/></div>'+
  '<div class="opp-dialog-content"><h2 id="opp-dialog-title">'+L(data.title)+'</h2><p class="opp-dialog-state">'+L(t.proposed)+'</p><h3>'+L(t.summary)+'</h3><p>'+L(data.summary)+'</p>'+
  (tags.length?'<h3>'+L(t.suggested)+'</h3>'+pillTags(tags):'')+
  (formatModules(data.examples||data.business_examples).length?'<h3>'+L(t.example)+'</h3><p>'+L(formatModules(data.examples||data.business_examples).slice(0,6).join(', '))+'</p>':'')+
