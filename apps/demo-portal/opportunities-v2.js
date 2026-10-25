@@ -1,3 +1,4 @@
+import {sectorFr,categoryFr,businessFr,labelFor} from './opportunities-fr.js';
 // ADS Business Opportunities v2: only /opportunities routes.
 // All listings, families, groups, solutions and module tags come from PostgreSQL API.
 const BASE='/api/opportunities/v1';
@@ -27,11 +28,13 @@ const catalogueUI={
  en:{sectors:'Specific industries',businesses:'Business type',allSectors:'All industries',allBusinesses:'All business types',
       chooseSector:'Select one of the individual sectors to view its digital tools',directory:'Browse all industries',
       matching:'Recommended digital tools for',available:'Catalogue concepts, not automatically available products',
-      regs:'These are proposed institution-facing services; authorizations and integration agreements are required.'},
+      regs:'These are proposed institution-facing services; authorizations and integration agreements are required.',
+      partnerTitle:'Partner with ADS',partnerDescription:'Discuss your business sector and digital tools with our team.',partnerAction:'Email our team'},
  fr:{sectors:'Activités sectorielles',businesses:"Type d’entreprise",allSectors:'Toutes les activités',allBusinesses:"Tous les types d’entreprise",
       chooseSector:'Choisissez une activité pour voir ses outils numériques',directory:'Explorer toutes les activités',
       matching:'Outils numériques recommandés pour',available:'Propositions du catalogue, non nécessairement disponibles',
-      regs:'Services institutionnels proposés sous réserve d’autorisations et de conventions.'}
+      regs:'Services institutionnels proposés sous réserve d’autorisations et de conventions.',
+      partnerTitle:'Devenir partenaire ADS',partnerDescription:'Parlez-nous de votre secteur et de vos besoins numériques.',partnerAction:'Écrire à notre équipe'}
 };
 const categoryIcons={
 'business-agriculture':'🌱','business-processing':'🏭','business-commerce':'🛒','business-construction':'🏗️','business-mobility':'🚚','business-tourism':'🏨','business-education':'🎓','business-health':'🏥','business-services':'🛠️','business-finance':'🏦','business-communities':'🤝','business-technology':'💻','business-environment':'♻️',
@@ -52,7 +55,7 @@ const L=x=>escapeHtml(x);
 const tFor=lang=>langText[lang]||langText.en;
 const photo=id=>'https://images.unsplash.com/'+(photos[id]||'photo-1497366811353-6870744d04b2')+'?auto=format&fit=crop&w=740&q=70';
 const button=(label,action,cls='',attrs='')=>'<button type="button" class="'+L(cls)+'" data-action="'+L(action)+'" '+attrs+'>'+L(label)+'</button>';
-const contact=t=>'<a class="btn btn-gold opp-whatsapp" href="'+wa+'" rel="noopener noreferrer" target="_blank">'+L(t.contact)+' ↗</a>';
+const contact=t=>'<a class="btn btn-gold" href="mailto:admin@africadigitalsynergy.com">admin@africadigitalsynergy.com ↗</a><a class="btn btn-outline" href="'+wa+'" rel="noopener noreferrer" target="_blank">WhatsApp ↗</a>';
 export const directoryShell=()=>'<div id="opportunities-app"></div>';
 export const detailShell=directoryShell;
 function stateFromURL(){
@@ -70,7 +73,7 @@ function stateFromURL(){
 function goto(update){
  const current=stateFromURL(),s={...current,...update};
  if(s.family==='institutional'){s.view='bundles';s.sector='';s.business='';}
- if(s.sector||s.business){s.view='tools';s.category='';}
+ if(s.sector||s.business){s.view='tools';}
  const p=new URLSearchParams();
  if(s.family==='institutional')p.set('family','institutional');
  if(s.category)p.set('category',s.category);
@@ -87,7 +90,7 @@ function goto(update){
 }
 const opts=(items,selected)=>items.map(x=>'<option value="'+L(x.id)+'"'+(x.id===selected?' selected':'')+'>'+L(x.name)+'</option>').join('');
 function frame(t,body){
- return '<section class="opp-hero"><div class="container opp-hero-body"><div class="opp-hero-copy"><h1>'+L(t.title)+'</h1><h2>'+L(t.allFamilies)+'</h2><p>'+L(t.desc)+'</p><div class="opp-hero-facts"><span>◈ '+L(t.business)+'</span><span>▦ '+L(t.suggested)+'</span><span>✦ '+L(t.institutional)+'</span></div></div><div class="opp-hero-image" aria-hidden="true"></div><div class="opp-hero-pathways"><div><span>↗</span><strong>Digitalize Your Business</strong><small>Explore tools that support your organisation</small></div><div><span>▥</span><strong>Start a Digital Business</strong><small>Discover reusable digital service opportunities</small></div><div><span>♧</span><strong>Partner with ADS</strong><small>Partnership enquiries via WhatsApp for now</small></div></div></div></section>'+body;
+ return '<section class="opp-hero"><div class="container opp-hero-body"><div class="opp-hero-copy"><h1>'+L(t.title)+'</h1><h2>'+L(t.allFamilies)+'</h2><p>'+L(t.desc)+'</p><div class="opp-hero-facts"><span>◈ '+L(t.business)+'</span><span>▦ '+L(t.suggested)+'</span><span>✦ '+L(t.institutional)+'</span></div></div><div class="opp-hero-image" aria-hidden="true"></div></div></section>'+body;
 }
 function families(t,state){
  return '<div class="opp-families container" role="group" aria-label="Discovery families">'+
@@ -97,7 +100,7 @@ function categoryCards(cats,state,t){
  return '<div class="opp-category-top"><h2>'+L(state.family==='business'?t.business:t.institutional)+'</h2><span>'+cats.length+' '+L(t.category.toLowerCase())+'</span></div>'+
  '<div class="opp-category-rail" role="group" aria-label="'+L(t.category)+'">'+cats.map(c=>
  '<button type="button" class="opp-category '+(c.id===state.category?'selected':'')+'" data-category="'+L(c.id)+'" aria-pressed="'+String(c.id===state.category)+'">'+
- '<span class="opp-category-photo" style="background-image:url('+photo(c.id)+')"><span>'+L(categoryIcons[c.id]||'◈')+'</span></span><strong>'+L(c.name)+'</strong><small>'+c.opportunity_count+' '+L(t.results.toLowerCase())+'</small></button>').join('')+'</div>';
+ '<span class="opp-category-photo"><img class="opp-category-img" src="'+L(photo(c.id))+'" width="240" height="140" alt="" loading="lazy"/><span>'+L(categoryIcons[c.id]||'◈')+'</span></span><strong>'+L(c.name)+'</strong><small>'+c.opportunity_count+' '+L(t.results.toLowerCase())+'</small></button>').join('')+'</div>';
 }
 function sectorDirectory(sectors,state,t,labels){
  if(state.family!=='business'||!sectors.length)return '';
@@ -117,7 +120,8 @@ function aside(cats,state,modules,t,sectors,businesses,labels){
  return '<aside class="opp-aside"><form id="opp-search-form" role="search"><label for="opp-search">'+L(t.search)+'</label><input type="search" id="opp-search" maxlength="100" autocomplete="off" placeholder="'+L(t.searchPlaceholder)+'" value="'+L(state.q)+'"/><button class="btn btn-navy" type="submit">'+L(t.search)+' →</button><small>'+L(t.searchHelp)+'</small><div id="opp-suggestions" role="listbox"></div></form>'+
  '<div class="opp-filter-head"><h2>'+L(t.filters)+'</h2>'+button(t.reset,'reset','opp-reset')+'</div>'+
  '<label for="opp-select-category">'+L(t.category)+'</label><select id="opp-select-category">'+opts([{id:'',name:t.all},...cats],state.category)+'</select>'+
- (state.family==='business'?'<label for="opp-select-sector">'+L(labels.sectors)+'</label><select id="opp-select-sector">'+opts([{id:'',name:labels.allSectors},...sectors],state.sector)+'</select>'+
+ (state.family==='business'?'<label for="opp-activity-search">'+L(labels.sectors)+' — '+L(t.search)+'</label><input id="opp-activity-search" type="search" autocomplete="off" maxlength="80" placeholder="'+L(t.searchPlaceholder)+'"/>'+
+ '<label for="opp-select-sector">'+L(labels.sectors)+'</label><select id="opp-select-sector">'+opts([{id:'',name:labels.allSectors},...sectors],state.sector)+'</select>'+
  '<label for="opp-select-business">'+L(labels.businesses)+'</label><select id="opp-select-business">'+opts([{id:'',name:labels.allBusinesses},...businesses],state.business)+'</select>':'')+
  '<label for="opp-module">'+L(t.module)+'</label><select id="opp-module">'+opts([{id:'',name:t.allModules},...modules.map(m=>({id:m,name:m}))],state.module)+'</select>'+
  '<p class="opp-sidebar-help">'+L(t.step)+'</p></aside>';
@@ -126,10 +130,10 @@ function pillTags(items){return '<div class="opp-tags">'+(items||[]).slice(0,5).
 function solutionCard(x,t,view){
  const kind=view==='tools'?'tool':'solution';
  const tags=view==='tools'?[]:x.tools;
- return '<article class="opp-solution"><div class="opp-solution-cover" style="background-image:url('+photo(x.category_id||'business-processing')+')"><span>'+L(x.readiness==='verified_demo'?'Verified demo':t.proposed)+'</span></div>'+
+ return '<article class="opp-solution"><div class="opp-solution-cover"><img class="opp-cover-img" src="'+L(photo(x.category_id||'business-processing'))+'" width="420" height="190" alt="" loading="lazy"/><span>'+L(x.readiness==='verified_demo'?'Verified demo':t.proposed)+'</span></div>'+
  '<div class="opp-solution-body"><small>'+L(x.sector_name||x.category_name||t.results)+'</small><h3>'+L(x.title)+'</h3><p>'+L(x.summary)+'</p>'+
  pillTags(tags)+'<div class="opp-card-actions">'+button(t.see+' →','detail','btn btn-outline opp-detail-open','data-id="'+L(x.id)+'" data-kind="'+kind+'"')+
- '<a class="btn btn-navy" href="'+wa+'" target="_blank" rel="noopener noreferrer">'+L(t.contact)+'</a></div></div></article>';
+ '<a class="btn btn-navy" href="mailto:admin@africadigitalsynergy.com">admin@africadigitalsynergy.com</a></div></div></article>';
 }
 function pagination(state,pageInfo,t){
  const last=Math.max(1,Math.ceil(pageInfo.total/pageInfo.limit));
@@ -145,7 +149,9 @@ function resultBody(data,state,t,cats,modules,sectors,businesses,labels){
  (state.family==='business'?'<select id="opp-view" aria-label="'+L(t.view)+'">'+opts([{id:'bundles',name:t.bundles},{id:'tools',name:t.tools}],state.view)+'</select>':'')+
  '<select id="opp-sort" aria-label="'+L(t.sort)+'">'+opts([{id:'relevance',name:t.relevance},{id:'name',name:t.alphabetical}],state.sort)+'</select></div></div>'+
  (filtered.length?'<div class="opp-solutions">'+filtered.map(x=>solutionCard(x,t,state.view)).join('')+'</div>':'<div class="opp-empty">'+L(t.empty)+'</div>')+
- pagination(state,data,t)+'<div class="opp-end-note"><p>'+L(t.step)+'</p><a class="btn btn-outline" href="/platforms">'+L(t.platforms)+' →</a></div></section></div>';
+ pagination(state,data,t)+'<div class="opp-end-note"><p>'+L(t.step)+'</p><a class="btn btn-outline" href="/platforms">'+L(t.platforms)+' →</a></div>'+
+ '<section class="opp-partner-cta"><div><h3>'+L(labels.partnerTitle)+'</h3><p>'+L(labels.partnerDescription)+'</p></div>'+
+ '<a class="btn btn-gold" href="mailto:admin@africadigitalsynergy.com?subject=ADS%20Partnership">'+L(labels.partnerAction)+' →</a></section></section></div>';
 }
 const formatModules=(items)=>Array.isArray(items)?items:[];
 function closeModal(){
@@ -170,7 +176,7 @@ async function openModal(id,kind,t,opts={}){
  modalRestoreUrl=restore;
  if(!opts.deepLink)history.pushState({},'', '/opportunities/'+encodeURIComponent(id)+location.search);
  const tags=formatModules(data.tools);
- el.innerHTML='<div class="opp-scrim" data-action="dismiss"><div role="dialog" aria-modal="true" aria-labelledby="opp-dialog-title" class="opp-dialog"><div class="opp-dialog-heading"><span>'+L(data.sector_name||data.category_name||t.title)+'</span>'+button('×','dismiss','opp-x')+'</div><div class="opp-dialog-cover" style="background-image:url('+photo(data.category_id||'business-processing')+')"></div>'+
+ el.innerHTML='<div class="opp-scrim" data-action="dismiss"><div role="dialog" aria-modal="true" aria-labelledby="opp-dialog-title" class="opp-dialog"><div class="opp-dialog-heading"><span>'+L(data.sector_name||data.category_name||t.title)+'</span>'+button('×','dismiss','opp-x')+'</div><div class="opp-dialog-cover"><img class="opp-cover-img" src="'+L(photo(data.category_id||'business-processing'))+'" width="620" height="220" alt=""/></div>'+
  '<div class="opp-dialog-content"><h2 id="opp-dialog-title">'+L(data.title)+'</h2><p class="opp-dialog-state">'+L(t.proposed)+'</p><h3>'+L(t.summary)+'</h3><p>'+L(data.summary)+'</p>'+
  (tags.length?'<h3>'+L(t.suggested)+'</h3>'+pillTags(tags):'')+
  (formatModules(data.examples||data.business_examples).length?'<h3>'+L(t.example)+'</h3><p>'+L(formatModules(data.examples||data.business_examples).slice(0,6).join(', '))+'</p>':'')+
@@ -198,14 +204,24 @@ function wire(el,state,cats,modules,t,sectors,businesses){
  el.querySelectorAll('[data-family]').forEach(b=>b.addEventListener('click',()=>goto({family:b.dataset.family,category:'',sector:'',business:'',view:'bundles',page:1,q:'',module:''})));
  el.querySelectorAll('[data-category]').forEach(b=>b.addEventListener('click',()=>goto({category:b.dataset.category,sector:'',business:'',view:'bundles',page:1,module:''})));
  el.querySelector('#opp-select-category').addEventListener('change',e=>goto({category:e.target.value,sector:'',business:'',view:'bundles',page:1,module:''}));
+ const searchActivities=el.querySelector('#opp-activity-search');
+ if(searchActivities)searchActivities.addEventListener('input',()=>{
+  const q=searchActivities.value.trim().toLocaleLowerCase();
+  const filtered=sectors.filter(x=>x.name.toLocaleLowerCase().includes(q));
+  const filteredBiz=businesses.filter(x=>x.name.toLocaleLowerCase().includes(q)||
+    x.sector_name.toLocaleLowerCase().includes(q));
+  const sEl=el.querySelector('#opp-select-sector'),bEl=el.querySelector('#opp-select-business');
+  if(sEl)sEl.innerHTML=opts([{id:'',name:t.all},...filtered],state.sector);
+  if(bEl)bEl.innerHTML=opts([{id:'',name:t.all},...filteredBiz],state.business);
+ });
  const sector=el.querySelector('#opp-select-sector');
- if(sector)sector.addEventListener('change',e=>goto({sector:e.target.value,business:'',category:'',view:'tools',page:1,module:''}));
+ if(sector)sector.addEventListener('change',e=>goto({sector:e.target.value,business:'',view:'tools',page:1,module:''}));
  const business=el.querySelector('#opp-select-business');
  if(business)business.addEventListener('change',e=>{
   const b=businesses.find(x=>x.id===e.target.value);
-  goto({business:e.target.value,sector:b?.sector_id||'',category:'',view:'tools',page:1,module:''});
+  goto({business:e.target.value,sector:b?.sector_id||'',view:'tools',page:1,module:''});
  });
- el.querySelectorAll('[data-action=sector]').forEach(b=>b.addEventListener('click',()=>goto({sector:b.dataset.sector,business:'',category:'',view:'tools',page:1,module:''})));
+ el.querySelectorAll('[data-action=sector]').forEach(b=>b.addEventListener('click',()=>goto({sector:b.dataset.sector,business:'',view:'tools',page:1,module:''})));
  el.querySelector('#opp-module').addEventListener('change',e=>goto({module:e.target.value,page:1}));
  const view=el.querySelector('#opp-view');if(view)view.addEventListener('change',e=>goto({view:e.target.value,page:1,module:''}));
  el.querySelector('#opp-sort').addEventListener('change',e=>goto({sort:e.target.value,page:1}));
@@ -233,17 +249,30 @@ export async function hydrate(path,lang){
  const requestId=++seq,t=tFor(lang),state=stateFromURL();
  el.innerHTML=frame(t,families(t,state)+'<div class="container opp-loading" role="status">'+L(t.loading)+'</div>');
  try{
-  const categories=(await fetchJSON('/discovery/categories?family='+state.family)).data;
+  const categories=(await fetchJSON('/discovery/categories?family='+state.family)).data.map(c=>({...c,name:labelFor(categoryFr,c.id,c.name,lang)}));
   const labels=catalogueUI[lang]||catalogueUI.en;
   const [sectorsResult,businessesResult]=state.family==='business'?
    await Promise.all([fetchJSON('/sectors'),fetchJSON('/businesses?limit=100')]):[{data:[]},{data:[]}];
-  const sectors=sectorsResult.data||[],businesses=businessesResult.data||[];
+  const sectors=(sectorsResult.data||[]).map(v=>({...v,name:labelFor(sectorFr,v.id,v.name,lang)}));
+  let groups={};
+  if(state.family==='business'){
+   try{
+    const mapping=await fetch('/sector-groups.json',{cache:'no-store'});
+    if(mapping.ok)groups=(await mapping.json()).groups||{};
+   }catch{groups={}}
+  }
+  const businesses=(businessesResult.data||[]).map(v=>({...v,name:labelFor(businessFr,v.id,v.name,lang),sector_name:labelFor(sectorFr,v.sector_id,v.sector_name,lang)}));
   if(state.family==='business'){
    if(state.sector&&!sectors.some(s=>s.id===state.sector))state.sector='';
    if(state.business&&!businesses.some(b=>b.id===state.business))state.business='';
   }
   if(requestId!==seq)return;
   if(state.category&&!categories.some(c=>c.id===state.category))state.category='';
+  if(state.sector&&!state.category)state.category=Object.keys(groups).find(key=>groups[key].includes(state.sector))||'';
+  const shownSectors=state.category&&groups[state.category]?
+    sectors.filter(v=>groups[state.category].includes(v.id)):[];
+  const shownBusinesses=state.category&&groups[state.category]?
+    businesses.filter(v=>groups[state.category].includes(v.sector_id)):[];
   const isTools=state.view==='tools';
   const p=new URLSearchParams({page:String(state.page),limit:'12'});
   if(state.q)p.set('q',state.q);
@@ -253,10 +282,11 @@ export async function hydrate(path,lang){
   if(state.module)p.set('tool',state.module);
   const endpoint=isTools?'/opportunities?':'/discovery/solutions?family='+state.family+'&';
   const result=await fetchJSON(endpoint+p.toString());
+  if(Array.isArray(result.data))result.data=result.data.map(v=>({...v,sector_name:labelFor(sectorFr,v.sector_id,v.sector_name,lang),category_name:labelFor(categoryFr,v.category_id,v.category_name,lang)}));
   const modules=isTools?[]:(await fetchJSON('/discovery/modules?family='+state.family+(state.category?'&category='+encodeURIComponent(state.category):''))).data;
   if(requestId!==seq)return;
-  el.innerHTML=frame(t,families(t,state)+resultBody(result,state,t,categories,modules,sectors,businesses,labels)+'<div id="opp-dialog-host"></div>');
-  wire(el,state,categories,modules,t,sectors,businesses);
+  el.innerHTML=frame(t,families(t,state)+resultBody(result,state,t,categories,modules,shownSectors,shownBusinesses,labels)+'<div id="opp-dialog-host"></div>');
+  wire(el,state,categories,modules,t,shownSectors,shownBusinesses);
   if(path.startsWith('/opportunities/')){
     const id=decodeURIComponent(path.slice('/opportunities/'.length));
     await openModal(id,state.view==='tools'?'tool':'solution',t,{deepLink:true,restore:'/opportunities'+location.search});

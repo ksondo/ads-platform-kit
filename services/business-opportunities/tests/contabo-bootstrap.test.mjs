@@ -20,7 +20,7 @@ test('independent catalogue database has no host port and never touches commerce
 test('operator installer is additive, avoids Nginx and destructive actions',()=>{
  const s=read('../scripts/bootstrap-contabo.sh');
  for(const disallowed of ['docker system prune','docker volume rm','down -v','docker compose down','DEMO_RESET','demo-reset','systemctl reload nginx','/etc/nginx/sites-enabled']) assert.ok(!s.includes(disallowed), disallowed);
- for(const required of ['001_catalogue.sql','002_discovery.sql','seed.mjs','seed-discovery.mjs','ON_ERROR_STOP=1','no-deps public-read-api','50/333/52/21/122','ADS_NGINX_AND_CURRENT_PORTAL=UNCHANGED']) assert.ok(s.includes(required), required);
+ for(const required of ['001_catalogue.sql','002_discovery.sql','seed.mjs','seed-discovery.mjs','ON_ERROR_STOP=1','no-deps public-read-api','49/328/52/21/121','ADS_NGINX_AND_CURRENT_PORTAL=UNCHANGED']) assert.ok(s.includes(required), required);
  assert.match(s,/reader_pw/);
  assert.match(s,/chmod 0600/);
 });

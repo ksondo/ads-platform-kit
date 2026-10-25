@@ -105,7 +105,6 @@
         "home-domestic-services",
         "beauty-personal-services",
         "legal-professional-services",
-        "confidential-adult-matchmaking",
         "family-heritage-ancestry",
         "creative-industries-media"
       ]
@@ -1159,27 +1158,6 @@
         "pastor",
         "ministry organization",
         "formation group"
-      ],
-      "stage": "concept",
-      "format": "sector-bundle"
-    },
-    {
-      "id": "sector-confidential-adult-matchmaking",
-      "family": "business",
-      "categoryId": "business-services",
-      "sectorId": "confidential-adult-matchmaking",
-      "title": "Digital solutions for Confidential adult matchmaking",
-      "summary": "Explore how Consent-based profiles, Private introductions, Screening workflow, Moderator scheduling can work together in a digital solution for confidential adult matchmaking.",
-      "tools": [
-        "Consent-based profiles",
-        "Private introductions",
-        "Screening workflow",
-        "Moderator scheduling",
-        "Confidential follow-up"
-      ],
-      "examples": [
-        "Adult matchmaking operator",
-        "screened introduction agency"
       ],
       "stage": "concept",
       "format": "sector-bundle"

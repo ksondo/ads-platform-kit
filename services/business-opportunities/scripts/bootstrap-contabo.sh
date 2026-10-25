@@ -84,7 +84,7 @@ compose --profile operator-seed run --rm seed node seed.mjs
 compose --profile operator-seed run --rm seed node seed-discovery.mjs
 sql="SELECT (SELECT count(*) FROM opportunities.sectors)::text || '/' || (SELECT count(*) FROM opportunities.sector_opportunities)::text || '/' || (SELECT count(*) FROM opportunities.business_types)::text || '/' || (SELECT count(*) FROM opportunities.discovery_categories)::text || '/' || (SELECT count(*) FROM opportunities.discovery_solutions)::text"
 counts="$(compose exec -T db psql -X -U opportunities_owner -d ads_opportunities -Atqc "$sql" | tr -d '\r')"
-[ "$counts" = 50/333/52/21/122 ] || fail "Unexpected catalogue totals: $counts"
+[ "$counts" = 49/328/52/21/121 ] || fail "Unexpected catalogue totals: $counts"
 echo "ADS_OPPORTUNITIES_DATABASE=PASS $counts"
 compose up -d --no-deps public-read-api
 ready=0
@@ -97,11 +97,11 @@ check_api() {
  curl --noproxy '*' -fsS --max-time 12 "http://127.0.0.1:18190/api/opportunities/v1/$1" |
    python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["total"]==int(sys.argv[1])' "$2"
 }
-check_api sectors 50
-check_api 'opportunities?limit=1' 333
+check_api sectors 49
+check_api 'opportunities?limit=1' 328
 check_api 'discovery/categories?family=business' 13
 check_api 'discovery/categories?family=institutional' 8
-check_api 'discovery/solutions?family=business&limit=1' 102
+check_api 'discovery/solutions?family=business&limit=1' 101
 check_api 'discovery/solutions?family=institutional&limit=1' 20
 echo 'ADS_OPPORTUNITIES_LOCAL_API=PASS'
 echo 'ADS_NGINX_AND_CURRENT_PORTAL=UNCHANGED'

@@ -127,3 +127,21 @@ body.opp-modal-open{overflow:hidden}
  }
  #opportunities-app .opp-category{width:auto;min-width:0;flex:auto}
 }
+
+
+/* CSP-safe images replace blocked inline background-image attributes. */
+#opportunities-app .opp-category-img,
+#opportunities-app .opp-cover-img{display:block;width:100%;height:100%;object-fit:cover}
+#opportunities-app .opp-category-photo{overflow:visible}
+#opportunities-app .opp-category-photo>img{border-radius:6px}
+#opportunities-app .opp-solution-cover,
+#opportunities-app .opp-dialog-cover{overflow:hidden}
+#opportunities-app .opp-solution-cover>span{z-index:2}
+#opportunities-app .opp-email{overflow-wrap:anywhere}
+
+
+#opportunities-app .opp-partner-cta{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:32px 0 0;padding:22px 24px;background:#0b2642;color:#fff;border-radius:12px}
+#opportunities-app .opp-partner-cta h3{margin:0 0 5px;font-size:19px;color:#fff}
+#opportunities-app .opp-partner-cta p{margin:0;font-size:13px;color:#dbe6f2;line-height:1.5}
+#opportunities-app .opp-partner-cta .btn{flex-shrink:0}
+@media(max-width:650px){#opportunities-app .opp-partner-cta{flex-direction:column;align-items:stretch;padding:18px}}

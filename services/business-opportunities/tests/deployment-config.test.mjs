@@ -16,5 +16,5 @@ test('operator guidance routes only the opportunities API to its dedicated local
  const guide=read('../README.md');
  assert.ok(guide.includes('18190'));
  assert.ok(!guide.includes('http://127.0.0.1:18090'));
- assert.ok(guide.includes('50/333/52') || guide.includes('equals 333'));
+ assert.ok(guide.includes('49/328/52') || guide.includes('equals 328'));
 });

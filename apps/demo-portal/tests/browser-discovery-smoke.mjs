@@ -76,7 +76,7 @@ function serve(req,res){
  res.writeHead(200,{'content-type':mime[extname(file)]||'application/octet-stream'});
  res.end(readFileSync(file));
 }
-test('Chromium discovers 50 sectors, 52 local businesses, regulator services and their permissions', {timeout:120000},async()=>{
+test('Chromium discovers 49 sectors, 52 local businesses, regulator services and their permissions', {timeout:120000},async()=>{
  const server=http.createServer(serve);
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  let browser;
@@ -99,8 +99,12 @@ test('Chromium discovers 50 sectors, 52 local businesses, regulator services and
   await page.locator('button[data-category^="institutional-"]').first().waitFor();
   await page.goto('http://127.0.0.1:'+server.address().port+'/opportunities');
   await page.locator('#opp-select-business').waitFor();
-  assert.equal(await page.locator('#opp-select-sector option').count(),51);
-  assert.equal(await page.locator('#opp-select-business option').count(),53);
+  assert.equal(await page.locator('#opp-select-sector option').count(),1);
+  assert.equal(await page.locator('#opp-select-business option').count(),1);
+  await page.locator('#opp-select-category').selectOption('business-processing');
+  await page.locator('#opp-select-sector').waitFor();
+  assert.ok((await page.locator('#opp-select-sector option').count())>2);
+  assert.ok((await page.locator('#opp-select-sector option').count())<50);
   await page.screenshot({path:'/tmp/ads-opportunities-business-sectors.png',fullPage:true});
   await page.locator('#opp-select-business').selectOption('wood-processor-sawmill');
   await page.locator('.opp-business-context').waitFor();
@@ -118,7 +122,9 @@ test('Chromium discovers 50 sectors, 52 local businesses, regulator services and
   await page.setViewportSize({width:390,height:844});
   await page.goto('http://127.0.0.1:'+server.address().port+'/opportunities');
   await page.locator('#opp-select-business').waitFor();
-  assert.equal(await page.locator('#opp-select-sector option').count(),51);
+  assert.equal(await page.locator('#opp-select-sector option').count(),1);
+  await page.locator('#opp-select-category').selectOption('business-processing');
+  await page.locator('#opp-select-sector option[value="wood-forest-processing"]').waitFor({state:'attached'});
   await page.screenshot({path:'/tmp/ads-opportunities-mobile.png',fullPage:true});
   await page.screenshot({path:'/tmp/ads-opportunities-interactive-smoke.png',fullPage:true});
  }finally{

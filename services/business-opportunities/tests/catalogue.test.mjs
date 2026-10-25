@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import {loadAndValidate} from '../validate-seed.mjs';
 import {createHandler} from '../server.mjs';
 const data=loadAndValidate();
-test('all 333 entries have a distinct sector mapping, summary and evidence scope',()=>{
- assert.equal(data.sectors.length,50);
- assert.equal(data.opportunities.length,333);
+test('all 328 entries have a distinct sector mapping, summary and evidence scope',()=>{
+ assert.equal(data.sectors.length,49);
+ assert.equal(data.opportunities.length,328);
  assert.equal(data.businesses.length,52);
- assert.equal(new Set(data.opportunities.map(x=>x.id)).size,333);
+ assert.equal(new Set(data.opportunities.map(x=>x.id)).size,328);
  for(const x of data.opportunities){
    assert.ok(x.summaryEn.includes('digital tool helps'),x.id);
    assert.ok(x.modelEn.length>80,x.id);
@@ -58,9 +58,9 @@ test('opportunities pagination caps limit at 48 and reports DB totals',async()=>
  const r=await invoke('/api/opportunities/v1/opportunities?limit=999&page=2&sector=wood-forest-processing',
  'GET',async(sql,params)=>{
   calls.push({sql,params});
-  return sql.includes('COUNT(*)')?{rows:[{total:333}]}:{rows:[]};
+  return sql.includes('COUNT(*)')?{rows:[{total:328}]}:{rows:[]};
  });
- assert.equal(r.code,200);assert.equal(r.response.total,333);
+ assert.equal(r.code,200);assert.equal(r.response.total,328);
  assert.equal(r.response.limit,48);assert.equal(calls[1].params.at(-1),48);
 });
 test('database errors fail closed without exposing credentials',async()=>{

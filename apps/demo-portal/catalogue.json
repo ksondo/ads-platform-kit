@@ -10,7 +10,9 @@
       "image": "photo-1503676260728-1c00da094a0b",
       "icon": "🎓",
       "demoUrl": null,
-      "featured": true
+      "featured": true,
+      "summary_fr": "Solutions numériques pour l'apprentissage et la gestion scolaire",
+      "availability": "coming_soon"
     },
     {
       "id": "commerce",
@@ -20,7 +22,9 @@
       "image": "photo-1556742049-0cfed4f6a45d",
       "icon": "🛒",
       "demoUrl": "https://commerce.demo.africadigitalsynergy.com/commerce",
-      "featured": true
+      "featured": true,
+      "summary_fr": "Solutions pour le commerce et les entreprises sur les marchés africains",
+      "availability": "verified_demo"
     },
     {
       "id": "healthcare",
@@ -30,7 +34,9 @@
       "image": "photo-1576091160399-112ba8d25d1d",
       "icon": "♥",
       "demoUrl": null,
-      "featured": true
+      "featured": true,
+      "summary_fr": "Services de santé et gestion des patients",
+      "availability": "coming_soon"
     },
     {
       "id": "agriculture",
@@ -40,7 +46,9 @@
       "image": "photo-1500382017468-9049fed747ef",
       "icon": "🌱",
       "demoUrl": null,
-      "featured": true
+      "featured": true,
+      "summary_fr": "Solutions pour l'agriculture et les chaînes de valeur agricoles",
+      "availability": "coming_soon"
     },
     {
       "id": "finance",
@@ -50,7 +58,9 @@
       "image": "photo-1611974789855-9c2a0a7236a3",
       "icon": "◈",
       "demoUrl": null,
-      "featured": true
+      "featured": true,
+      "summary_fr": "Services financiers et paiements numériques",
+      "availability": "coming_soon"
     },
     {
       "id": "transport",
@@ -60,7 +70,9 @@
       "image": "photo-1519003722824-194d4455a60c",
       "icon": "🚚",
       "demoUrl": null,
-      "featured": true
+      "featured": true,
+      "summary_fr": "Solutions de mobilité et de logistique",
+      "availability": "coming_soon"
     },
     {
       "id": "ventureworks",
@@ -70,7 +82,9 @@
       "image": "photo-1497366811353-6870744d04b2",
       "icon": "◇",
       "demoUrl": null,
-      "featured": false
+      "featured": false,
+      "summary_fr": "Préparation, planification et développement d'entreprises",
+      "availability": "coming_soon"
     },
     {
       "id": "morphoo",
@@ -80,7 +94,213 @@
       "image": "photo-1490730141103-6cac27aaab94",
       "icon": "✦",
       "demoUrl": null,
-      "featured": false
+      "featured": false,
+      "summary_fr": "Réflexion et formation spirituelles",
+      "availability": "coming_soon"
+    },
+    {
+      "id": "logistics",
+      "name": "Logistics",
+      "fr": "Logistique",
+      "summary": "Delivery, storage and fulfilment",
+      "summary_fr": "Livraison, stockage et préparation des commandes",
+      "image": null,
+      "icon": "",
+      "demoUrl": null,
+      "featured": false,
+      "availability": "coming_soon"
+    },
+    {
+      "id": "home-services",
+      "name": "Home Services",
+      "fr": "Services à domicile",
+      "summary": "Domestic and household services",
+      "summary_fr": "Services domestiques et aux ménages",
+      "image": null,
+      "icon": "",
+      "demoUrl": null,
+      "featured": false,
+      "availability": "coming_soon"
+    },
+    {
+      "id": "africover",
+      "name": "AfriCover",
+      "fr": "AfriCover",
+      "summary": "Insurance support and risk services",
+      "summary_fr": "Assistance en assurance et gestion des risques",
+      "image": null,
+      "icon": "",
+      "demoUrl": null,
+      "featured": false,
+      "availability": "coming_soon"
+    },
+    {
+      "id": "soulbridge",
+      "name": "SoulBridge",
+      "fr": "SoulBridge",
+      "summary": "Community and counselling services",
+      "summary_fr": "Services communautaires et d'accompagnement",
+      "image": null,
+      "icon": "",
+      "demoUrl": null,
+      "featured": false,
+      "availability": "coming_soon"
+    },
+    {
+      "id": "mama-care",
+      "name": "Mama Care",
+      "fr": "Mama Care",
+      "summary": "Maternal, newborn and family health",
+      "summary_fr": "Santé maternelle, néonatale et familiale",
+      "image": null,
+      "icon": "",
+      "demoUrl": null,
+      "featured": false,
+      "availability": "coming_soon"
+    },
+    {
+      "id": "digital-tontine",
+      "name": "Digital Tontine",
+      "fr": "Tontine numérique",
+      "summary": "Savings-group coordination",
+      "summary_fr": "Coordination des groupes d'épargne",
+      "image": null,
+      "icon": "",
+      "demoUrl": null,
+      "featured": false,
+      "availability": "coming_soon"
+    },
+    {
+      "id": "fleet-guard",
+      "name": "Fleet Guard",
+      "fr": "Fleet Guard",
+      "summary": "Vehicle asset care and servicing",
+      "summary_fr": "Entretien et gestion des véhicules",
+      "image": null,
+      "icon": "",
+      "demoUrl": null,
+      "featured": false,
+      "availability": "coming_soon"
+    },
+    {
+      "id": "real-estate",
+      "name": "Real Estate",
+      "fr": "Immobilier",
+      "summary": "Property services and housing",
+      "summary_fr": "Immobilier et logement",
+      "image": null,
+      "icon": "",
+      "demoUrl": null,
+      "featured": false,
+      "availability": "coming_soon"
+    },
+    {
+      "id": "nutrition",
+      "name": "Nutrition Intelligence",
+      "fr": "Intelligence nutritionnelle",
+      "summary": "Nutrition education and planning",
+      "summary_fr": "Éducation et planification nutritionnelles",
+      "image": null,
+      "icon": "",
+      "demoUrl": null,
+      "featured": false,
+      "availability": "coming_soon"
+    },
+    {
+      "id": "city-events",
+      "name": "City Events",
+      "fr": "Événements urbains",
+      "summary": "Community event discovery and invitations",
+      "summary_fr": "Événements communautaires et invitations",
+      "image": null,
+      "icon": "",
+      "demoUrl": null,
+      "featured": false,
+      "availability": "coming_soon"
+    },
+    {
+      "id": "community-incidents",
+      "name": "Community Intelligence",
+      "fr": "Information communautaire",
+      "summary": "Local updates, positive developments and issues",
+      "summary_fr": "Actualités locales, progrès et signalements",
+      "image": null,
+      "icon": "",
+      "demoUrl": null,
+      "featured": false,
+      "availability": "coming_soon"
+    },
+    {
+      "id": "processing",
+      "name": "Processing",
+      "fr": "Transformation",
+      "summary": "Production and processing businesses",
+      "summary_fr": "Entreprises de production et de transformation",
+      "image": null,
+      "icon": "",
+      "demoUrl": null,
+      "featured": false,
+      "availability": "coming_soon"
+    },
+    {
+      "id": "tourism",
+      "name": "Tourism",
+      "fr": "Tourisme",
+      "summary": "Tourism services and visitor experiences",
+      "summary_fr": "Services touristiques et expériences visiteurs",
+      "image": null,
+      "icon": "",
+      "demoUrl": null,
+      "featured": false,
+      "availability": "coming_soon"
+    },
+    {
+      "id": "law-firms",
+      "name": "Law Firm Services",
+      "fr": "Services aux cabinets juridiques",
+      "summary": "Legal-practice management services",
+      "summary_fr": "Services numériques pour cabinets juridiques",
+      "image": null,
+      "icon": "",
+      "demoUrl": null,
+      "featured": false,
+      "availability": "coming_soon"
+    },
+    {
+      "id": "hopebridge",
+      "name": "HopeBridge",
+      "fr": "HopeBridge",
+      "summary": "Nonprofit and community support",
+      "summary_fr": "Soutien associatif et communautaire",
+      "image": null,
+      "icon": "",
+      "demoUrl": null,
+      "featured": false,
+      "availability": "coming_soon"
+    },
+    {
+      "id": "construction",
+      "name": "Construction",
+      "fr": "Construction",
+      "summary": "Projects, contractors and works",
+      "summary_fr": "Projets, entrepreneurs et travaux",
+      "image": null,
+      "icon": "",
+      "demoUrl": null,
+      "featured": false,
+      "availability": "coming_soon"
+    },
+    {
+      "id": "project-management",
+      "name": "Project Management",
+      "fr": "Gestion de projets",
+      "summary": "Planning, milestones and organisational workflows",
+      "summary_fr": "Planification, jalons et organisation des projets",
+      "image": null,
+      "icon": "",
+      "demoUrl": null,
+      "featured": false,
+      "availability": "coming_soon"
     }
   ],
   "tools": [
@@ -92,7 +312,10 @@
       "model": "Operate an online marketplace, a branded store, or managed merchant storefronts",
       "image": "photo-1556742049-0cfed4f6a45d",
       "demoUrl": "https://commerce.demo.africadigitalsynergy.com/commerce",
-      "independentDemo": true
+      "independentDemo": true,
+      "fr": "Commerce électronique",
+      "summary_fr": "Boutiques en ligne, catalogues de produits, commandes et paiement",
+      "model_fr": "Exploiter une place de marché, une boutique de marque ou des vitrines marchandes gérées"
     },
     {
       "id": "pos",
@@ -102,7 +325,10 @@
       "model": "Offer POS-as-a-service to stores or manage your own retail operation",
       "image": "photo-1556742502-ec7c0e9f34b1",
       "demoUrl": "https://commerce.demo.africadigitalsynergy.com/commerce/merchant/pos",
-      "independentDemo": true
+      "independentDemo": true,
+      "fr": "Point de vente (POS)",
+      "summary_fr": "Ventes au détail, opérations de caisse, stocks et reçus",
+      "model_fr": "Proposer un service de caisse aux magasins ou gérer un point de vente"
     },
     {
       "id": "bnpl",
@@ -112,7 +338,10 @@
       "model": "Offer merchant financing through licensed financial partners, subject to regulatory approval",
       "image": "photo-1563013544-824ae1b704d3",
       "demoUrl": null,
-      "independentDemo": false
+      "independentDemo": false,
+      "fr": "Acheter maintenant, payer plus tard",
+      "summary_fr": "Achats échelonnés avec des partenaires financiers réglementés",
+      "model_fr": "Proposer un financement marchand via des partenaires agréés, sous réserve d'autorisation"
     },
     {
       "id": "inventory",
@@ -122,7 +351,10 @@
       "model": "Provide stock-control software to shops, wholesalers and warehouses",
       "image": "photo-1586528116311-ad8dd3c8310d",
       "demoUrl": null,
-      "independentDemo": false
+      "independentDemo": false,
+      "fr": "Gestion des stocks",
+      "summary_fr": "Catalogues de produits, mouvements de stock et réapprovisionnement",
+      "model_fr": "Fournir un logiciel de contrôle des stocks aux commerces, grossistes et entrepôts"
     },
     {
       "id": "storefront",
@@ -132,7 +364,10 @@
       "model": "Launch and operate branded stores on behalf of local businesses",
       "image": "photo-1441986300917-64674bd600d8",
       "demoUrl": null,
-      "independentDemo": false
+      "independentDemo": false,
+      "fr": "Boutiques personnalisées en marque blanche",
+      "summary_fr": "Vitrines numériques à l'image des commerçants indépendants",
+      "model_fr": "Lancer et gérer des boutiques personnalisées pour des entreprises locales"
     },
     {
       "id": "learning",
@@ -142,7 +377,10 @@
       "model": "Offer managed digital learning services with education partners",
       "image": "photo-1434030216411-0b793f4b4173",
       "demoUrl": null,
-      "independentDemo": false
+      "independentDemo": false,
+      "fr": "Apprentissage numérique",
+      "summary_fr": "Cours, évaluations et progression des apprenants",
+      "model_fr": "Proposer des services d'apprentissage numérique avec des partenaires éducatifs"
     },
     {
       "id": "school",
@@ -152,7 +390,10 @@
       "model": "Implement a managed school-operations service for institutions",
       "image": "photo-1509062522246-3755977927d7",
       "demoUrl": null,
-      "independentDemo": false
+      "independentDemo": false,
+      "fr": "Administration scolaire",
+      "summary_fr": "Gestion scolaire et suivi pédagogique",
+      "model_fr": "Fournir un service de gestion scolaire aux établissements"
     },
     {
       "id": "appointments",
@@ -162,7 +403,10 @@
       "model": "Offer scheduling services to participating care providers",
       "image": "photo-1579684385127-1ef15d508118",
       "demoUrl": null,
-      "independentDemo": false
+      "independentDemo": false,
+      "fr": "Rendez-vous médicaux",
+      "summary_fr": "Prise de rendez-vous et coordination des services aux patients",
+      "model_fr": "Proposer la planification aux prestataires de soins participants"
     },
     {
       "id": "fleet",
@@ -172,7 +416,10 @@
       "model": "Serve transport operators with fleet-management technology",
       "image": "photo-1519003722824-194d4455a60c",
       "demoUrl": null,
-      "independentDemo": false
+      "independentDemo": false,
+      "fr": "Gestion de flotte",
+      "summary_fr": "Véhicules, trajets et opérations de répartition",
+      "model_fr": "Aider les transporteurs avec des outils numériques de gestion de flotte"
     },
     {
       "id": "planning",
@@ -182,7 +429,10 @@
       "model": "Support entrepreneurs with planning and operational guidance",
       "image": "photo-1454165804606-c3d57bc86b40",
       "demoUrl": null,
-      "independentDemo": false
+      "independentDemo": false,
+      "fr": "Planification d'entreprise",
+      "summary_fr": "Plans d'entreprise, étapes et préparation opérationnelle",
+      "model_fr": "Accompagner les entrepreneurs dans la planification et l'exécution"
     }
   ],
   "companySiteLinksEnabled": false

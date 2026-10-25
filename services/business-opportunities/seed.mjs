@@ -14,7 +14,7 @@ try{
  await client.query('BEGIN');
  await client.query("SELECT pg_advisory_xact_lock(hashtext('ads-opportunities-seed-v1'))");
  const count=await client.query('SELECT COUNT(*)::int AS n FROM opportunities.sector_opportunities');
- if(count.rows[0].n>333)throw Error('Existing catalogue contains more records than this seed; refusing unexpected rewrite');
+ if(count.rows[0].n>328)throw Error('Existing catalogue contains more records than this seed; refusing unexpected rewrite');
  for(const s of data.sectors)await client.query(
   'INSERT INTO opportunities.sectors(id,name_en,business_examples,source_repos,evidence) VALUES($1,$2,$3::jsonb,$4::jsonb,$5) ON CONFLICT(id) DO NOTHING',
   [s.id,s.name,JSON.stringify(s.examples||[]),JSON.stringify(s.sourceRepos||[]),s.evidence||null]
@@ -32,8 +32,8 @@ try{
   [b.id,b.name,b.sectorId,b.sectorName,JSON.stringify(b.toolBundle||[]),b.pathway||null,b.status||'discovery_only']
  );
  const after=await client.query('SELECT COUNT(*)::int AS n FROM opportunities.sector_opportunities');
- if(after.rows[0].n!==333)throw Error('Unexpected row count after import: '+after.rows[0].n);
+ if(after.rows[0].n!==328)throw Error('Unexpected row count after import: '+after.rows[0].n);
  await client.query('COMMIT');
- console.log('ADS_OPPORTUNITIES_DATABASE_SEED=PASS sectors=50 opportunities=333 businesses=52 (no reset)');
+ console.log('ADS_OPPORTUNITIES_DATABASE_SEED=PASS sectors=49 opportunities=328 businesses=52 (no reset)');
 }catch(error){await client.query('ROLLBACK');console.error('Catalogue seed refused: '+error.message);process.exitCode=1}
 finally{client.release();await pool.end()}

@@ -42,10 +42,14 @@ jobs:
             if curl --fail -s http://127.0.0.1:18888/ >/dev/null; then break; fi
             sleep 1
           done
-          curl --fail -s http://127.0.0.1:18888/platforms/commerce | grep -q 'ADS Digital Ecosystem'
-          curl --fail -s http://127.0.0.1:18888/opportunities/pos | grep -q 'ADS Digital Ecosystem'
-          curl --fail -s http://127.0.0.1:18888/cloud | grep -q 'ADS Digital Ecosystem'
-          curl --fail -s http://127.0.0.1:18888/catalogue.json | grep -q '"ecommerce"'
+          # Avoid SIGPIPE from curl | grep -q under pipefail when the
+          # response body is larger than a pipe buffer.
+          for route in /platforms/commerce /opportunities/pos /cloud; do
+            curl --fail --silent --show-error "http://127.0.0.1:18888$route" -o /tmp/ads-demo-route.html
+            grep -Fq 'ADS Digital Ecosystem' /tmp/ads-demo-route.html
+          done
+          curl --fail --silent --show-error http://127.0.0.1:18888/catalogue.json -o /tmp/ads-demo-catalogue.json
+          grep -Fq '"ecommerce"' /tmp/ads-demo-catalogue.json
 
   browser-discovery:
     name: Chromium opportunity discovery acceptance
@@ -69,6 +73,38 @@ jobs:
           name: opportunities-interactive-browser
           path: /tmp/ads-opportunities-*.png
           if-no-files-found: ignore
+
+  ux-screenshots:
+    name: UX before-after EN-FR 360-768-1280
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-noble
+      options: --ipc=host
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: baseline-demo
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install matching Chromium test library
+        run: npm install --prefix apps/demo-portal --no-save --no-audit --no-fund playwright@1.56.1
+      - name: Capture 60 before-after screenshots without secrets or live accounts
+        run: node --test apps/demo-portal/tests/browser-ux-screenshots.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ads-portal-ux-before-after
+          path: ux-screenshots/*.png
+          retention-days: 30
+          if-no-files-found: error
 
   publish:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
