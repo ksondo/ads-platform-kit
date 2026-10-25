@@ -43,14 +43,14 @@ test("public portal does not expose passwords or claim unverified deployments",(
 });
 test("demo sign-in guide never creates a duplicate login form",()=>{
   const js=readFileSync(new URL("../main.js",import.meta.url),"utf8")
-    .replace(/^import \* as ADSOpportunities[^\n]*\n/m, ""); // VM tests legacy guide without loading other modules
+    .replace(/^import[^\n]*\n/gm, ""); // VM tests legacy guide without loading other modules
   const fake={
-    document:{getElementById:()=>({innerHTML:""}),documentElement:{}},
+    document:{getElementById:()=>({innerHTML:""}),documentElement:{},addEventListener:()=>{}},
     localStorage:{getItem:()=>null},
     navigator:{language:"en-US"},
     location:{pathname:"/demo-access",search:""},
     URLSearchParams,
-    window:{location:{pathname:"/demo-access",search:""}}
+    window:{location:{pathname:"/demo-access",search:""},addEventListener:()=>{}}
   };
   vm.runInNewContext(js.replace(/start\(\);\s*$/,"globalThis.__guide = demoAccessGuide();"),fake);
   const html=String(fake.__guide);
