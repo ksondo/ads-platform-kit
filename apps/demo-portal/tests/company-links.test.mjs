@@ -9,6 +9,7 @@ const script = readFileSync(new URL("../main.js", import.meta.url), "utf8")
 const sandbox = {
   document: { getElementById: () => ({ innerHTML: "" }) },
   localStorage: { getItem: () => null },
+  navigator: { language: "en-US" },
 };
 vm.runInNewContext(script.replace(/start\(\);\s*$/, "globalThis.__test = { companyNav, companyAction, whatsAppContact, link };"), sandbox);
 const { companyNav, companyAction, whatsAppContact, link } = sandbox.__test;
