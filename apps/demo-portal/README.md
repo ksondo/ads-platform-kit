@@ -53,3 +53,11 @@ On first load, a registered ADS product may initiate the existing **authorizatio
 **P5-3 — Portal status is intentionally skipped.** The current `/v1/identity/session` endpoint is token-based legacy context, not a CORS-enabled cookie-safe public portal identity read endpoint. Do **not** attempt to read ADS Identity cookies from the portal, store access tokens, or infer sign-in state. Add a product-specific, allowlisted, CSRF-safe minimal display-name endpoint in a later identity work package if explicitly approved.
 
 **Languages.** The portal defaults to French for unrecognized browser languages and saves an explicit EN/FR switch in local storage. Products should propagate their selected language in `ui_locales` during OAuth; portal preferences alone do not configure third-party application language.
+
+## 25 October 2026 — navigation and sector imagery polish (PR #36)
+
+Normal internal Portal links now use client-side navigation, preserving the document between Home, Platforms, Business Opportunities, Cloud, Demo Access and Photo Credits. Browser back/forward works. The initial HTML uses an accessible branded skeleton rather than the old unstyled static fallback. Catalogue API totals load after the visible page, so public navigation remains available during brief API delays.
+
+A public `/photo-credits` page and `images/CREDITS.md` record 17 Cameroon-focused Commons photographers under CC BY-SA 4.0. The visual registry assigns 25 distinct platform images and one dedicated image per 21 discovery category groups. Remote, width-limited Wikimedia/Unsplash images remain externally hosted; avoid claiming a WebP self-host or verified 1.5 MB transfer budget. The production Nginx CSP adds Wikimedia image origins only and retains strict `script-src 'self'`.
+
+The `.github/workflows/demo-portal.yml` Docker smoke verifies `image-library.js` inside the actual packaged container; Chromium checks SPA history and repeated platform images.
