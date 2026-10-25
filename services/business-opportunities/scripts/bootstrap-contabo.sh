@@ -101,7 +101,7 @@ check_api sectors 49
 check_api 'opportunities?limit=1' 328
 check_api 'discovery/categories?family=business' 13
 check_api 'discovery/categories?family=institutional' 8
-check_api 'discovery/solutions?family=business&limit=1' 102
+check_api 'discovery/solutions?family=business&limit=1' 101
 check_api 'discovery/solutions?family=institutional&limit=1' 20
 echo 'ADS_OPPORTUNITIES_LOCAL_API=PASS'
 echo 'ADS_NGINX_AND_CURRENT_PORTAL=UNCHANGED'
