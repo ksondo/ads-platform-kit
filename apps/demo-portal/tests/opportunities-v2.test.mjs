@@ -4,6 +4,16 @@ import {readFileSync} from 'node:fs';
 const main=readFileSync(new URL('../main.js',import.meta.url),'utf8');
 const ux=readFileSync(new URL('../opportunities-v2.js',import.meta.url),'utf8');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+test('ADS homepage visibly links to all sector, local-business and proposed regulator discovery',()=>{
+ assert.ok(main.includes('function opportunityDiscoveryPaths(){'));
+ assert.ok(main.includes('hero()+opportunityDiscoveryPaths()'));
+ assert.ok(main.includes('"/opportunities?view=tools"'));
+ assert.ok(main.includes('"/opportunities?family=institutional"'));
+ for(const label of ['industriesPath','businessesPath','regulatorsPath','discoveryPathsCopy'])
+  assert.ok(main.includes('t("'+label+'")'),label);
+ assert.ok(main.includes('50 industries') && main.includes('52 example business profiles'));
+ assert.ok(main.includes('Official authorizations are still required.'));
+});
 test('only Business Opportunities routes are replaced; home/platforms/cloud/demo-access stay intact',()=>{
  assert.ok(main.includes('function landing(){'));
  assert.ok(main.includes('main=landing()'));
