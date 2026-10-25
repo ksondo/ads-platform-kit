@@ -47,6 +47,7 @@ test("demo sign-in guide never creates a duplicate login form",()=>{
   const fake={
     document:{getElementById:()=>({innerHTML:""}),documentElement:{}},
     localStorage:{getItem:()=>null},
+    navigator:{language:"en-US"},
     location:{pathname:"/demo-access",search:""},
     URLSearchParams,
     window:{location:{pathname:"/demo-access",search:""}}
