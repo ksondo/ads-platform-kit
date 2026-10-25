@@ -544,6 +544,11 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       // A bare GET (no registered product return address) asks for confirmation, so other sites cannot sign people out.
       if (method === 'GET' && !back) return page(req, res, 'confirm_logout', { client, lang: q.lang, values: { clientId } });
       if (method === 'POST') checkCsrf(req, form);
+      // A wrong-account switch may return only to the EXISTING browser-bound,
+      // unexpired OAuth request. Never accept an arbitrary return URL.
+      const switchAuth = method === 'POST' && form.switch_account === '1'
+        ? await authRequestFrom(form) : null;
+      if (form.switch_account === '1' && !switchAuth) fail(400, 'SIGN_IN_REQUEST_EXPIRED');
       const raw = unsignValue(parseCookies(req.headers.cookie)[C.sso], config.cookieSecret);
       if (raw) {
         const row = (await pool.query('UPDATE platform.sso_sessions SET revoked_at=now() WHERE token_hash=$1 AND revoked_at IS NULL RETURNING id,user_id', [sha256(raw)])).rows[0];
@@ -553,6 +558,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
         }
       }
       addCookie(res, cookie(C.sso, '', { secure: config.secureCookies, maxAge: 0 }));
+      if (switchAuth) return redirect(res, '/login?req=' + encodeURIComponent(switchAuth.id) + '&lang=' + encodeURIComponent(langOf(form.lang) || switchAuth.locale || 'fr'));
       if (!back && method === 'POST' && safeNext(form.next)) return redirect(res, safeNext(form.next));
       if (back) {
         const url = new URL(back);
