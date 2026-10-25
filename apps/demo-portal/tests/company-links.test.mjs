@@ -7,6 +7,7 @@ const catalogue = JSON.parse(readFileSync(new URL("../catalogue.json", import.me
 const script = readFileSync(new URL("../main.js", import.meta.url), "utf8")
   .replace(/^import[^\n]*\n/gm, ""); // VM checks classic navigation helpers only
 const sandbox = {
+  imageUrl: () => "", platformImage: () => "", credits: [],
   document: { getElementById: () => ({ innerHTML: "" }), addEventListener: () => {} },
   window: { addEventListener: () => {} },
   localStorage: { getItem: () => null },
