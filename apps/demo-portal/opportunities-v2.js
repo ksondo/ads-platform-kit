@@ -1,4 +1,5 @@
 import {sectorFr,categoryFr,businessFr,labelFor} from './opportunities-fr.js';
+import {groupImage} from './image-library.js';
 // ADS Business Opportunities v2: only /opportunities routes.
 // All listings, families, groups, solutions and module tags come from PostgreSQL API.
 const BASE='/api/opportunities/v1';
@@ -53,7 +54,7 @@ const fetchJSON=async path=>{
 };
 const L=x=>escapeHtml(x);
 const tFor=lang=>langText[lang]||langText.en;
-const photo=id=>'https://images.unsplash.com/'+(photos[id]||'photo-1497366811353-6870744d04b2')+'?auto=format&fit=crop&w=740&q=70';
+const photo=id=>groupImage(id,740);
 const button=(label,action,cls='',attrs='')=>'<button type="button" class="'+L(cls)+'" data-action="'+L(action)+'" '+attrs+'>'+L(label)+'</button>';
 const contact=t=>'<a class="btn btn-gold" href="mailto:admin@africadigitalsynergy.com">admin@africadigitalsynergy.com ↗</a><a class="btn btn-outline" href="'+wa+'" rel="noopener noreferrer" target="_blank">WhatsApp ↗</a>';
 export const directoryShell=()=>'<div id="opportunities-app"></div>';
@@ -297,6 +298,4 @@ export async function hydrate(path,lang){
   el.querySelectorAll('[data-family]').forEach(b=>b.addEventListener('click',()=>goto({family:b.dataset.family,category:'',view:'bundles',page:1})));
  }
 }
-if(typeof window!=='undefined'){
- window.addEventListener('popstate',()=>{if(document.getElementById('opportunities-app'))hydrate(location.pathname,document.documentElement.lang||'en')});
-}
+// Main portal navigation owns popstate; avoids duplicate discovery hydration.
