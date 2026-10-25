@@ -7,7 +7,7 @@ const langText={
 en:{
  title:'Business Opportunities',desc:'Explore digital business possibilities and reusable tools for your industry. Discover how complementary modules can work together.',
  business:'Business Sectors',institutional:'Institutional & Regulatory Services',
- businessSub:'Opportunities by industry and business type',institutionalSub:'Opportunities connecting businesses to institutions',
+ businessSub:'Explore industries, local businesses and their digital tools',institutionalSub:'Explore services involving regulators and approved institutions',
  search:'Search opportunities',searchPlaceholder:'e.g. sawmill, packaging, export, tax…',searchHelp:'Search by business activity, sector or digital tool',filters:'Filters',reset:'Clear filters',
  category:'Sector or service',all:'All categories',view:'Explore',bundles:'Complete business solutions',tools:'Individual digital tools',module:'Tools & modules',allModules:'Any module',sort:'Sort',relevance:'Catalogue order',alphabetical:'Name A–Z',status:'Availability',allStatus:'All proposed opportunities',
  results:'Opportunities',summary:'Business idea summary',ideal:'Relevant businesses',suggested:'Recommended digital tools',disclaimer:'This is an introduction to a potential digital solution, not a complete implementation blueprint. ADS can discuss availability and integration requirements.',
@@ -16,13 +16,23 @@ en:{
 fr:{
  title:"Opportunités d'affaires",desc:"Explorez les possibilités d'activités numériques et les outils réutilisables adaptés à votre secteur.",
  business:"Secteurs d'activité",institutional:'Services institutionnels et réglementaires',
- businessSub:"Opportunités par industrie et activité",institutionalSub:"Services reliant les entreprises aux institutions",
+ businessSub:"Explorez les secteurs, entreprises et outils numériques",institutionalSub:"Services liés aux régulateurs et aux institutions autorisées",
  search:'Rechercher',searchPlaceholder:'ex. scierie, emballage, export, impôts…',searchHelp:"Rechercher par activité, secteur ou outil numérique",filters:'Filtres',reset:'Effacer',
  category:'Secteur ou service',all:'Toutes les catégories',view:'Explorer',bundles:"Solutions d'entreprise complètes",tools:'Outils numériques individuels',module:'Outils et modules',allModules:'Tous les modules',sort:'Trier',relevance:'Ordre du catalogue',alphabetical:'Nom A–Z',status:'Disponibilité',allStatus:'Toutes les propositions',
  results:'Opportunités',summary:"Résumé de l'idée",ideal:'Entreprises concernées',suggested:'Outils numériques recommandés',disclaimer:"Ceci est une présentation de l'idée, et non un plan de réalisation complet. ADS peut préciser les possibilités et les conditions d'intégration.",
  proposed:'Concept / proposition',see:'Voir le résumé',contact:'Contacter ADS sur WhatsApp',platforms:'Voir les plateformes et les démos',back:'Retour au catalogue',close:'Fermer',more:'Suivant',previous:'Précédent',empty:'Aucun résultat. Essayez une autre activité ou effacez les filtres.',error:'Le catalogue est momentanément indisponible. Les autres pages ADS restent accessibles.',loading:'Chargement des opportunités…',step:"Explorez les idées puis ouvrez une démo vérifiée dans Plateformes avec la connexion ADS.",english:'Les descriptions restent en anglais en attendant la validation française.',noCopy:'Seul un résumé public est présenté.',allFamilies:'Découvrez les opportunités numériques',example:"Exemples d'entreprises",requirements:'Les services institutionnels exigent les autorisations appropriées.'
 }};
 const familyIcons={'business':'▦','institutional':'▤'};
+const catalogueUI={
+ en:{sectors:'Specific industries',businesses:'Business type',allSectors:'All industries',allBusinesses:'All business types',
+      chooseSector:'Select one of the individual sectors to view its digital tools',directory:'Browse all industries',
+      matching:'Recommended digital tools for',available:'Catalogue concepts, not automatically available products',
+      regs:'These are proposed institution-facing services; authorizations and integration agreements are required.'},
+ fr:{sectors:'Activités sectorielles',businesses:"Type d’entreprise",allSectors:'Toutes les activités',allBusinesses:"Tous les types d’entreprise",
+      chooseSector:'Choisissez une activité pour voir ses outils numériques',directory:'Explorer toutes les activités',
+      matching:'Outils numériques recommandés pour',available:'Propositions du catalogue, non nécessairement disponibles',
+      regs:'Services institutionnels proposés sous réserve d’autorisations et de conventions.'}
+};
 const categoryIcons={
 'business-agriculture':'🌱','business-processing':'🏭','business-commerce':'🛒','business-construction':'🏗️','business-mobility':'🚚','business-tourism':'🏨','business-education':'🎓','business-health':'🏥','business-services':'🛠️','business-finance':'🏦','business-communities':'🤝','business-technology':'💻','business-environment':'♻️',
 'institutional-formalities':'🏢','institutional-tax':'📑','institutional-trade':'🚢','institutional-banking':'🏦','institutional-standards':'🛡️','institutional-licensing':'📋','institutional-insurance':'🔒','institutional-multiagency':'🌐'};
@@ -50,15 +60,22 @@ function stateFromURL(){
  const family=p.get('family')==='institutional'?'institutional':'business';
  const platform=p.get('platform')||'';
  const platformCategory={commerce:'business-commerce',education:'business-education',healthcare:'business-health',agriculture:'business-agriculture',finance:'business-finance',transport:'business-mobility',ventureworks:'business-technology',morphoo:'business-communities'}[platform]||'';
- return {family,category:p.get('category')||platformCategory,view:p.get('view')==='tools'&&family==='business'?'tools':'bundles',
+ const sector=family==='business'?(p.get('sector')||''):'';
+ const business=family==='business'?(p.get('business')||''):'';
+ return {family,category:p.get('category')||platformCategory,sector,business,
+  view:family==='business'&&(sector||business||p.get('view')==='tools')?'tools':'bundles',
   q:p.get('q')||'',module:p.get('module')||'',sort:p.get('sort')==='name'?'name':'relevance',
   page:Math.max(1,Math.min(1000,Number(p.get('page'))||1))};
 }
 function goto(update){
- const current=stateFromURL(),s={...current,...update};if(s.family==='institutional')s.view='bundles';
+ const current=stateFromURL(),s={...current,...update};
+ if(s.family==='institutional'){s.view='bundles';s.sector='';s.business='';}
+ if(s.sector||s.business){s.view='tools';s.category='';}
  const p=new URLSearchParams();
  if(s.family==='institutional')p.set('family','institutional');
  if(s.category)p.set('category',s.category);
+ if(s.sector)p.set('sector',s.sector);
+ if(s.business)p.set('business',s.business);
  if(s.view==='tools')p.set('view','tools');
  if(s.q)p.set('q',s.q);
  if(s.module)p.set('module',s.module);
@@ -82,10 +99,26 @@ function categoryCards(cats,state,t){
  '<button type="button" class="opp-category '+(c.id===state.category?'selected':'')+'" data-category="'+L(c.id)+'" aria-pressed="'+String(c.id===state.category)+'">'+
  '<span class="opp-category-photo" style="background-image:url('+photo(c.id)+')"><span>'+L(categoryIcons[c.id]||'◈')+'</span></span><strong>'+L(c.name)+'</strong><small>'+c.opportunity_count+' '+L(t.results.toLowerCase())+'</small></button>').join('')+'</div>';
 }
-function aside(cats,state,modules,t){
+function sectorDirectory(sectors,state,t,labels){
+ if(state.family!=='business'||!sectors.length)return '';
+ return '<details class="opp-sector-dir"><summary>'+L(labels.directory)+' · '+sectors.length+' '+L(labels.sectors.toLowerCase())+' ⌄</summary>'+
+ '<div class="opp-sector-grid" role="group" aria-label="'+L(labels.sectors)+'">'+
+ sectors.map(s=>button(s.name+' ('+s.opportunity_count+')','sector','opp-sector-chip'+(state.sector===s.id?' selected':''),'data-sector="'+L(s.id)+'"')).join('')+'</div></details>';
+}
+function businessPanel(state,businesses,t,labels){
+ if(!state.business)return '';
+ const b=businesses.find(x=>x.id===state.business);
+ if(!b)return '';
+ return '<section class="opp-business-context"><h3>'+L(labels.matching)+' '+L(b.name)+'</h3>'+
+ '<p>'+L(b.sector_name)+'</p>'+pillTags(b.recommended_tools)+
+ '<p class="opp-preview-note">'+L(labels.available)+'</p></section>';
+}
+function aside(cats,state,modules,t,sectors,businesses,labels){
  return '<aside class="opp-aside"><form id="opp-search-form" role="search"><label for="opp-search">'+L(t.search)+'</label><input type="search" id="opp-search" maxlength="100" autocomplete="off" placeholder="'+L(t.searchPlaceholder)+'" value="'+L(state.q)+'"/><button class="btn btn-navy" type="submit">'+L(t.search)+' →</button><small>'+L(t.searchHelp)+'</small><div id="opp-suggestions" role="listbox"></div></form>'+
  '<div class="opp-filter-head"><h2>'+L(t.filters)+'</h2>'+button(t.reset,'reset','opp-reset')+'</div>'+
  '<label for="opp-select-category">'+L(t.category)+'</label><select id="opp-select-category">'+opts([{id:'',name:t.all},...cats],state.category)+'</select>'+
+ (state.family==='business'?'<label for="opp-select-sector">'+L(labels.sectors)+'</label><select id="opp-select-sector">'+opts([{id:'',name:labels.allSectors},...sectors],state.sector)+'</select>'+
+ '<label for="opp-select-business">'+L(labels.businesses)+'</label><select id="opp-select-business">'+opts([{id:'',name:labels.allBusinesses},...businesses],state.business)+'</select>':'')+
  '<label for="opp-module">'+L(t.module)+'</label><select id="opp-module">'+opts([{id:'',name:t.allModules},...modules.map(m=>({id:m,name:m}))],state.module)+'</select>'+
  '<p class="opp-sidebar-help">'+L(t.step)+'</p></aside>';
 }
@@ -102,11 +135,13 @@ function pagination(state,pageInfo,t){
  const last=Math.max(1,Math.ceil(pageInfo.total/pageInfo.limit));
  return '<nav class="opp-pages" aria-label="Pagination">'+(state.page>1?button('← '+t.previous,'previous','opp-page'):'')+'<span>'+state.page+' / '+last+'</span>'+(state.page<last?button(t.more+' →','next','opp-page'):'')+'</nav>';
 }
-function resultBody(data,state,t,cats,modules){
+function resultBody(data,state,t,cats,modules,sectors,businesses,labels){
  const title=cats.find(x=>x.id===state.category)?.name||t.results;
  const filtered=state.sort==='name'?[...data.data].sort((a,b)=>a.title.localeCompare(b.title)):data.data;
- return '<div class="container opp-layout">'+aside(cats,state,modules,t)+'<section class="opp-content">'+
- categoryCards(cats,state,t)+'<div class="opp-results-bar"><div><h2>'+data.total+' '+L(t.results)+' · '+L(title)+'</h2><p>'+L(t.english)+'</p></div><div class="opp-result-tools">'+
+ return '<div class="container opp-layout">'+aside(cats,state,modules,t,sectors,businesses,labels)+'<section class="opp-content">'+
+ categoryCards(cats,state,t)+sectorDirectory(sectors,state,t,labels)+businessPanel(state,businesses,t,labels)+
+ (state.family==='institutional'?'<p class="opp-regulatory-guard">'+L(labels.regs)+'</p>':'')+
+ '<div class="opp-results-bar"><div><h2>'+data.total+' '+L(t.results)+' · '+L(title)+'</h2><p>'+L(t.english)+'</p></div><div class="opp-result-tools">'+
  (state.family==='business'?'<select id="opp-view" aria-label="'+L(t.view)+'">'+opts([{id:'bundles',name:t.bundles},{id:'tools',name:t.tools}],state.view)+'</select>':'')+
  '<select id="opp-sort" aria-label="'+L(t.sort)+'">'+opts([{id:'relevance',name:t.relevance},{id:'name',name:t.alphabetical}],state.sort)+'</select></div></div>'+
  (filtered.length?'<div class="opp-solutions">'+filtered.map(x=>solutionCard(x,t,state.view)).join('')+'</div>':'<div class="opp-empty">'+L(t.empty)+'</div>')+
@@ -139,7 +174,7 @@ async function openModal(id,kind,t,opts={}){
  '<div class="opp-dialog-content"><h2 id="opp-dialog-title">'+L(data.title)+'</h2><p class="opp-dialog-state">'+L(t.proposed)+'</p><h3>'+L(t.summary)+'</h3><p>'+L(data.summary)+'</p>'+
  (tags.length?'<h3>'+L(t.suggested)+'</h3>'+pillTags(tags):'')+
  (formatModules(data.examples||data.business_examples).length?'<h3>'+L(t.example)+'</h3><p>'+L(formatModules(data.examples||data.business_examples).slice(0,6).join(', '))+'</p>':'')+
- (data.required_permission_summary?'<p class="opp-permit">'+L(t.requirements)+'</p>':'')+
+ (data.required_permission_summary?'<p class="opp-permit">'+L(data.required_permission_summary)+'</p>':'')+
  '<p class="opp-preview-note">'+L(t.disclaimer)+'</p>'+
  '<div class="opp-dialog-actions">'+button(t.close,'dismiss','btn btn-outline')+contact(t)+'<a class="btn btn-outline" href="/platforms">'+L(t.platforms)+' →</a></div></div></div></div>';
  document.body.classList.add('opp-modal-open');
@@ -159,14 +194,22 @@ async function openModal(id,kind,t,opts={}){
    if(event.target===el.querySelector('.opp-scrim')||event.target.closest('button[data-action=dismiss]'))closeModal();
  });
 }
-function wire(el,state,cats,modules,t){
- el.querySelectorAll('[data-family]').forEach(b=>b.addEventListener('click',()=>goto({family:b.dataset.family,category:'',view:'bundles',page:1,q:'',module:''})));
- el.querySelectorAll('[data-category]').forEach(b=>b.addEventListener('click',()=>goto({category:b.dataset.category,page:1,module:''})));
- el.querySelector('#opp-select-category').addEventListener('change',e=>goto({category:e.target.value,page:1,module:''}));
+function wire(el,state,cats,modules,t,sectors,businesses){
+ el.querySelectorAll('[data-family]').forEach(b=>b.addEventListener('click',()=>goto({family:b.dataset.family,category:'',sector:'',business:'',view:'bundles',page:1,q:'',module:''})));
+ el.querySelectorAll('[data-category]').forEach(b=>b.addEventListener('click',()=>goto({category:b.dataset.category,sector:'',business:'',view:'bundles',page:1,module:''})));
+ el.querySelector('#opp-select-category').addEventListener('change',e=>goto({category:e.target.value,sector:'',business:'',view:'bundles',page:1,module:''}));
+ const sector=el.querySelector('#opp-select-sector');
+ if(sector)sector.addEventListener('change',e=>goto({sector:e.target.value,business:'',category:'',view:'tools',page:1,module:''}));
+ const business=el.querySelector('#opp-select-business');
+ if(business)business.addEventListener('change',e=>{
+  const b=businesses.find(x=>x.id===e.target.value);
+  goto({business:e.target.value,sector:b?.sector_id||'',category:'',view:'tools',page:1,module:''});
+ });
+ el.querySelectorAll('[data-action=sector]').forEach(b=>b.addEventListener('click',()=>goto({sector:b.dataset.sector,business:'',category:'',view:'tools',page:1,module:''})));
  el.querySelector('#opp-module').addEventListener('change',e=>goto({module:e.target.value,page:1}));
  const view=el.querySelector('#opp-view');if(view)view.addEventListener('change',e=>goto({view:e.target.value,page:1,module:''}));
  el.querySelector('#opp-sort').addEventListener('change',e=>goto({sort:e.target.value,page:1}));
- el.querySelector('[data-action=reset]').addEventListener('click',()=>goto({q:'',module:'',category:'',page:1,sort:'relevance'}));
+ el.querySelector('[data-action=reset]').addEventListener('click',()=>goto({q:'',module:'',category:'',sector:'',business:'',page:1,sort:'relevance',view:'bundles'}));
  el.querySelector('#opp-search-form').addEventListener('submit',e=>{e.preventDefault();goto({q:el.querySelector('#opp-search').value,category:'',page:1})});
  el.querySelectorAll('[data-action=detail]').forEach(b=>b.addEventListener('click',()=>openModal(b.dataset.id,b.dataset.kind,t,{focus:b})));
  el.querySelectorAll('[data-action=next]').forEach(b=>b.addEventListener('click',()=>goto({page:state.page+1})));
@@ -191,20 +234,29 @@ export async function hydrate(path,lang){
  el.innerHTML=frame(t,families(t,state)+'<div class="container opp-loading" role="status">'+L(t.loading)+'</div>');
  try{
   const categories=(await fetchJSON('/discovery/categories?family='+state.family)).data;
+  const labels=catalogueUI[lang]||catalogueUI.en;
+  const [sectorsResult,businessesResult]=state.family==='business'?
+   await Promise.all([fetchJSON('/sectors'),fetchJSON('/businesses?limit=100')]):[{data:[]},{data:[]}];
+  const sectors=sectorsResult.data||[],businesses=businessesResult.data||[];
+  if(state.family==='business'){
+   if(state.sector&&!sectors.some(s=>s.id===state.sector))state.sector='';
+   if(state.business&&!businesses.some(b=>b.id===state.business))state.business='';
+  }
   if(requestId!==seq)return;
   if(state.category&&!categories.some(c=>c.id===state.category))state.category='';
+  const isTools=state.view==='tools';
   const p=new URLSearchParams({page:String(state.page),limit:'12'});
   if(state.q)p.set('q',state.q);
   if(state.sort==='name')p.set('sort','name');
   if(state.category)p.set('category',state.category);
+  if(state.sector&&isTools)p.set('sector',state.sector);
   if(state.module)p.set('tool',state.module);
-  const isTools=state.view==='tools';
   const endpoint=isTools?'/opportunities?':'/discovery/solutions?family='+state.family+'&';
   const result=await fetchJSON(endpoint+p.toString());
   const modules=isTools?[]:(await fetchJSON('/discovery/modules?family='+state.family+(state.category?'&category='+encodeURIComponent(state.category):''))).data;
   if(requestId!==seq)return;
-  el.innerHTML=frame(t,families(t,state)+resultBody(result,state,t,categories,modules)+'<div id="opp-dialog-host"></div>');
-  wire(el,state,categories,modules,t);
+  el.innerHTML=frame(t,families(t,state)+resultBody(result,state,t,categories,modules,sectors,businesses,labels)+'<div id="opp-dialog-host"></div>');
+  wire(el,state,categories,modules,t,sectors,businesses);
   if(path.startsWith('/opportunities/')){
     const id=decodeURIComponent(path.slice('/opportunities/'.length));
     await openModal(id,state.view==='tools'?'tool':'solution',t,{deepLink:true,restore:'/opportunities'+location.search});

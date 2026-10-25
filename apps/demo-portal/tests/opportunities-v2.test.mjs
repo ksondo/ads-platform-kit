@@ -4,6 +4,23 @@ import {readFileSync} from 'node:fs';
 const main=readFileSync(new URL('../main.js',import.meta.url),'utf8');
 const ux=readFileSync(new URL('../opportunities-v2.js',import.meta.url),'utf8');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+test('ADS homepage visibly links to all sector, local-business and proposed regulator discovery',()=>{
+ assert.ok(main.includes('function opportunityDiscoveryPaths(){'));
+ assert.ok(main.includes('hero()+opportunityDiscoveryPaths()'));
+ assert.ok(main.includes('"/opportunities?view=tools"'));
+ assert.ok(main.includes('"/opportunities?family=institutional"'));
+ for(const label of ['industriesPath','businessesPath','regulatorsPath','discoveryPathsCopy'])
+  assert.ok(main.includes('t("'+label+'")'),label);
+ assert.ok(main.includes('50 industries') && main.includes('52 example business profiles'));
+ assert.ok(main.includes('Official authorizations are still required.'));
+});
+test('ADS homepage discovery paths are labelled in both English and French',()=>{
+ for(const phrase of ['Browse 50 industries','Find a local business type','Institutional & regulatory services',
+                      'Explorer 50 secteurs','Trouver une activité locale','Services institutionnels et réglementaires'])
+   assert.ok(main.includes(phrase),phrase);
+ assert.ok(main.includes("'/opportunities?family=institutional'") ||
+           main.includes('"/opportunities?family=institutional"'));
+});
 test('only Business Opportunities routes are replaced; home/platforms/cloud/demo-access stay intact',()=>{
  assert.ok(main.includes('function landing(){'));
  assert.ok(main.includes('main=landing()'));
@@ -33,6 +50,17 @@ test('filters, discoverable bundles and modal content are dynamically retrieved'
  assert.ok(ux.includes('event.shiftKey'));
  assert.ok(ux.includes('https://wa.me/237654035075'));
  assert.ok(ux.includes('location.pathname.startsWith'));
+});
+test('full sector and local business discovery are actually wired to database API',()=>{
+ for(const endpoint of ['/sectors', '/businesses?limit=100'])assert.ok(ux.includes(endpoint),endpoint);
+ for(const selector of ['opp-select-sector','opp-select-business','opp-sector-grid','opp-business-context','data-action=sector'])
+  assert.ok(ux.includes(selector),selector);
+ assert.ok(ux.includes("p.set('sector',state.sector)"));
+ assert.ok(ux.includes("p.set('business',s.business)"));
+ assert.ok(ux.includes('recommended_tools'));
+ assert.ok(ux.includes('data.required_permission_summary'));
+ assert.ok(ux.includes("'/discovery/categories?family='+state.family"));
+ assert.ok(ux.includes('institutional'));
 });
 test('new display does not invent demos, require login or expose private instructions',()=>{
  assert.ok(!ux.includes('localStorage.setItem('));
