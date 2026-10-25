@@ -1,6 +1,6 @@
 # ADS portal image acceptance — pending owner/licence review
 
-**Status: not supplied and not release-certified in PR #34.** Existing Unsplash CDN backgrounds are inherited from the prior portal build. They are **not** evidence of a locally hosted, licensed, optimized photo library. Do not claim P4-1–P4-4 complete until actual assets are reviewed.
+**Historical PR #34 status: not supplied and not release-certified.** Existing Unsplash CDN backgrounds are inherited from the prior portal build. They are **not** evidence of a locally hosted, licensed, optimized photo library. Do not claim P4-1–P4-4 complete until actual assets are reviewed.
 
 ## Required photographs
 
@@ -39,3 +39,9 @@ For Commerce E-commerce and POS, capture screenshots of the **real hosted demo**
 - Visually inspect images at 360/768/1280 and EN/FR for crops, contrast, licence/provenance and identifiable people.
 
 No images from this checklist have been copied or fabricated in PR #34.
+\n
+## 25 October 2026 — portal image-curation follow-up (PR #36)
+
+The portal now maps 25 distinct images to the 25 platform cards and assigns explicit category imagery to 13 business groups and eight institutional groups. Seventeen Cameroon-relevant photographs have individually documented Wikimedia Commons author/source/licence attribution in [CREDITS.md](CREDITS.md), also exposed in the portal's `/photo-credits` route.
+
+**Important:** images are provider-served resized thumbnails, not local WebP assets. This is an editorial diversity/attribution improvement, not P4 self-hosted image or network byte-budget certification. Existing Unsplash editorial photos remain under their separate site licence. Do not claim licensed e-commerce/POS app screenshots have been collected. Next acceptance: verify actual images/crops over Contabo HTTPS and performance; optionally self-host compressed files with retained attribution.

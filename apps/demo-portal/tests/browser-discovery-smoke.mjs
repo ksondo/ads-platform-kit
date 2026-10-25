@@ -91,7 +91,28 @@ test('Chromium discovers 49 sectors, 52 local businesses, regulator services and
   await page.route('**/api/opportunities/v1/**',route=>
    route.fulfill({status:200,contentType:'application/json',
     body:JSON.stringify(responseFor(route.request().url()))}));
+  await page.route('https://commons.wikimedia.org/**',route=>route.abort());
+  await page.route('https://upload.wikimedia.org/**',route=>route.abort());
   await page.goto('http://127.0.0.1:'+server.address().port+'/');
+  await page.locator('.ads-discovery-path a').first().waitFor();
+  const firstDocument=await page.evaluate(()=>performance.timeOrigin);
+  await page.locator('.nav-links a[href="/platforms"]').click();
+  await page.locator('.platform-card').first().waitFor();
+  assert.equal(await page.locator('.platform-card').count(),25);
+  assert.equal(await page.evaluate(()=>performance.timeOrigin),firstDocument,
+    'internal link unexpectedly navigated to a new HTML document');
+  assert.equal(await page.locator('.portal-loading-shell').count(),0);
+  const srcs=await page.locator('.platform-card .platform-image img').evaluateAll(els=>els.map(x=>x.getAttribute('src')));
+  assert.equal(srcs.length,25);
+  assert.equal(new Set(srcs).size,25,'platform directory has repeated photographs');
+  await page.goBack();
+  await page.locator('.ads-discovery-path a').first().waitFor();
+  assert.equal(await page.evaluate(()=>performance.timeOrigin),firstDocument);
+  await page.locator('a[href="/photo-credits"]').last().click();
+  await page.locator('.credit-item').first().waitFor();
+  assert.ok((await page.locator('.credit-item').count())>=13);
+  assert.equal(await page.evaluate(()=>performance.timeOrigin),firstDocument);
+  await page.goBack();
   await page.locator('.ads-discovery-path a').first().waitFor();
   assert.equal(await page.locator('.ads-discovery-path').count(),3);
   await page.locator('.ads-discovery-path').last().locator('a').click();

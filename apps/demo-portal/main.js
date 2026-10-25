@@ -1,4 +1,5 @@
 import * as ADSOpportunities from "./opportunities-v2.js";
+import {imageUrl, platformImage, credits} from "./image-library.js";
 const app = document.getElementById("root");
 const i18n = {
   en: {
@@ -37,7 +38,7 @@ let opportunityCounts={sectors:null,businesses:null,institutional:null};
 const s = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const t = key => i18n[lang][key] || i18n.en[key] || key;
 const site = path => catalogue.publicSite.replace(/\/$/,"") + path;
-const photo = (id,w=800) => "https://images.unsplash.com/" + encodeURIComponent(id) + "?w=" + w + "&q=82&fit=crop";
+const photo = imageUrl;
 const title = p => lang === "fr" && p.fr ? p.fr : p.name;
 const summary=p=>lang==="fr"&&p.summary_fr?p.summary_fr:p.summary;
 const model=p=>lang==="fr"&&p.model_fr?p.model_fr:p.model;
@@ -92,14 +93,14 @@ function africaArt(){
 function platformCard(p){
  const n=catalogue.tools.filter(x=>x.platformId===p.id).length;
  const demo=safeDemo(p.demoUrl),url=demo||platformUrl(p);
- const media=p.image?'<img src="'+s(photo(p.image))+'" alt="'+s(title(p))+'" loading="lazy" width="640" height="360"/>':'<span class="platform-placeholder" aria-hidden="true">◇</span>';
+ const media=platformImage(p)?'<img src="'+s(platformImage(p))+'" alt="" decoding="async" loading="lazy" width="640" height="360"/>':'<span class="platform-placeholder" aria-hidden="true">◇</span>';
  return '<a class="platform-card" href="'+s(url)+'"'+(demo?' target="_blank" rel="noopener noreferrer"':'')+'><span class="platform-image">'+media+'</span>'+
  '<div class="platform-body"><h3>'+s(title(p))+'</h3><p>'+s(summary(p))+'</p><span class="card-spacer"></span>'+
  '<span class="platform-meta">'+(n?pill(countLabel(n,"tools")):pill(t("demoPending"),"muted"))+'</span>'+
  '<span class="btn btn-outline card-action">'+s(demo?t("tryDemo"):t("explore"))+' →</span></div></a>';
 }
 function toolCard(x){
- const media=x.image?'<img src="'+s(photo(x.image))+'" alt="'+s(title(x))+'" loading="lazy" width="560" height="315"/>':'<span class="tool-placeholder" aria-hidden="true">◇</span>';
+ const media=x.image?'<img src="'+s(photo(x.image))+'" alt="" decoding="async" loading="lazy" width="560" height="315"/>':'<span class="tool-placeholder" aria-hidden="true">◇</span>';
  return '<a class="tool-card" href="'+toolUrl(x)+'"><span class="tool-photo">'+media+(safeDemo(x.demoUrl)?pill(t("live"),"online"):pill(t("demoPending"),"muted"))+'</span>'+
  '<div class="tool-body"><h3>'+s(title(x))+'</h3><p>'+s(summary(x))+'</p><span class="card-spacer"></span>'+
  '<span class="btn btn-outline card-action">'+s(t("learn"))+' →</span></div></a>';
@@ -172,7 +173,7 @@ function toolDirectory(){
 }
 function platformDetail(p){
   const items=catalogue.tools.filter(x=>x.platformId===p.id);
-  return '<section class="detail-hero" data-portal-hero="platform"><img class="detail-hero-photo" src="'+s(photo(p.image,1300))+'" alt="" loading="lazy" width="1300" height="420"/><div class="container">'+link("/platforms","← "+s(t("back")),"back-link")+'<div class="eyebrow">'+s(t("platforms"))+'</div><h1>'+s(title(p))+'</h1><p>'+s(summary(p))+'</p><div class="detail-actions">'+launch(p.demoUrl,t("visitPlatform"))+companyAction("/partners",t("becomePartner"),"btn btn-outline-light")+link("/demo-access",s(t("demoHelp"))+" →","btn btn-outline-light")+'</div></div></section>'+
+  return '<section class="detail-hero" data-portal-hero="platform"><img class="detail-hero-photo" src="'+s(platformImage(p,1300))+'" alt="" loading="lazy" width="1300" height="420"/><div class="container">'+link("/platforms","← "+s(t("back")),"back-link")+'<div class="eyebrow">'+s(t("platforms"))+'</div><h1>'+s(title(p))+'</h1><p>'+s(summary(p))+'</p><div class="detail-actions">'+launch(p.demoUrl,t("visitPlatform"))+companyAction("/partners",t("becomePartner"),"btn btn-outline-light")+link("/demo-access",s(t("demoHelp"))+" →","btn btn-outline-light")+'</div></div></section>'+
   '<section class="section"><div class="container">'+sectionTitle(t("toolsInside"),"/opportunities?platform="+encodeURIComponent(p.id),t("allTools"))+
   (items.length?'<div class="tool-grid directory-tools">'+items.map(toolCard).join("")+'</div>':'<p class="empty">'+s(t("noResults"))+'</p>')+
   '<p class="detail-note">'+s(t("statusNote"))+'</p></div></section>';
@@ -193,7 +194,15 @@ function footer(){
  link("/cloud",s(t("cloud")),"footer-link")+companyNav("/about",t("about"))+
  companyAction("/partners",t("becomePartner"),"footer-link")+
  link("mailto:admin@africadigitalsynergy.com","admin@africadigitalsynergy.com","footer-link")+
+  link("/photo-credits",lang==="fr"?"Crédits photos":"Photo credits","footer-link")+
  whatsAppContact("WhatsApp","footer-link")+'</div></div></footer>';
+}
+function photoCreditsPage(){
+  const en=lang!=="fr";
+  return '<section class="directory-intro"><div class="container"><h1>'+(en?'Photo credits':'Crédits photographiques')+'</h1><p>'+(en?'Photographs of business and community life in Cameroon, credited to their creators.':'Photographies de la vie économique et communautaire au Cameroun, créditées à leurs auteurs.')+'</p></div></section>'+
+    '<section class="section"><div class="container credit-grid">'+credits.map(x=>
+    '<article class="credit-item"><h2>'+s(en?x.en:x.fr)+'</h2><p>© '+s(x.author)+'</p><a href="'+s(x.source)+'" target="_blank" rel="noopener noreferrer">'+(en?'Original photograph':'Photographie originale')+'</a> · <a href="'+s(x.license)+'" target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a></article>'
+    ).join('')+'<p class="credit-note">'+(en?'Thumbnails are resized by Wikimedia Commons; attribution does not imply endorsement.':'Miniatures redimensionnées par Wikimedia Commons ; l’attribution n’implique aucun soutien à ADS.')+'</p></div></section>';
 }
 function render(){
  document.documentElement.lang=lang;
@@ -206,37 +215,73 @@ function render(){
  else if(path.startsWith("/opportunities/")) {const legacy=catalogue.tools.find(y=>y.id===path.split("/")[2]);main=legacy?toolDetail(legacy):ADSOpportunities.detailShell();}
  else if(path==="/demo-access") main=demoAccessGuide();
  else if(path==="/cloud") main=cloud();
+  else if(path==="/photo-credits") main=photoCreditsPage();
  else main=platformDirectory();
- const sectionTitle=path==="/"?"ADS":path==="/platforms"?t("platforms"):path==="/opportunities"?t("opportunities"):path==="/cloud"?t("cloud"):path==="/demo-access"?t("demos"):path.includes("/platforms/")?title(catalogue.platforms.find(p=>p.id===path.split("/")[2])||{name:"ADS"}):path.includes("/opportunities/")?t("opportunities"):t("platforms");
+ const sectionTitle=path==="/"?"ADS":path==="/platforms"?t("platforms"):path==="/opportunities"?t("opportunities"):path==="/cloud"?t("cloud"):path==="/photo-credits"?(lang==="fr"?"Crédits photos":"Photo credits"):path==="/demo-access"?t("demos"):path.includes("/platforms/")?title(catalogue.platforms.find(p=>p.id===path.split("/")[2])||{name:"ADS"}):path.includes("/opportunities/")?t("opportunities"):t("platforms");
  document.title=sectionTitle+" · ADS";
  document.querySelector(".skip-link").textContent=lang==="fr"?"Aller au contenu":"Skip to content";
  app.innerHTML=header()+'<main id="main">'+main+'</main>'+footer();
+ app.removeAttribute("aria-busy");
  const menu=app.querySelector(".menu-toggle"),nav=app.querySelector(".nav-links");
  menu.addEventListener("click",()=>{const open=nav.classList.toggle("is-open");menu.setAttribute("aria-expanded",String(open));});
  app.querySelectorAll("[data-lang]").forEach(btn=>btn.addEventListener("click",()=>{lang=btn.dataset.lang;localStorage.setItem("ads-portal-lang",lang);render();}));
  if(path==="/opportunities" || path.startsWith("/opportunities/")) ADSOpportunities.hydrate(path,lang);
 }
+// Internal link navigation avoids reloading the HTML fallback between pages.
+function portalRoute(path){
+  return path==="/"||path==="/platforms"||path==="/opportunities"||path==="/demo-access"||
+    path==="/cloud"||path==="/photo-credits"||path.startsWith("/platforms/")||
+    path.startsWith("/opportunities/");
+}
+document.addEventListener("click",event=>{
+  if(event.defaultPrevented||event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+  const a=event.target?.closest?.("a[href]");
+  if(!a||a.target||a.hasAttribute("download"))return;
+  const href=a.getAttribute("href");
+  if(!href||href.startsWith("#"))return;
+  const url=new URL(href,location.href);
+  if(url.origin!==location.origin||!portalRoute(url.pathname))return;
+  if(url.pathname===location.pathname&&url.search===location.search&&url.hash)return;
+  event.preventDefault();
+  if(url.href===location.href)return;
+  history.pushState({},'',url.pathname+url.search+url.hash);
+  render();
+  window.scrollTo(0,0);
+});
+window.addEventListener("popstate",()=>render());
+document.addEventListener("error",event=>{
+  if(event.target instanceof HTMLImageElement && event.target.closest("#root")){
+    event.target.hidden=true;
+    event.target.classList.add("image-unavailable");
+  }
+},true);
+
 async function start(){
- try {
- const response=await fetch("/catalogue.json",{cache:"no-store"});
- if(!response.ok) throw new Error("catalogue unavailable");
- const data=await response.json();
- if(!Array.isArray(data.platforms)||!Array.isArray(data.tools)) throw new Error("invalid catalogue");
- catalogue=data;
- const endpoints=[["sectors","/api/opportunities/v1/sectors"],["businesses","/api/opportunities/v1/businesses?limit=1"],
-  ["institutional","/api/opportunities/v1/discovery/categories?family=institutional"]];
- await Promise.all(endpoints.map(async ([key,url])=>{
-   try{
-     const response=await fetch(url,{credentials:"omit",cache:"no-store"});
-     if(!response.ok)return;
-     const data=await response.json();
-     if(Number.isSafeInteger(data.total)&&data.total>=0)opportunityCounts[key]=data.total;
-   }catch{/* Keep public portal available if the read-only catalogue API is offline. */}
- }));
- render();
- } catch(err) {
- app.innerHTML='<main class="error-page"><h1>ADS Digital Ecosystem</h1><p>Catalogue temporarily unavailable.</p><a href="/">Try again</a></main>';
- console.error(err);
- }
+  try {
+    const response=await fetch("/catalogue.json",{cache:"no-store"});
+    if(!response.ok) throw new Error("catalogue unavailable");
+    const data=await response.json();
+    if(!Array.isArray(data.platforms)||!Array.isArray(data.tools)) throw new Error("invalid catalogue");
+    catalogue=data;
+    render(); // Never block page rendering on the optional Opportunities API.
+    const endpoints=[["sectors","/api/opportunities/v1/sectors"],["businesses","/api/opportunities/v1/businesses?limit=1"],
+      ["institutional","/api/opportunities/v1/discovery/categories?family=institutional"]];
+    Promise.all(endpoints.map(async ([key,url])=>{
+      try{
+        const response=await fetch(url,{credentials:"omit",cache:"no-store"});
+        if(!response.ok)return;
+        const data=await response.json();
+        if(Number.isSafeInteger(data.total)&&data.total>=0)opportunityCounts[key]=data.total;
+      }catch{/* Keep public pages available if the read-only discovery API is down. */}
+    })).then(()=>{
+      const stats=[opportunityCounts.sectors,opportunityCounts.businesses,opportunityCounts.institutional];
+      document.querySelectorAll(".ads-discovery-path-count").forEach((el,i)=>{
+        if(stats[i]!=null)el.textContent=String(stats[i]);
+      });
+    });
+  }catch(err){
+    app.innerHTML='<main class="error-page" role="alert"><h1>ADS Digital Ecosystem</h1><p>Catalogue temporarily unavailable / Catalogue momentanément indisponible.</p><a href="/">Try again / Réessayer</a></main>';
+    console.error(err);
+  }
 }
 start();
