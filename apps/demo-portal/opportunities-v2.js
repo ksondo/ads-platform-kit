@@ -73,6 +73,9 @@ function stateFromURL(){
 }
 function goto(update){
  const current=stateFromURL(),s={...current,...update};
+ // Preserve horizontal browsing position when the selected sector changes.
+ const previousRail=document.querySelector('#opportunities-app .opp-category-rail');
+ const railScrollLeft=current.family===s.family?(previousRail?.scrollLeft||0):0;
  if(s.family==='institutional'){s.view='bundles';s.sector='';s.business='';}
  if(s.sector||s.business){s.view='tools';}
  const p=new URLSearchParams();
@@ -87,7 +90,7 @@ function goto(update){
  if(s.page>1)p.set('page',String(s.page));
  const url='/opportunities'+(p.toString()?'?'+p.toString():'');
  history.pushState({},'',url);
- hydrate('/opportunities',window.document.documentElement.lang||'en',{revealResults:true});
+ hydrate('/opportunities',window.document.documentElement.lang||'en',{revealResults:true,railScrollLeft});
 }
 const opts=(items,selected)=>items.map(x=>'<option value="'+L(x.id)+'"'+(x.id===selected?' selected':'')+'>'+L(x.name)+'</option>').join('');
 function frame(t,body){
@@ -261,11 +264,18 @@ function wire(el,state,cats,modules,t,sectors,businesses){
    }catch{suggestions.innerHTML=''}
  });
 }
-export async function hydrate(path,lang,{revealResults=false}={}){
+export async function hydrate(path,lang,{revealResults=false,railScrollLeft=0}={}){
  const el=document.getElementById('opportunities-app');
  if(!el)return;
  const requestId=++seq,t=tFor(lang),state=stateFromURL();
- el.innerHTML=frame(t,families(t,state)+'<div class="container opp-loading" role="status">'+L(t.loading)+'</div>');
+ // Avoid replacing the sticky sectors and results with a short loading frame:
+ // doing so collapses the document's scroll position between sector selections.
+ const retainCurrentResults=revealResults&&!!el.querySelector('#opp-results');
+ if(retainCurrentResults){
+  el.querySelector('.opp-content')?.setAttribute('aria-busy','true');
+ }else{
+  el.innerHTML=frame(t,families(t,state)+'<div class="container opp-loading" role="status">'+L(t.loading)+'</div>');
+ }
  try{
   const categories=(await fetchJSON('/discovery/categories?family='+state.family)).data.map(c=>({...c,name:labelFor(categoryFr,c.id,c.name,lang)}));
   const labels=catalogueUI[lang]||catalogueUI.en;
@@ -305,12 +315,18 @@ export async function hydrate(path,lang,{revealResults=false}={}){
   if(requestId!==seq)return;
   el.innerHTML=frame(t,families(t,state)+resultBody(result,state,t,categories,modules,shownSectors,shownBusinesses,labels)+'<div id="opp-dialog-host"></div>');
   wire(el,state,categories,modules,t,shownSectors,shownBusinesses);
+  const nextRail=el.querySelector('.opp-category-rail');
+  if(nextRail)nextRail.scrollLeft=railScrollLeft;
   if(revealResults){
    const heading=el.querySelector('#opp-results-title');
    if(heading){
     heading.focus({preventScroll:true});
     const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    heading.scrollIntoView({behavior:reduced?'instant':'smooth',block:'start'});
+    const stickyStrip=el.querySelector('.opp-category-strip');
+    // The results must start immediately beneath the visible sticky carousel.
+    const offset=(stickyStrip?.getBoundingClientRect().height||0)+14;
+    const position=Math.max(0,window.scrollY+heading.getBoundingClientRect().top-offset);
+    window.scrollTo({top:position,behavior:reduced?'instant':'smooth'});
    }
   }
   if(path.startsWith('/opportunities/')){
@@ -319,6 +335,17 @@ export async function hydrate(path,lang,{revealResults=false}={}){
   }
  }catch(e){
   if(requestId!==seq)return;
+  if(retainCurrentResults){
+   el.querySelector('.opp-content')?.removeAttribute('aria-busy');
+   el.querySelector('#opp-update-error')?.remove();
+   const warning=document.createElement('p');
+   warning.id='opp-update-error';
+   warning.className='opp-update-error';
+   warning.setAttribute('role','alert');
+   warning.textContent=t.error;
+   el.querySelector('.opp-category-strip')?.after(warning);
+   return;
+  }
   el.innerHTML=frame(t,families(t,state)+'<div class="container opp-empty" role="status">'+L(t.error)+' <a href="/platforms">'+L(t.platforms)+'</a></div>');
   el.querySelectorAll('[data-family]').forEach(b=>b.addEventListener('click',()=>goto({family:b.dataset.family,category:'',view:'bundles',page:1})));
  }
