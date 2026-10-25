@@ -577,18 +577,6 @@
       "evidence": "Morphoo/LTTS existing ministry scope; sensitive data safeguards"
     },
     {
-      "id": "confidential-adult-matchmaking",
-      "name": "Confidential adult matchmaking",
-      "examples": [
-        "Adult matchmaking operator",
-        "screened introduction agency"
-      ],
-      "sourceRepos": [
-        "Dating-platform"
-      ],
-      "evidence": "Controlled staging only; not public-launch ready"
-    },
-    {
       "id": "software-it-services",
       "name": "Software & IT services",
       "examples": [
@@ -2292,36 +2280,6 @@
       "id": "member-service-directory",
       "name": "Member service directory",
       "description": "Reusable member service directory capability; sector-specific integration and certification required.",
-      "evidence_status": "catalogue_candidate"
-    },
-    {
-      "id": "consent-based-profiles",
-      "name": "Consent-based profiles",
-      "description": "Reusable consent-based profiles capability; sector-specific integration and certification required.",
-      "evidence_status": "catalogue_candidate"
-    },
-    {
-      "id": "private-introductions",
-      "name": "Private introductions",
-      "description": "Reusable private introductions capability; sector-specific integration and certification required.",
-      "evidence_status": "catalogue_candidate"
-    },
-    {
-      "id": "screening-workflow",
-      "name": "Screening workflow",
-      "description": "Reusable screening workflow capability; sector-specific integration and certification required.",
-      "evidence_status": "catalogue_candidate"
-    },
-    {
-      "id": "moderator-scheduling",
-      "name": "Moderator scheduling",
-      "description": "Reusable moderator scheduling capability; sector-specific integration and certification required.",
-      "evidence_status": "catalogue_candidate"
-    },
-    {
-      "id": "confidential-follow-up",
-      "name": "Confidential follow-up",
-      "description": "Reusable confidential follow-up capability; sector-specific integration and certification required.",
       "evidence_status": "catalogue_candidate"
     },
     {
@@ -8148,96 +8106,6 @@
         "Education-and-intelligent-services"
       ],
       "evidence": "Morphoo/LTTS existing ministry scope; sensitive data safeguards",
-      "status": "discovery_only",
-      "published": true
-    },
-    {
-      "id": "confidential-adult-matchmaking-consent-based-profiles",
-      "sectorId": "confidential-adult-matchmaking",
-      "capabilityId": "consent-based-profiles",
-      "title": "Consent-based profiles",
-      "summaryEn": "For Adult matchmaking operator and screened introduction agency in confidential adult matchmaking, this digital tool helps organize client or member onboarding, profiles and service histories. It can be combined with other ADS components according to the business workflow.",
-      "modelEn": "Use consent-based profiles to digitalize an existing confidential adult matchmaking business, or develop a managed service for businesses in this sector.",
-      "businessExamples": [
-        "Adult matchmaking operator",
-        "screened introduction agency"
-      ],
-      "sourceRepos": [
-        "Dating-platform"
-      ],
-      "evidence": "Controlled staging only; not public-launch ready",
-      "status": "discovery_only",
-      "published": true
-    },
-    {
-      "id": "confidential-adult-matchmaking-private-introductions",
-      "sectorId": "confidential-adult-matchmaking",
-      "capabilityId": "private-introductions",
-      "title": "Private introductions",
-      "summaryEn": "For Adult matchmaking operator and screened introduction agency in confidential adult matchmaking, this digital tool helps structure private introductions as a repeatable, auditable business process. It can be combined with other ADS components according to the business workflow.",
-      "modelEn": "Use private introductions to digitalize an existing confidential adult matchmaking business, or develop a managed service for businesses in this sector.",
-      "businessExamples": [
-        "Adult matchmaking operator",
-        "screened introduction agency"
-      ],
-      "sourceRepos": [
-        "Dating-platform"
-      ],
-      "evidence": "Controlled staging only; not public-launch ready",
-      "status": "discovery_only",
-      "published": true
-    },
-    {
-      "id": "confidential-adult-matchmaking-screening-workflow",
-      "sectorId": "confidential-adult-matchmaking",
-      "capabilityId": "screening-workflow",
-      "title": "Screening workflow",
-      "summaryEn": "For Adult matchmaking operator and screened introduction agency in confidential adult matchmaking, this digital tool helps structure screening workflow as a repeatable, auditable business process. It can be combined with other ADS components according to the business workflow.",
-      "modelEn": "Use screening workflow to digitalize an existing confidential adult matchmaking business, or develop a managed service for businesses in this sector.",
-      "businessExamples": [
-        "Adult matchmaking operator",
-        "screened introduction agency"
-      ],
-      "sourceRepos": [
-        "Dating-platform"
-      ],
-      "evidence": "Controlled staging only; not public-launch ready",
-      "status": "discovery_only",
-      "published": true
-    },
-    {
-      "id": "confidential-adult-matchmaking-moderator-scheduling",
-      "sectorId": "confidential-adult-matchmaking",
-      "capabilityId": "moderator-scheduling",
-      "title": "Moderator scheduling",
-      "summaryEn": "For Adult matchmaking operator and screened introduction agency in confidential adult matchmaking, this digital tool helps structure moderator scheduling as a repeatable, auditable business process. It can be combined with other ADS components according to the business workflow.",
-      "modelEn": "Use moderator scheduling to digitalize an existing confidential adult matchmaking business, or develop a managed service for businesses in this sector.",
-      "businessExamples": [
-        "Adult matchmaking operator",
-        "screened introduction agency"
-      ],
-      "sourceRepos": [
-        "Dating-platform"
-      ],
-      "evidence": "Controlled staging only; not public-launch ready",
-      "status": "discovery_only",
-      "published": true
-    },
-    {
-      "id": "confidential-adult-matchmaking-confidential-follow-up",
-      "sectorId": "confidential-adult-matchmaking",
-      "capabilityId": "confidential-follow-up",
-      "title": "Confidential follow-up",
-      "summaryEn": "For Adult matchmaking operator and screened introduction agency in confidential adult matchmaking, this digital tool helps structure confidential follow-up as a repeatable, auditable business process. It can be combined with other ADS components according to the business workflow.",
-      "modelEn": "Use confidential follow-up to digitalize an existing confidential adult matchmaking business, or develop a managed service for businesses in this sector.",
-      "businessExamples": [
-        "Adult matchmaking operator",
-        "screened introduction agency"
-      ],
-      "sourceRepos": [
-        "Dating-platform"
-      ],
-      "evidence": "Controlled staging only; not public-launch ready",
       "status": "discovery_only",
       "published": true
     },
