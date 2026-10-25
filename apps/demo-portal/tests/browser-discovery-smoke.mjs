@@ -124,7 +124,7 @@ test('Chromium discovers 49 sectors, 52 local businesses, regulator services and
   await page.locator('#opp-select-business').waitFor();
   assert.equal(await page.locator('#opp-select-sector option').count(),1);
   await page.locator('#opp-select-category').selectOption('business-processing');
-  await page.locator('#opp-select-sector option[value="wood-forest-processing"]').waitFor();
+  await page.locator('#opp-select-sector option[value="wood-forest-processing"]').waitFor({state:'attached'});
   await page.screenshot({path:'/tmp/ads-opportunities-mobile.png',fullPage:true});
   await page.screenshot({path:'/tmp/ads-opportunities-interactive-smoke.png',fullPage:true});
  }finally{
