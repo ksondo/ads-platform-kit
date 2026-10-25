@@ -91,6 +91,12 @@ test('Chromium discovers 50 sectors, 52 local businesses, regulator services and
   await page.route('**/api/opportunities/v1/**',route=>
    route.fulfill({status:200,contentType:'application/json',
     body:JSON.stringify(responseFor(route.request().url()))}));
+  await page.goto('http://127.0.0.1:'+server.address().port+'/');
+  await page.locator('.ads-discovery-path a').first().waitFor();
+  assert.equal(await page.locator('.ads-discovery-path').count(),3);
+  await page.locator('.ads-discovery-path').last().locator('a').click();
+  assert.match(page.url(),/family=institutional/);
+  await page.locator('button[data-category^="institutional-"]').first().waitFor();
   await page.goto('http://127.0.0.1:'+server.address().port+'/opportunities');
   await page.locator('#opp-select-business').waitFor();
   assert.equal(await page.locator('#opp-select-sector option').count(),51);
