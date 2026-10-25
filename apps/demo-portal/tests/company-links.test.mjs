@@ -24,12 +24,12 @@ test("About ADS and Partners remain visible with no link or click action", () =>
     assert.doesNotMatch(html, /href=|onclick=|<a\b|<button\b/);
   }
 });
-test("partner calls-to-action remain visible but do nothing", () => {
+test("P2-2 partner calls-to-action open company email, even while About/Partners pages are paused", () => {
   for (const label of ["Be a Partner","Discuss Cloud Partnership"]) {
     const html = companyAction("/partners",label,"btn btn-gold");
     assert.ok(html.includes(label));
-    assert.match(html, /<span[^>]*class="btn btn-gold company-action-disabled"/);
-    assert.doesNotMatch(html, /href=|onclick=|<a\b|<button\b/);
+    assert.match(html, /<a[^>]*href="mailto:admin@africadigitalsynergy.com\?subject=ADS%20Partnership"/);
+    assert.doesNotMatch(html, /company-action-disabled/);
   }
 });
 test("internal portal links still function", () => {
