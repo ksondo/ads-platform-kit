@@ -37,6 +37,7 @@ test('P2-4: correct count singular/plural for zero, one and two',()=>{
 });
 test('P3-11 and P3-12: route titles and static fallback for crawlers',()=>{
  assert.ok(script.includes('document.title=sectionTitle'));
+ assert.ok(script.includes('opportunityCounts.sectors'));
  for(const path of ['/platforms','/opportunities','/demo-access']) assert.ok(html.includes(path));
  for(const field of ['og:title','og:description','og:url','twitter:card'])assert.ok(html.includes(field));
  assert.ok(!html.includes('Loading ADS Digital Ecosystem'));
