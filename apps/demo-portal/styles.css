@@ -66,3 +66,29 @@ button,input{font:inherit}a{color:inherit;text-decoration:none}button{cursor:poi
  .site-header .brand-mark{font-size:28px}
  .head-inner{min-width:0}
 }
+
+/* Smooth first paint: a branded shell instead of a plaintext fallback flash. */
+.portal-shell-head{height:100%;min-height:78px;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.portal-shell-brand{color:#f3c75e;font-weight:800;letter-spacing:.08em;font-size:14px}
+.portal-shell-lang{color:#d9e6f4;font-size:11px}
+.portal-loading-shell{background:#f8fafc;min-height:80vh;padding:clamp(32px,5vw,75px) 0;color:#102039}
+.portal-loading-kicker{color:#b18530;font-size:11px;letter-spacing:.18em;font-weight:800}
+.portal-loading-shell h1{max-width:850px;margin:15px 0;font-size:clamp(28px,4vw,53px)}
+.portal-loading-shell p{color:#60748d}
+.portal-loading-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:35px}
+.portal-loading-card{min-height:210px;background:white;border:1px solid #e1e7f0;border-radius:12px;overflow:hidden;padding-bottom:18px}
+.portal-loading-card span{display:block;height:116px;background:linear-gradient(90deg,#d8e2ef,#eff4fa,#d8e2ef);background-size:200% 100%;animation:ads-shell-shimmer 2s ease-in-out infinite}
+.portal-loading-card i{display:block;margin:16px 18px 0;background:#e8edf4;height:12px;border-radius:8px;width:65%}
+.portal-loading-card i:last-child{width:44%;height:9px;margin-top:11px}
+@keyframes ads-shell-shimmer{to{background-position-x:-200%}}
+@media(prefers-reduced-motion:reduce){.portal-loading-card span{animation:none}}
+.portal-noscript{padding:20px;background:#071b32;color:white}
+.platform-image{background-image:linear-gradient(125deg,#163e5a,#297b83 52%,#e6b15a)}
+.platform-image img[hidden],.tool-photo img[hidden],.opp-category-img[hidden],.opp-cover-img[hidden],.detail-hero-photo[hidden],.featured-commerce-photo[hidden]{display:none!important}
+.credit-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.credit-item{min-width:0;border:1px solid #e0e6ec;border-radius:10px;padding:18px;background:#fff}
+.credit-item h2{font:700 15px/1.4 Manrope,Arial,sans-serif}
+.credit-item p,.credit-item a{font-size:12px;line-height:1.6}
+.credit-item a{color:#165cab;text-decoration:underline}
+.credit-note{grid-column:1/-1;font-size:12px;color:#627086}
+@media(max-width:720px){.portal-shell-head{min-height:67px}.portal-loading-grid,.credit-grid{grid-template-columns:1fr}.portal-loading-grid{gap:12px}.portal-loading-card:nth-child(n+2){display:none}}
