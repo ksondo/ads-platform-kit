@@ -152,7 +152,7 @@ function demoAccessGuide() {
    '<article class="cloud-card"><span class="demo-step">'+s(num)+'</span><h2>'+s(name)+'</h2><p>'+s(explain)+'</p></article>'
  ).join("")+'</div><p class="detail-note">'+s(t("demoGuideNotLive"))+'</p></div></section>';
 }
-function partnerBanner(){return '<section class="partner-banner"><div class="container"><div><span class="eyebrow">ADS PARTNERSHIPS</span><h2>'+s(t("partnerTitle"))+'</h2><p>'+s(t("partnerCopy"))+'</p></div>'+companyAction("/partners",t("becomePartner"),"btn btn-gold")+'</div></section>';}
+function partnerBanner(){return '<section class="partner-banner"><div class="container"><div><span class="eyebrow">'+s(t("partners"))+'</span><h2>'+s(t("partnerTitle"))+'</h2><p>'+s(t("partnerCopy"))+'</p></div>'+companyAction("/partners",t("becomePartner"),"btn btn-gold")+'</div></section>';}
 function chip(href,text,active){return link(href,s(text),"filter-chip"+(active?" selected":""));}
 function platformDirectory(){
   const q=(new URLSearchParams(location.search).get("q")||"").toLowerCase().trim();
