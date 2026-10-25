@@ -11,7 +11,7 @@ const i18n = {
     partnerTitle:"Build the next opportunity with ADS", partnerCopy:"Whether you are an entrepreneur, institution, technology provider, data centre or enterprise, discover how to become a partner.", becomePartner:"Be a Partner",
     catalogPlatforms:"Discover Platforms", catalogTools:"Explore Business Opportunities", catalogCopy:"Browse digital tools by platform and learn how they could serve a business or community.", all:"All sectors", noResults:"No matching entries. Try another search.", back:"Back to platforms", toolsInside:"Digital tools within this platform", howWorks:"Business model", audience:"Who it serves", visitPlatform:"Open platform demo", returnTools:"Back to opportunities",
     cloudTitle:"ADS Cloud Services", cloudText:"Hosting, deployment, managed operations and technical support for digital businesses and institutions.", cloudFeature1:"Application hosting", cloudFeature1Text:"Deploy approved applications on managed infrastructure.", cloudFeature2:"Maintenance & operations", cloudFeature2Text:"Monitoring, updates and technical assistance for hosted applications.", cloudFeature3:"Partner infrastructure", cloudFeature3Text:"Explore hosting and infrastructure partnerships with ADS.", askCloud:"Discuss Cloud Partnership", cloudNote:"Cloud packages and pricing will be published after operational verification.",
-    footer:"Real platforms. Practical opportunities. Shared progress.", external:"Opens the Africa Digital Synergy company website", companyUpdating:"Company website being updated — link temporarily unavailable", statusNote:"Demo buttons become active only when a verified deployment URL is registered.", featuredSubtitle:"Integrated business solutions for modern trade", officePending:"Yaoundé, Cameroon — street address pending confirmation", educationChip:"Education", healthcareChip:"Healthcare", discoveryPaths:"Find your business opportunity", discoveryPathsCopy:"Start with your industry, local business type, or institutional service area.", industriesPath:"Browse 49 industries", industriesCopy:"Explore business sectors and the digital tools relevant to each activity.", businessesPath:"Find a local business type", businessesCopy:"Choose from 52 example business profiles and discover useful tools.", regulatorsPath:"Institutional & regulatory services", regulatorsCopy:"Explore proposed compliance and institutional support services. Official authorizations are still required."
+    footer:"Real platforms. Practical opportunities. Shared progress.", external:"Opens the Africa Digital Synergy company website", companyUpdating:"Company website being updated — link temporarily unavailable", statusNote:"Demo buttons become active only when a verified deployment URL is registered.", featuredSubtitle:"Integrated business solutions for modern trade", officePending:"Yaoundé, Cameroon — street address pending confirmation", educationChip:"Education", healthcareChip:"Healthcare", discoveryPaths:"Find your business opportunity", discoveryPathsCopy:"Start with your industry, local business type, or institutional service area.", industriesPath:"Browse industries", industriesCopy:"Explore business sectors and the digital tools relevant to each activity.", businessesPath:"Find a local business type", businessesCopy:"Choose from 52 example business profiles and discover useful tools.", regulatorsPath:"Institutional & regulatory services", regulatorsCopy:"Explore proposed compliance and institutional support services. Official authorizations are still required."
   },
   fr: {
     home:"Accueil", platforms:"Plateformes", opportunities:"Opportunités d'affaires", cloud:"Services Cloud", about:"À propos d'ADS", partners:"Partenaires", contact:"Contact", demos:"Explorer les démos", demoHelp:"Comment accéder aux démos", demoGuideTitle:"Comment accéder aux démos ADS", demoGuideIntro:"Choisissez une plateforme. Elle s’ouvre dans un nouvel onglet pendant que la page d’accueil ADS reste ouverte. La connexion ADS partagée vous ramène ensuite à cette plateforme.", demoGuideFirst:"Choisir une plateforme", demoGuideFirstText:"Explorez les plateformes ADS : la démo choisie s’ouvre dans un autre onglet et cette page reste disponible.", demoGuideSecond:"Se connecter dans l’application", demoGuideSecondText:"L’application ouvre la page de connexion ADS. Dans un environnement démo activé, choisissez Utiliser le compte démo ; aucun mot de passe n’est stocké sur ce portail.", demoGuideThird:"Explorer votre espace démo", demoGuideThirdText:"L’application vous redirige vers votre espace selon votre rôle et votre organisation.", demoGuideNotLive:"Les liens des démos ne sont activés qu’après vérification de l’application et de son authentification.",
@@ -23,7 +23,7 @@ const i18n = {
     partnerTitle:"Construisons ensemble avec ADS", partnerCopy:"Entrepreneur, institution, fournisseur technologique, centre de données ou entreprise : découvrez comment devenir partenaire.", becomePartner:"Devenir partenaire",
     catalogPlatforms:"Découvrir les plateformes", catalogTools:"Explorer les opportunités", catalogCopy:"Parcourez les outils par plateforme et découvrez leur modèle économique.", all:"Tous les secteurs", noResults:"Aucun résultat. Essayez une autre recherche.", back:"Retour aux plateformes", toolsInside:"Outils de cette plateforme", howWorks:"Modèle économique", audience:"Public concerné", visitPlatform:"Ouvrir la démo", returnTools:"Retour aux opportunités",
     cloudTitle:"Services Cloud ADS", cloudText:"Hébergement, déploiement, exploitation et assistance technique pour les entreprises et institutions.", cloudFeature1:"Hébergement d'applications", cloudFeature1Text:"Déployer des applications approuvées sur une infrastructure gérée.", cloudFeature2:"Maintenance et exploitation", cloudFeature2Text:"Supervision, mises à jour et assistance technique.", cloudFeature3:"Infrastructure partenaire", cloudFeature3Text:"Explorer des partenariats d'hébergement et d'infrastructure.", askCloud:"Parler de partenariat Cloud", cloudNote:"Les offres et prix Cloud seront publiés après validation opérationnelle.",
-    footer:"Des plateformes réelles. Des opportunités concrètes. Un progrès partagé.", external:"Ouvre le site de l'entreprise Africa Digital Synergy", companyUpdating:"Site de l’entreprise en cours de mise à jour — lien temporairement indisponible", statusNote:"Les boutons de démo sont activés uniquement après validation de l'URL du déploiement.", featuredSubtitle:"Solutions intégrées pour le commerce moderne", officePending:"Yaoundé, Cameroun — adresse de rue à confirmer", educationChip:"Éducation", healthcareChip:"Santé", discoveryPaths:"Trouvez votre opportunité d’affaires", discoveryPathsCopy:"Commencez par votre secteur, votre activité locale ou les services institutionnels.", industriesPath:"Explorer 49 secteurs", industriesCopy:"Découvrez les secteurs d’activité et les outils numériques associés.", businessesPath:"Trouver une activité locale", businessesCopy:"Choisissez parmi 52 profils d’entreprise et découvrez des outils utiles.", regulatorsPath:"Services institutionnels et réglementaires", regulatorsCopy:"Découvrez les services proposés pour la conformité et les institutions, sous réserve des autorisations officielles."
+    footer:"Des plateformes réelles. Des opportunités concrètes. Un progrès partagé.", external:"Ouvre le site de l'entreprise Africa Digital Synergy", companyUpdating:"Site de l’entreprise en cours de mise à jour — lien temporairement indisponible", statusNote:"Les boutons de démo sont activés uniquement après validation de l'URL du déploiement.", featuredSubtitle:"Solutions intégrées pour le commerce moderne", officePending:"Yaoundé, Cameroun — adresse de rue à confirmer", educationChip:"Éducation", healthcareChip:"Santé", discoveryPaths:"Trouvez votre opportunité d’affaires", discoveryPathsCopy:"Commencez par votre secteur, votre activité locale ou les services institutionnels.", industriesPath:"Explorer les secteurs", industriesCopy:"Découvrez les secteurs d’activité et les outils numériques associés.", businessesPath:"Trouver une activité locale", businessesCopy:"Choisissez parmi 52 profils d’entreprise et découvrez des outils utiles.", regulatorsPath:"Services institutionnels et réglementaires", regulatorsCopy:"Découvrez les services proposés pour la conformité et les institutions, sous réserve des autorisations officielles."
   }
 };
 const initialLanguage=()=>{
@@ -33,6 +33,7 @@ const initialLanguage=()=>{
 };
 let lang=initialLanguage();
 let catalogue = {platforms:[],tools:[],publicSite:"https://africadigitalsynergy.com",companySiteLinksEnabled:false};
+let opportunityCounts={sectors:null,businesses:null,institutional:null};
 const s = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const t = key => i18n[lang][key] || i18n.en[key] || key;
 const site = path => catalogue.publicSite.replace(/\/$/,"") + path;
@@ -118,14 +119,14 @@ function sectionTitle(title,href,label,subtitle=""){
 }
 function opportunityDiscoveryPaths(){
  const cards=[
-  ["/opportunities?view=tools",t("industriesPath"),t("industriesCopy"),String(49)],
-  ["/opportunities?view=tools",t("businessesPath"),t("businessesCopy"),"52"],
-  ["/opportunities?family=institutional",t("regulatorsPath"),t("regulatorsCopy"),"8"]
+  ["/opportunities?view=tools",t("industriesPath"),t("industriesCopy"),opportunityCounts.sectors],
+  ["/opportunities?view=tools",t("businessesPath"),t("businessesCopy"),opportunityCounts.businesses],
+  ["/opportunities?family=institutional",t("regulatorsPath"),t("regulatorsCopy"),opportunityCounts.institutional]
  ];
  return '<section class="section ads-discovery-paths"><div class="container">'+
   '<div class="section-head"><div><h2>'+s(t("discoveryPaths"))+'</h2><p>'+s(t("discoveryPathsCopy"))+'</p></div></div>'+
   '<div class="ads-discovery-path-grid">'+cards.map(([url,title,description,count])=>
-   '<article class="ads-discovery-path"><span class="ads-discovery-path-count">'+s(count)+'</span><h3>'+s(title)+'</h3><p>'+s(description)+'</p>'+
+   '<article class="ads-discovery-path"><span class="ads-discovery-path-count">'+s(count==null?"—":count)+'</span><h3>'+s(title)+'</h3><p>'+s(description)+'</p>'+
    link(url,s(t("explore"))+' →',"btn btn-navy")+'</article>').join('')+'</div></div></section>';
 }
 function landing(){
@@ -208,6 +209,7 @@ function render(){
  else main=platformDirectory();
  const sectionTitle=path==="/"?"ADS":path==="/platforms"?t("platforms"):path==="/opportunities"?t("opportunities"):path==="/cloud"?t("cloud"):path==="/demo-access"?t("demos"):path.includes("/platforms/")?title(catalogue.platforms.find(p=>p.id===path.split("/")[2])||{name:"ADS"}):path.includes("/opportunities/")?t("opportunities"):t("platforms");
  document.title=sectionTitle+" · ADS";
+ document.querySelector(".skip-link").textContent=lang==="fr"?"Aller au contenu":"Skip to content";
  app.innerHTML=header()+'<main id="main">'+main+'</main>'+footer();
  const menu=app.querySelector(".menu-toggle"),nav=app.querySelector(".nav-links");
  menu.addEventListener("click",()=>{const open=nav.classList.toggle("is-open");menu.setAttribute("aria-expanded",String(open));});
@@ -221,6 +223,16 @@ async function start(){
  const data=await response.json();
  if(!Array.isArray(data.platforms)||!Array.isArray(data.tools)) throw new Error("invalid catalogue");
  catalogue=data;
+ const endpoints=[["sectors","/api/opportunities/v1/sectors"],["businesses","/api/opportunities/v1/businesses?limit=1"],
+  ["institutional","/api/opportunities/v1/discovery/categories?family=institutional"]];
+ await Promise.all(endpoints.map(async ([key,url])=>{
+   try{
+     const response=await fetch(url,{credentials:"omit",cache:"no-store"});
+     if(!response.ok)return;
+     const data=await response.json();
+     if(Number.isSafeInteger(data.total)&&data.total>=0)opportunityCounts[key]=data.total;
+   }catch{/* Keep public portal available if the read-only catalogue API is offline. */}
+ }));
  render();
  } catch(err) {
  app.innerHTML='<main class="error-page"><h1>ADS Digital Ecosystem</h1><p>Catalogue temporarily unavailable.</p><a href="/">Try again</a></main>';
