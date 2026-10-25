@@ -118,17 +118,6 @@ body.opp-modal-open{overflow:hidden}
 .opp-regulatory-guard{margin:12px 0;padding:11px 14px;border-left:4px solid #4176ad;background:#f3f7fc;color:#24476b}
 @media(max-width:700px){.opp-sector-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.opp-sector-chip{padding:9px;font-size:11px}}
 
-/* Reveal the complete primary business and regulator category hierarchy on
-   desktop instead of hiding most categories in a horizontal scroller. */
-@media(min-width:960px){
- #opportunities-app .opp-category-rail{
-   display:grid;grid-template-columns:repeat(auto-fill,minmax(127px,1fr));
-   overflow:visible;scroll-snap-type:none;align-items:stretch
- }
- #opportunities-app .opp-category{width:auto;min-width:0;flex:auto}
-}
-
-
 /* CSP-safe images replace blocked inline background-image attributes. */
 #opportunities-app .opp-category-img,
 #opportunities-app .opp-cover-img{display:block;width:100%;height:100%;object-fit:cover}
@@ -145,3 +134,25 @@ body.opp-modal-open{overflow:hidden}
 #opportunities-app .opp-partner-cta p{margin:0;font-size:13px;color:#dbe6f2;line-height:1.5}
 #opportunities-app .opp-partner-cta .btn{flex-shrink:0}
 @media(max-width:650px){#opportunities-app .opp-partner-cta{flex-direction:column;align-items:stretch;padding:18px}}
+
+/* One full-width row for sector discovery; filtering and results sit underneath. */
+#opportunities-app .opp-category-strip{padding-top:14px;padding-bottom:17px}
+#opportunities-app .opp-category-top{align-items:center;margin:0 0 9px}
+#opportunities-app .opp-category-top h2{font-size:18px;margin:0 0 3px}
+#opportunities-app .opp-category-hint{font-size:12px;color:#516683;margin:0;line-height:1.5}
+#opportunities-app .opp-category-controls{display:flex;align-items:center;gap:7px;flex-shrink:0}
+#opportunities-app .opp-carousel-arrow{width:40px;height:40px;border:1px solid #b7c9df;border-radius:50%;font-size:27px;line-height:1;background:#fff;color:#123c66;cursor:pointer}
+#opportunities-app .opp-carousel-arrow:hover{background:#eaf3ff;border-color:#5796e3}
+#opportunities-app .opp-carousel-arrow:focus-visible,#opportunities-app .opp-category-rail:focus-visible{outline:3px solid #176cee;outline-offset:2px}
+#opportunities-app .opp-category-rail{display:flex;flex-wrap:nowrap;grid-template-columns:none;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scroll-snap-type:x mandatory;scroll-padding-inline:2px;overscroll-behavior-x:contain;gap:10px;padding:2px 2px 10px}
+#opportunities-app .opp-category{width:150px;min-width:150px;max-width:150px;flex:0 0 150px;scroll-snap-align:start}
+#opportunities-app .opp-layout{padding-top:2px}
+#opportunities-app #opp-results,#opportunities-app #opp-results-title{scroll-margin-top:18px}
+#opportunities-app #opp-results-title:focus-visible{outline:3px solid #176cee;outline-offset:5px;border-radius:3px}
+@media(max-width:570px){
+ #opportunities-app .opp-category-strip{padding-top:9px;padding-bottom:11px}
+ #opportunities-app .opp-category{width:128px;min-width:128px;max-width:128px;flex-basis:128px;min-height:118px}
+ #opportunities-app .opp-category-photo{height:62px}
+ #opportunities-app .opp-carousel-arrow{width:36px;height:36px}
+}
+@media(prefers-reduced-motion:reduce){#opportunities-app .opp-category-rail{scroll-behavior:auto}}
