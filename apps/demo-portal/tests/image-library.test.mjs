@@ -38,7 +38,7 @@ test('Commons sources have explicit author, licence, and public credit route',()
 test('image library is packaged and allows Wikimedia thumbnails without loosening script CSP',()=>{
   assert.ok(read('Dockerfile').includes('COPY apps/demo-portal/image-library.js'));
   const csp=read('nginx.conf');
-  for(const host of ['https://commons.wikimedia.org','https://upload.wikimedia.org'])
+  for(const host of ['https://commons.wikimedia.org','https://upload.wikimedia.org','https://thumb.wikimedia.org'])
     assert.ok(csp.includes(host));
   assert.ok(csp.includes("script-src 'self'"));
   assert.ok(!csp.includes("'unsafe-inline'"));
