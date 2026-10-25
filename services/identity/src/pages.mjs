@@ -17,7 +17,7 @@ const T = {
     sendLink: 'Send reset link', resetTitle: 'Choose a new password', savePassword: 'Save new password',
     resetDone: 'Password changed', resetDoneBody: 'You were signed out everywhere. Sign in with your new password.',
     chooseTitle: 'Choose a workspace', chooseBody: 'Your account belongs to several organisations. Which one do you want to use in {product}?',
-    noAccessTitle: 'No access yet', noAccessBody: 'Your account is signed in, but you have not been given access to {product}. Ask your organisation administrator.',
+    noAccessTitle: 'No access yet', noAccessBody: 'This account does not have access to {product}. Choose Switch account to sign in with an authorized account.', switchAccount: 'Switch account',
     errorTitle: 'Something went wrong', backToSignIn: 'Back to sign in', securedBy: 'Secured by Africa Digital Synergy',
     signedIn: 'You are signed in', signedInBody: 'Signed in as {email}. You can now open any ADS app.',
     signedOut: 'You are signed out', signedOutBody: 'You have been signed out of your ADS account on this device.',
@@ -64,7 +64,7 @@ const T = {
     sendLink: 'Envoyer le lien', resetTitle: 'Choisissez un nouveau mot de passe', savePassword: 'Enregistrer',
     resetDone: 'Mot de passe modifié', resetDoneBody: 'Toutes vos sessions ont été fermées. Connectez-vous avec le nouveau mot de passe.',
     chooseTitle: 'Choisissez un espace', chooseBody: 'Votre compte appartient à plusieurs organisations. Laquelle voulez-vous utiliser dans {product} ?',
-    noAccessTitle: "Pas encore d'accès", noAccessBody: "Vous êtes connecté, mais aucun accès à {product} ne vous a été attribué. Contactez l'administrateur de votre organisation.",
+    noAccessTitle: "Pas encore d'accès", noAccessBody: "Ce compte n'a pas accès à {product}. Choisissez Changer de compte pour vous connecter avec un compte autorisé.", switchAccount: 'Changer de compte',
     errorTitle: 'Une erreur est survenue', backToSignIn: 'Retour à la connexion', securedBy: 'Sécurisé par Africa Digital Synergy',
     signedIn: 'Vous êtes connecté', signedInBody: 'Connecté en tant que {email}. Vous pouvez ouvrir toutes les applications ADS.',
     signedOut: 'Vous êtes déconnecté', signedOutBody: 'Vous avez été déconnecté de votre compte ADS sur cet appareil.',
@@ -318,7 +318,11 @@ ${values.productUrl ? `<a class="button" href="${esc(values.productUrl)}">${fill
     case 'invite_invalid':
       return layout({ ...base, title: t.inviteInvalid, body: `<h1>${esc(t.inviteInvalid)}</h1><p>${esc(t.inviteInvalidBody)}</p>` });
     case 'no_access':
-      return layout({ ...base, title: t.noAccessTitle, body: `<h1>${esc(t.noAccessTitle)}</h1><p>${fill(t.noAccessBody, { product })}</p>` });
+      return layout({ ...base, title: t.noAccessTitle, body: `<h1>${esc(t.noAccessTitle)}</h1><p>${fill(t.noAccessBody, { product })}</p>
+<form method="post" action="/logout">
+${csrfField}${hidden('client_id', client?.client_id)}
+${hidden('switch_account', '1')}
+<button type="submit">${esc(t.switchAccount)}</button></form>` });
     default:
       return layout({ ...base, title: t.errorTitle, body: `<h1>${esc(t.errorTitle)}</h1>${errorBox(locale, error)}` });
   }
