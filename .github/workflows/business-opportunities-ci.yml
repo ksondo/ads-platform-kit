@@ -43,6 +43,7 @@ jobs:
           node --check services/business-opportunities/discovery.mjs
           node --check services/business-opportunities/seed-discovery.mjs
           bash -n services/business-opportunities/scripts/bootstrap-contabo.sh
+          bash -n services/business-opportunities/scripts/release-directory-api-git-direct.sh
           python3 -m py_compile services/business-opportunities/scripts/publish-https-ingress.py
           python3 -m unittest discover -s services/business-opportunities/tests -p 'test_https_ingress.py' -v
           node --test apps/demo-portal/tests/*.test.mjs
