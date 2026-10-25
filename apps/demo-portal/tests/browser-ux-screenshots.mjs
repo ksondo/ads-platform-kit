@@ -6,6 +6,10 @@ import {join, resolve, extname} from 'node:path';
 import {chromium} from 'playwright';
 
 const root=resolve('apps/demo-portal');
+const sourceNginx=readFileSync(join(root,'nginx.conf'),'utf8');
+const csp=sourceNginx.match(/add_header Content-Security-Policy "([^"]+)" always;/)?.[1];
+assert.ok(csp&&csp.includes("style-src 'self'")&&!csp.includes("'unsafe-inline'"),
+ 'browser screenshots must enforce the existing strict production CSP');
 const fixture=resolve('services/business-opportunities/seed');
 const catalogue=JSON.parse(readFileSync(join(fixture,'opportunities.v1.json'),'utf8'));
 const discovery=JSON.parse(readFileSync(join(fixture,'discovery.v1.json'),'utf8'));
@@ -73,7 +77,8 @@ function serve(req,res,assetRoot=root){
  const file=resolve(assetRoot,'.'+name);
  if(!file.startsWith(assetRoot+'/')||!existsSync(file)){res.writeHead(404);res.end();return}
  const mime={'.html':'text/html','.js':'text/javascript','.json':'application/json','.css':'text/css'};
- res.writeHead(200,{'content-type':mime[extname(file)]||'application/octet-stream'});
+ res.writeHead(200,{'content-type':mime[extname(file)]||'application/octet-stream',
+  'content-security-policy':csp});
  res.end(readFileSync(file));
 }
 
@@ -98,8 +103,11 @@ test('P1–P4 before-and-after screenshots: five pages, EN/FR, 360/768/1280', {t
        window.localStorage.setItem('ads-portal-lang',language);
      },lang);
      const page=await context.newPage();
-     const errors=[];
+     const errors=[],cspErrors=[];
      page.on('pageerror',e=>errors.push(e.message));
+     page.on('console',message=>{
+      if(/content security policy|violates.*style-src|refused to apply inline style/i.test(message.text()))cspErrors.push(message.text());
+     });
      // Stable screenshots without unrelated third-party photo/font fetches.
      await page.route('https://images.unsplash.com/**',route=>route.abort());
      await page.route('https://fonts.googleapis.com/**',route=>route.abort());
@@ -110,6 +118,17 @@ test('P1–P4 before-and-after screenshots: five pages, EN/FR, 360/768/1280', {t
       await page.goto('http://127.0.0.1:'+server.address().port+path,{waitUntil:'domcontentloaded'});
       if(name==='opportunities')await page.locator('.opp-results-bar').waitFor({timeout:10000});
       else await page.locator('main h1').first().waitFor({timeout:10000});
+      if(phase==='after'){
+       assert.deepEqual(cspErrors,[],name+' '+width+' '+lang+' CSP violations: '+cspErrors.join('; '));
+       if(lang==='fr'){
+        const pageText=await page.locator('body').innerText();
+        for(const english of ['Learning and school management solutions','Online stores, product catalogues',
+          'Buy Now, Pay Later','Inventory Management','White-label Storefronts',
+          'Skip to content','ADS PARTNERSHIPS']){
+         assert.ok(!pageText.includes(english),name+' '+width+' untranslated: '+english);
+        }
+       }
+      }
       await page.screenshot({path:join(shots,phase+'-'+name+'-'+width+'-'+lang+'.png'),fullPage:true,animations:'disabled'});
      }
      if(errors.length)console.error(phase,width,lang,'browser errors:',errors.slice(0,4));
