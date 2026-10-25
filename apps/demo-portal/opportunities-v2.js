@@ -71,7 +71,7 @@ function stateFromURL(){
 function goto(update){
  const current=stateFromURL(),s={...current,...update};
  if(s.family==='institutional'){s.view='bundles';s.sector='';s.business='';}
- if(s.sector||s.business){s.view='tools';s.category='';}
+ if(s.sector||s.business){s.view='tools';}
  const p=new URLSearchParams();
  if(s.family==='institutional')p.set('family','institutional');
  if(s.category)p.set('category',s.category);
@@ -211,13 +211,13 @@ function wire(el,state,cats,modules,t,sectors,businesses){
   if(bEl)bEl.innerHTML=opts([{id:'',name:t.all},...filteredBiz],state.business);
  });
  const sector=el.querySelector('#opp-select-sector');
- if(sector)sector.addEventListener('change',e=>goto({sector:e.target.value,business:'',category:'',view:'tools',page:1,module:''}));
+ if(sector)sector.addEventListener('change',e=>goto({sector:e.target.value,business:'',view:'tools',page:1,module:''}));
  const business=el.querySelector('#opp-select-business');
  if(business)business.addEventListener('change',e=>{
   const b=businesses.find(x=>x.id===e.target.value);
-  goto({business:e.target.value,sector:b?.sector_id||'',category:'',view:'tools',page:1,module:''});
+  goto({business:e.target.value,sector:b?.sector_id||'',view:'tools',page:1,module:''});
  });
- el.querySelectorAll('[data-action=sector]').forEach(b=>b.addEventListener('click',()=>goto({sector:b.dataset.sector,business:'',category:'',view:'tools',page:1,module:''})));
+ el.querySelectorAll('[data-action=sector]').forEach(b=>b.addEventListener('click',()=>goto({sector:b.dataset.sector,business:'',view:'tools',page:1,module:''})));
  el.querySelector('#opp-module').addEventListener('change',e=>goto({module:e.target.value,page:1}));
  const view=el.querySelector('#opp-view');if(view)view.addEventListener('change',e=>goto({view:e.target.value,page:1,module:''}));
  el.querySelector('#opp-sort').addEventListener('change',e=>goto({sort:e.target.value,page:1}));
@@ -264,8 +264,11 @@ export async function hydrate(path,lang){
   }
   if(requestId!==seq)return;
   if(state.category&&!categories.some(c=>c.id===state.category))state.category='';
+  if(state.sector&&!state.category)state.category=Object.keys(groups).find(key=>groups[key].includes(state.sector))||'';
   const shownSectors=state.category&&groups[state.category]?
-    sectors.filter(v=>groups[state.category].includes(v.id)):sectors;
+    sectors.filter(v=>groups[state.category].includes(v.id)):[];
+  const shownBusinesses=state.category&&groups[state.category]?
+    businesses.filter(v=>groups[state.category].includes(v.sector_id)):[];
   const isTools=state.view==='tools';
   const p=new URLSearchParams({page:String(state.page),limit:'12'});
   if(state.q)p.set('q',state.q);
@@ -278,8 +281,8 @@ export async function hydrate(path,lang){
   if(Array.isArray(result.data))result.data=result.data.map(v=>({...v,sector_name:labelFor(sectorFr,v.sector_id,v.sector_name,lang),category_name:labelFor(categoryFr,v.category_id,v.category_name,lang)}));
   const modules=isTools?[]:(await fetchJSON('/discovery/modules?family='+state.family+(state.category?'&category='+encodeURIComponent(state.category):''))).data;
   if(requestId!==seq)return;
-  el.innerHTML=frame(t,families(t,state)+resultBody(result,state,t,categories,modules,shownSectors,businesses,labels)+'<div id="opp-dialog-host"></div>');
-  wire(el,state,categories,modules,t,shownSectors,businesses);
+  el.innerHTML=frame(t,families(t,state)+resultBody(result,state,t,categories,modules,shownSectors,shownBusinesses,labels)+'<div id="opp-dialog-host"></div>');
+  wire(el,state,categories,modules,t,shownSectors,shownBusinesses);
   if(path.startsWith('/opportunities/')){
     const id=decodeURIComponent(path.slice('/opportunities/'.length));
     await openModal(id,state.view==='tools'?'tool':'solution',t,{deepLink:true,restore:'/opportunities'+location.search});
