@@ -45,6 +45,7 @@ test("demo sign-in guide never creates a duplicate login form",()=>{
   const js=readFileSync(new URL("../main.js",import.meta.url),"utf8")
     .replace(/^import[^\n]*\n/gm, ""); // VM tests legacy guide without loading other modules
   const fake={
+    imageUrl:()=>"", platformImage:()=>"", credits:[],
     document:{getElementById:()=>({innerHTML:""}),documentElement:{},addEventListener:()=>{}},
     localStorage:{getItem:()=>null},
     navigator:{language:"en-US"},
