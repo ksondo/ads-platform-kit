@@ -221,6 +221,7 @@ function render(){
  document.title=sectionTitle+" · ADS";
  document.querySelector(".skip-link").textContent=lang==="fr"?"Aller au contenu":"Skip to content";
  app.innerHTML=header()+'<main id="main">'+main+'</main>'+footer();
+ app.removeAttribute("aria-busy");
  const menu=app.querySelector(".menu-toggle"),nav=app.querySelector(".nav-links");
  menu.addEventListener("click",()=>{const open=nav.classList.toggle("is-open");menu.setAttribute("aria-expanded",String(open));});
  app.querySelectorAll("[data-lang]").forEach(btn=>btn.addEventListener("click",()=>{lang=btn.dataset.lang;localStorage.setItem("ads-portal-lang",lang);render();}));
