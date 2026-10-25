@@ -5,9 +5,10 @@ import vm from "node:vm";
 
 const catalogue = JSON.parse(readFileSync(new URL("../catalogue.json", import.meta.url), "utf8"));
 const script = readFileSync(new URL("../main.js", import.meta.url), "utf8")
-  .replace(/^import \* as ADSOpportunities[^\n]*\n/m, ""); // VM checks classic navigation helpers only
+  .replace(/^import[^\n]*\n/gm, ""); // VM checks classic navigation helpers only
 const sandbox = {
-  document: { getElementById: () => ({ innerHTML: "" }) },
+  document: { getElementById: () => ({ innerHTML: "" }), addEventListener: () => {} },
+  window: { addEventListener: () => {} },
   localStorage: { getItem: () => null },
   navigator: { language: "en-US" },
 };
