@@ -23,19 +23,27 @@
 </head>
 <body>
   <a class="skip-link" href="#main" data-skip-en="Skip to content" data-skip-fr="Aller au contenu">Aller au contenu</a>
-  <div id="root">
-    <header class="site-header"><div class="container"><a href="/">Africa Digital Synergy</a></div></header>
-    <main id="main" class="static-fallback">
-      <h1>Écosystème numérique ADS / ADS Digital Ecosystem</h1>
-      <p>Découvrez les plateformes et les services numériques disponibles au Cameroun. Explore platforms, digital tools and business opportunities.</p>
-      <nav aria-label="Pages principales / Main pages">
-        <a href="/">Accueil / Home</a>
-        <a href="/platforms">Plateformes / Platforms</a>
-        <a href="/opportunities">Opportunités / Opportunities</a>
-        <a href="/demo-access">Accès aux démos / Demo access</a>
-      </nav>
-      <p>Contact : <a href="mailto:admin@africadigitalsynergy.com">admin@africadigitalsynergy.com</a></p>
+  <div id="root" aria-busy="true">
+    <header class="site-header"><div class="container portal-shell-head"><span class="portal-shell-brand">✺ &nbsp;AFRICA DIGITAL SYNERGY</span><span class="portal-shell-lang">ADS · EN / FR</span></div></header>
+    <main id="main" class="portal-loading-shell" role="status" aria-live="polite">
+      <div class="container">
+        <span class="portal-loading-kicker">ADS DIGITAL ECOSYSTEM</span>
+        <h1>Nos plateformes numériques · Our digital platforms</h1>
+        <p>Chargement de votre espace de découverte… / Loading your discovery experience…</p>
+        <div class="portal-loading-grid" aria-hidden="true">
+          <div class="portal-loading-card"><span></span><i></i><i></i></div>
+          <div class="portal-loading-card"><span></span><i></i><i></i></div>
+          <div class="portal-loading-card"><span></span><i></i><i></i></div>
+        </div>
+      </div>
     </main>
   </div>
+  <noscript>
+    <nav class="portal-noscript" aria-label="Pages principales / Main pages">
+      <a href="/">Accueil / Home</a> · <a href="/platforms">Plateformes / Platforms</a> ·
+      <a href="/opportunities">Opportunités / Opportunities</a> ·
+      <a href="mailto:admin@africadigitalsynergy.com">Contact ADS</a>
+    </nav>
+  </noscript>
 </body>
 </html>
