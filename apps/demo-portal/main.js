@@ -96,13 +96,13 @@ function platformCard(p){
  return '<a class="platform-card" href="'+s(url)+'"'+(demo?' target="_blank" rel="noopener noreferrer"':'')+'><span class="platform-image">'+media+'</span>'+
  '<div class="platform-body"><h3>'+s(title(p))+'</h3><p>'+s(summary(p))+'</p><span class="card-spacer"></span>'+
  '<span class="platform-meta">'+(n?pill(countLabel(n,"tools")):pill(t("demoPending"),"muted"))+'</span>'+
- '<span class="btn btn-outline card-action">'+s(demo?t("tryDemo"):t("explore"))+' →</span></span></a>';
+ '<span class="btn btn-outline card-action">'+s(demo?t("tryDemo"):t("explore"))+' →</span></div></a>';
 }
 function toolCard(x){
  const media=x.image?'<img src="'+s(photo(x.image))+'" alt="'+s(title(x))+'" loading="lazy" width="560" height="315"/>':'<span class="tool-placeholder" aria-hidden="true">◇</span>';
  return '<a class="tool-card" href="'+toolUrl(x)+'"><span class="tool-photo">'+media+(safeDemo(x.demoUrl)?pill(t("live"),"online"):pill(t("demoPending"),"muted"))+'</span>'+
  '<div class="tool-body"><h3>'+s(title(x))+'</h3><p>'+s(summary(x))+'</p><span class="card-spacer"></span>'+
- '<span class="btn btn-outline card-action">'+s(t("learn"))+' →</span></span></a>';
+ '<span class="btn btn-outline card-action">'+s(t("learn"))+' →</span></div></a>';
 }
 function searchBar(value=""){
   return '<form class="search-bar" method="get" action="/platforms" role="search"><label class="sr-only" for="portal-search">'+s(t("search"))+'</label><span class="search-glyph">⌕</span><input id="portal-search" name="q" type="search" placeholder="'+s(t("search"))+'" value="'+s(value)+'"/><button class="btn btn-gold" type="submit">'+s(t("searchButton"))+'</button></form>';
