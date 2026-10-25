@@ -11,12 +11,12 @@ test('ADS homepage visibly links to all sector, local-business and proposed regu
  assert.ok(main.includes('"/opportunities?family=institutional"'));
  for(const label of ['industriesPath','businessesPath','regulatorsPath','discoveryPathsCopy'])
   assert.ok(main.includes('t("'+label+'")'),label);
- assert.ok(main.includes('50 industries') && main.includes('52 example business profiles'));
+ assert.ok(main.includes('49 industries') && main.includes('52 example business profiles'));
  assert.ok(main.includes('Official authorizations are still required.'));
 });
 test('ADS homepage discovery paths are labelled in both English and French',()=>{
- for(const phrase of ['Browse 50 industries','Find a local business type','Institutional & regulatory services',
-                      'Explorer 50 secteurs','Trouver une activité locale','Services institutionnels et réglementaires'])
+ for(const phrase of ['Browse 49 industries','Find a local business type','Institutional & regulatory services',
+                      'Explorer 49 secteurs','Trouver une activité locale','Services institutionnels et réglementaires'])
    assert.ok(main.includes(phrase),phrase);
  assert.ok(main.includes("'/opportunities?family=institutional'") ||
            main.includes('"/opportunities?family=institutional"'));
