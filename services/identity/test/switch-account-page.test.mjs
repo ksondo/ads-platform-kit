@@ -13,6 +13,7 @@ const page=lang=>renderPage('no_access',{
 test('P5-1 account denial shows bilingual switch action preserving bound OAuth request',()=>{
  const en=page('en'),fr=page('fr');
  for(const html of [en,fr]){
+  assert.match(html,/data-ads-no-access="true"/);
   assert.match(html,/<form method="post" action="\/logout">/);
   assert.match(html,/name="csrf"/);
   assert.match(html,/name="req" value="boundOauthRequest123"/);
