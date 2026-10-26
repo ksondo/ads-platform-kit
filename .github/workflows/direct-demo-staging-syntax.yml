@@ -66,7 +66,7 @@ jobs:
           grep -q -- '--runtime-verify' deploy/contabo-demo/release-nine-demo-apps.sh
           grep -q 'ADS_FIVE_PRIVATE_APPS=PASS' deploy/contabo-demo/launch-five-demo-apps.sh
           grep -q 'ADS_FIVE_HTTPS=PASS' deploy/contabo-demo/publish-five-demo-https.sh
-          grep -q 'PUBLIC_TLS_NOT_CONFIGURED' deploy/contabo-demo/launch-five-demo-apps.sh
+          grep -q 'PUBLIC_HTTPS=NOT_CONFIGURED' deploy/contabo-demo/launch-five-demo-apps.sh
           grep -q 'PORTAL_LINKS=UNCHANGED' deploy/contabo-demo/publish-five-demo-https.sh
           grep -q -- '--deploy-five-apps' deploy/contabo-demo/release-nine-demo-apps.sh
           echo ADS_NINE_RELEASE_PLAN_CHECKS=PASS
