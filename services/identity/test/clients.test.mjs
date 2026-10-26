@@ -29,10 +29,22 @@ describe('client registration list (config/clients.demo.json)', () => {
   });
 
   it('uses reviewed HTTPS callback origins, including the approved public Commerce demo hostname', () => {
+    const newDemoOrigins = {
+      education: 'education', fleetguard: 'fleetguard', 'home-services': 'home-services',
+      mamacare: 'mamacare', morphoo: 'morphoo', tontine: 'tontine', ventureworks: 'ventureworks'
+    };
     for (const p of doc.products) {
-      const origin = p.slug === 'commerce' ? 'https://commerce.demo.africadigitalsynergy.com' : `https://${p.slug}.test.africadigitalsynergy.com`;
-      assert.ok(p.redirect_uris.length && p.redirect_uris.every(u => u.startsWith(`${origin}/`)), p.slug);
-      assert.deepEqual(p.post_logout_redirect_uris, [`${origin}/`], p.slug);
+      const original = p.slug === 'commerce' ? 'https://commerce.demo.africadigitalsynergy.com' : `https://${p.slug}.test.africadigitalsynergy.com`;
+      const demo = newDemoOrigins[p.slug] ? `https://${newDemoOrigins[p.slug]}.demo.africadigitalsynergy.com` : null;
+      const origins = demo ? [original, demo] : [original];
+      assert.ok(p.redirect_uris.length && p.redirect_uris.every(u => origins.some(o => u.startsWith(`${o}/`))), p.slug);
+      assert.ok(p.redirect_uris.some(u => u.startsWith(`${original}/`)), p.slug);
+      assert.ok(p.post_logout_redirect_uris.includes(`${original}/`), p.slug);
+      assert.ok(p.post_logout_redirect_uris.every(u => origins.some(o => u === `${o}/`)), p.slug);
+      if (demo) {
+        assert.ok(p.redirect_uris.some(u => u.startsWith(`${demo}/`)), p.slug);
+        assert.ok(p.post_logout_redirect_uris.includes(`${demo}/`), p.slug);
+      }
       assert.equal(typeof p.allow_personal_workspace, 'boolean');
     }
   });
