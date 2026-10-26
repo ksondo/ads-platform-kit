@@ -40,7 +40,7 @@ test("landing cards retain safe in-portal detail paths and launch URLs open in n
   const s=readFileSync(new URL("../main.js",import.meta.url),"utf8");
   assert.match(s,/const platformUrl = p =>/);
   assert.match(s,/const demo=safeDemo\(p\.demoUrl\),url=demo\|\|platformUrl\(p\)/);
-  assert.match(s,/target=\\"_blank\\" rel=\\"noopener noreferrer\\"/);
+  assert.match(s,/target="_blank" rel="noopener noreferrer"/);
   assert.match(s,/const safeDemo = url =>/);
   assert.ok(!s.includes("DEMO_USER_PASSWORD"));
 });
