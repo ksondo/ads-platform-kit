@@ -26,6 +26,17 @@ set_app() {
 }
 verify_app() {
  set_app "$1"
+ [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || return 1
+ [[ "$(docker inspect -f '{{.Config.Image}}' "$container" 2>/dev/null)" == "$image" ]] || {
+  echo "APP_IMAGE_NOT_PINNED app=$app" >&2; return 1;
+ }
+ [[ "$(docker inspect -f '{{index .Config.Labels "com.ads.demo.app"}}' "$container" 2>/dev/null)" == "$app" ]] || return 1
+ [[ "$(docker inspect -f '{{.State.Running}}' "$container" 2>/dev/null)" == true ]] || return 1
+ if [[ "$app" == education ]]; then
+  [[ "$(docker inspect -f '{{.Config.Image}}' ads-demo-education-web 2>/dev/null)" == "ads-demo-education-web:candidate-$sha" ]] || return 1
+  [[ "$(docker inspect -f '{{index .Config.Labels "com.ads.demo.app"}}' ads-demo-education-web 2>/dev/null)" == education ]] || return 1
+  [[ "$(docker inspect -f '{{.State.Running}}' ads-demo-education-web 2>/dev/null)" == true ]] || return 1
+ fi
  path=/health
  [[ "$app" == education ]] && path=/ready
  ok=0
@@ -92,10 +103,8 @@ for item in education fleetguard home-services mamacare tontine; do
  else echo 'EXTERNAL_MODE=live' >> "$transient"; fi
  chmod 0600 "$transient"
  if ! docker inspect "$container" >/dev/null 2>&1; then
-  bind=()
   if [[ "$app" != education ]]; then
    if ss -ltn | awk 'NR>1 {print $4}' | grep -Eq ":$port$"; then exit 2; fi
-   bind=(-p "127.0.0.1:$port:$inner")
   fi
   if [[ "$app" == education ]]; then
    docker run -d --name "$container" --network "$network" --network-alias education-api \
@@ -114,7 +123,7 @@ for item in education fleetguard home-services mamacare tontine; do
  fi
  rm -f "$transient"
  trap - EXIT
- if [[ "$app" == education && ! "$(docker inspect -f '{{.Name}}' ads-demo-education-web 2>/dev/null || true)" ]]; then
+ if [[ "$app" == education ]] && ! docker container inspect ads-demo-education-web >/dev/null 2>&1; then
   if ss -ltn | awk 'NR>1 {print $4}' | grep -Eq ":$port$"; then exit 2; fi
   docker run -d --name ads-demo-education-web --network "$network" \
     -p "127.0.0.1:$port:80" --restart unless-stopped \
