@@ -115,6 +115,19 @@ if [[ "$app" == home-services ]]; then
  cat "$runtime" >> "$tmp"
 fi
 chmod 0600 "$tmp"
+echo "=== BACKUP NEW ISOLATED DATABASE BEFORE SCHEMA MIGRATION: $app ==="
+exec 9>/var/lock/ads-new-demo-schema-migrate.lock
+flock -n 9 || { echo "REFUSED: another schema migration is running" >&2; exit 2; }
+backup_dir="/var/lib/ads-demo/db-backups/$app"
+[[ ! -L /var/lib/ads-demo && ! -L /var/lib/ads-demo/db-backups && ! -L "$backup_dir" ]] || exit 2
+install -d -o root -g root -m 0700 /var/lib/ads-demo/db-backups "$backup_dir"
+backup="$(mktemp "$backup_dir/pre-migrate-$(date -u +%Y%m%dT%H%M%SZ)-XXXXXXXX.dump")"
+if ! docker exec "$dbcontainer" pg_dump -U "$owner" -d "$db" -Fc > "$backup"; then
+  echo "BACKUP_FAILED: inspect $backup; schema migration not attempted" >&2
+  exit 1
+fi
+[[ -s "$backup" ]] || { echo "BACKUP_EMPTY: migration refused" >&2; exit 1; }
+echo "ADS_ISOLATED_DB_BACKUP=PASS app=$app file=$backup"
 echo "=== MIGRATE ISOLATED NEW DATABASE: $app ==="
 # Copy only the approved archived code to private ephemeral memory, install the locked
 # production dependencies, and run the app's OWN forward-only migration tool.
@@ -127,5 +140,5 @@ docker run --rm \
  --mount "type=bind,source=$source_path,target=/source,readonly" \
  --env-file "$tmp" \
  --workdir /work --entrypoint sh \
- node:22-alpine -ec "cp -R /source/. /work/; npm ci --omit=dev --ignore-scripts --no-audit --no-fund; $command"
+ node:22-alpine -ec "cp -R /source/. /work/; npm ci --omit=dev --ignore-scripts --no-audit --no-fund --cache /work/.npm; $command"
 echo "ADS_SCHEMA_MIGRATION_COMMAND=SUCCESS app=$app; verify via --verify"
