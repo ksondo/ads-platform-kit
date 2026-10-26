@@ -8,6 +8,7 @@ on:
       - 'deploy/contabo-demo/prepare-private-app-github-access.sh'
       - 'deploy/contabo-demo/bootstrap-direct-app-cache.sh'
       - 'deploy/contabo-demo/build-staged-demo-images.sh'
+      - 'deploy/contabo-demo/prepare-five-demo-databases.sh'
       - 'deploy/contabo-demo/release-nine-demo-apps.sh'
       - 'deploy/contabo-demo/release-nine-manifest.json'
       - 'deploy/contabo-demo/DIRECT_APPS_ROLLOUT_20261026.md'
@@ -26,7 +27,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for sh in deploy/contabo-demo/direct-apps-preflight.sh deploy/contabo-demo/direct-apps-runtime-audit.sh deploy/contabo-demo/stage-direct-apps.sh deploy/contabo-demo/prepare-private-app-github-access.sh deploy/contabo-demo/bootstrap-direct-app-cache.sh deploy/contabo-demo/build-staged-demo-images.sh deploy/contabo-demo/release-nine-demo-apps.sh; do
+          for sh in deploy/contabo-demo/direct-apps-preflight.sh deploy/contabo-demo/direct-apps-runtime-audit.sh deploy/contabo-demo/stage-direct-apps.sh deploy/contabo-demo/prepare-private-app-github-access.sh deploy/contabo-demo/bootstrap-direct-app-cache.sh deploy/contabo-demo/build-staged-demo-images.sh deploy/contabo-demo/prepare-five-demo-databases.sh deploy/contabo-demo/release-nine-demo-apps.sh; do
             bash -n "$sh"
           done
           python3 -m json.tool deploy/contabo-demo/release-nine-manifest.json > /dev/null
@@ -48,4 +49,7 @@ jobs:
           bash deploy/contabo-demo/bootstrap-direct-app-cache.sh --plan education > /tmp/ads-readonly-cache-plan.txt
           grep -q 'PLAN_ONLY' /tmp/ads-readonly-cache-plan.txt
           ! grep -En '(docker (run|rm|compose .*up|system prune)|nginx -s reload|systemctl (restart|reload)|certbot|psql -c)' deploy/contabo-demo/build-staged-demo-images.sh
+          grep -q 'ADS_FIVE_DATABASE_FOUNDATIONS=PASS' deploy/contabo-demo/prepare-five-demo-databases.sh
+          grep -q 'MIGRATIONS=NOT_RUN' deploy/contabo-demo/prepare-five-demo-databases.sh
+          grep -q 'REFUSED: unexpected published DB port' deploy/contabo-demo/prepare-five-demo-databases.sh
           echo ADS_NINE_RELEASE_PLAN_CHECKS=PASS
