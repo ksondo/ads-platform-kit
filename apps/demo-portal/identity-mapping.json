@@ -46,6 +46,24 @@
       "product": "morphoo",
       "clientId": "morphoo-web",
       "toolIds": []
+    },
+    {
+      "portal": "fleet-guard",
+      "product": "fleetguard",
+      "clientId": "fleet-guard-web",
+      "toolIds": []
+    },
+    {
+      "portal": "home-services",
+      "product": "home-services",
+      "clientId": "home-services",
+      "toolIds": []
+    },
+    {
+      "portal": "mama-care",
+      "product": "mamacare",
+      "clientId": "mamacare-web",
+      "toolIds": []
     }
   ]
 }
