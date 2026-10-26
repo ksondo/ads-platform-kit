@@ -64,6 +64,12 @@
       "product": "mamacare",
       "clientId": "mamacare-web",
       "toolIds": []
+    },
+    {
+      "portal": "digital-tontine",
+      "product": "tontine",
+      "clientId": "tontine-web",
+      "toolIds": []
     }
   ]
 }
