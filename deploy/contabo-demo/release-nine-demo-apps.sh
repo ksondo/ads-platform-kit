@@ -6,7 +6,7 @@ umask 077
 here="$(cd "$(dirname "$0")" && pwd -P)"
 manifest="$here/release-nine-manifest.json"
 [[ -f "$manifest" ]] || { echo 'Missing release-nine-manifest.json' >&2; exit 2; }
-[[ $# -ge 1 && $# -le 2 ]] || { echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--migrate-all|--images-plan|--build-candidates|--apply' >&2; exit 2; }
+[[ $# -ge 1 && $# -le 2 ]] || { echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--migrate-all|--runtime-plan|--provision-runtimes|--runtime-verify|--images-plan|--build-candidates|--apply' >&2; exit 2; }
 mode="$1"
 case "$mode" in
   --plan)
@@ -104,6 +104,18 @@ PY
     echo 'ADS_FIVE_SCHEMA_MIGRATIONS=PASS'
     echo 'RUNTIME_LOGINS=NOT_COMPLETE; APPS=NOT_STARTED; HTTPS=NOT_PUBLISHED'
     ;;
+  --runtime-plan)
+    [[ $# -eq 1 ]] || exit 2
+    bash "$here/provision-five-demo-runtime-logins.sh" --plan
+    ;;
+  --provision-runtimes)
+    [[ $# -eq 1 ]] || exit 2
+    bash "$here/provision-five-demo-runtime-logins.sh" --provision
+    ;;
+  --runtime-verify)
+    [[ $# -eq 1 ]] || exit 2
+    bash "$here/provision-five-demo-runtime-logins.sh" --verify
+    ;;
   --images-plan)
     bash "$here/build-staged-demo-images.sh" --plan
     ;;
@@ -116,7 +128,7 @@ PY
     exit 3
     ;;
   *)
-    echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--migrate-all|--images-plan|--build-candidates|--apply' >&2
+    echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--migrate-all|--runtime-plan|--provision-runtimes|--runtime-verify|--images-plan|--build-candidates|--apply' >&2
     exit 2
     ;;
 esac
