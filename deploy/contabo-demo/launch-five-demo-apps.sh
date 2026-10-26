@@ -120,7 +120,8 @@ for item in "${targets[@]}"; do
  printf 'OIDC_ISSUER=%s\nOIDC_JWKS_URL=%s/.well-known/jwks.json\nOIDC_AUDIENCE=%s\n' "$issuer" "$issuer" "$client" >> "$transient"
  printf 'ADS_IDENTITY_URL=%s\nADS_IDENTITY_CLIENT_ID=%s\nPUBLIC_URL=https://%s\n' "$issuer" "$client" "$domain" >> "$transient"
  printf 'DATABASE_SSL_MODE=disable\nADAPTERS_MODE=off\nCONTENT_MODE=test\nASSISTANT_ENABLED=false\nREMINDER_SWEEP_MINUTES=0\n' >> "$transient"
- if [[ "$app" == mamacare ]]; then echo 'EXTERNAL_MODE=test' >> "$transient"
+ # Financial demonstration must never invoke live external providers.
+ if [[ "$app" == mamacare || "$app" == tontine ]]; then echo 'EXTERNAL_MODE=test' >> "$transient"
  else echo 'EXTERNAL_MODE=live' >> "$transient"; fi
  chmod 0600 "$transient"
  if ! docker inspect "$container" >/dev/null 2>&1; then
