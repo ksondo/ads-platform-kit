@@ -6,7 +6,7 @@ umask 077
 here="$(cd "$(dirname "$0")" && pwd -P)"
 manifest="$here/release-nine-manifest.json"
 [[ -f "$manifest" ]] || { echo 'Missing release-nine-manifest.json' >&2; exit 2; }
-[[ $# -ge 1 && $# -le 2 ]] || { echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--images-plan|--build-candidates|--apply' >&2; exit 2; }
+[[ $# -ge 1 && $# -le 2 ]] || { echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--migrate-all|--images-plan|--build-candidates|--apply' >&2; exit 2; }
 mode="$1"
 case "$mode" in
   --plan)
@@ -80,6 +80,30 @@ PY
     [[ $# -eq 2 ]] || { echo 'Usage: --schema-verify APP' >&2; exit 2; }
     bash "$here/migrate-five-demo-schemas.sh" --verify "$2"
     ;;
+  --migrate-all)
+    [[ $# -eq 1 ]] || { echo 'Usage: --migrate-all' >&2; exit 2; }
+    [[ "$(hostname -s)" == vmi3191089 && "$(id -u)" -eq 0 ]] || {
+      echo 'REFUSED: requires root on vmi3191089' >&2; exit 2;
+    }
+    # Plan all five first; stop before any schema change if any app lacks its staged source/DB.
+    for app in education fleetguard home-services mamacare tontine; do
+      bash "$here/migrate-five-demo-schemas.sh" --plan "$app"
+    done
+    echo '=== SERIAL FIVE-APP SCHEMA MIGRATION (STOP ON FIRST ERROR) ==='
+    for app in education fleetguard home-services mamacare tontine; do
+      echo "=== $app ==="
+      if bash "$here/migrate-five-demo-schemas.sh" --verify "$app"; then
+        echo "ADS_SCHEMA_ALREADY_VERIFIED app=$app"
+      else
+        echo "ADS_SCHEMA_MIGRATION_REQUIRED app=$app"
+        bash "$here/migrate-five-demo-schemas.sh" --migrate "$app"
+        bash "$here/migrate-five-demo-schemas.sh" --verify "$app"
+      fi
+      echo "ADS_SCHEMA_GATE_PASS app=$app"
+    done
+    echo 'ADS_FIVE_SCHEMA_MIGRATIONS=PASS'
+    echo 'RUNTIME_LOGINS=NOT_COMPLETE; APPS=NOT_STARTED; HTTPS=NOT_PUBLISHED'
+    ;;
   --images-plan)
     bash "$here/build-staged-demo-images.sh" --plan
     ;;
@@ -92,7 +116,7 @@ PY
     exit 3
     ;;
   *)
-    echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--images-plan|--build-candidates|--apply' >&2
+    echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--migrate-all|--images-plan|--build-candidates|--apply' >&2
     exit 2
     ;;
 esac
