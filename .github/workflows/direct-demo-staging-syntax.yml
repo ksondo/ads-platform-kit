@@ -69,7 +69,8 @@ jobs:
           grep -q 'PUBLIC_HTTPS=NOT_CONFIGURED' deploy/contabo-demo/launch-five-demo-apps.sh
           grep -q 'PORTAL_LINKS=UNCHANGED' deploy/contabo-demo/publish-five-demo-https.sh
           grep -q -- '--deploy-five-apps' deploy/contabo-demo/release-nine-demo-apps.sh
-          grep -q -- '--publish-one|--verify-one' deploy/contabo-demo/publish-five-demo-https.sh || grep -q -- '--plan-one|--publish-one|--verify-one' deploy/contabo-demo/publish-five-demo-https.sh
+          grep -q -- '--publish-one' deploy/contabo-demo/publish-five-demo-https.sh
+          grep -q -- '--verify-one' deploy/contabo-demo/publish-five-demo-https.sh
           grep -q 'SINGLE_APP_LOCAL_HEALTH=PASS' deploy/contabo-demo/publish-five-demo-https.sh
           grep -q 'nginx -t' deploy/contabo-demo/publish-five-demo-https.sh
           grep -q -- '--repair-education-https' deploy/contabo-demo/release-nine-demo-apps.sh
