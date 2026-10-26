@@ -156,6 +156,27 @@ Repeat for other app names only if the prior one passes: fleetguard, home-servic
 - The migration runner does NOT roll back schema changes automatically. On any error, stop and inspect the failing isolated database; don't delete volumes, rerun on a production DB, or try to restore other apps.
 - This is an intermediate *schema-ready* stage, not a certified, public demo site.
 
+## Schema migration completed; combined restricted-login phase
+
+Operator result (26 Oct 2026): `ADS_FIVE_SCHEMA_MIGRATIONS=PASS`. All five have their complete migration ledger and forced RLS tables: Education 44 migrations/96 forced-RLS, Fleet Guard 7/30, Home Services 14/30, MamaCare 14/29, Digital Tontine 21/31. All five database network ports remain private and every migration was preceded by a protected schema backup.
+
+Next combined step (after fresh reviewed script checkout and green CI):
+
+~~~bash
+bash deploy/contabo-demo/release-nine-demo-apps.sh --runtime-all
+~~~
+
+The coordinator runs read-only plan, then provisioning, then verification, stopping if any step fails. The new runner only targets the five isolated DB containers. It creates new root-owned app-only connection env files under `/etc/ads-demo/apps` without exposing passwords. No container web/API starts, migration reruns, HTTPS vhost or portal update. Once created, roles/passwords are reused on reruns (no untracked role adoption).
+
+DB roles by application:
+- Education: distinct API, worker, webhook login members of education_api / education_worker / education_payment_webhook.
+- Fleet Guard: restricted API login member of fleetguard_app.
+- Home Services: reuse the **existing home_runtime login** created and granted during schema migration.
+- MamaCare: distinct API and job login members of mamacare_app / mamacare_job. **APPLICATION STARTUP BLOCKED** until the app uses its job connection separately (current server code uses one shared DB pool).
+- Digital Tontine: distinct **ads_tontine_api / ads_tontine_worker / ads_tontine_webhook** logins in the existing tontine_app / tontine_worker / tontine_webhook NOLOGIN roles. Explicitly avoid login/role name collisions.
+
+Verification checks privileged capabilities, role membership count and ownership. This role gate is not equivalent to end-to-end tenant isolation or successful credential-authentication tests; those remain mandatory before app release.
+
 ## Work packages in GitHub (concrete backlog)
 
 | WP | Deliverable | Completion evidence |
