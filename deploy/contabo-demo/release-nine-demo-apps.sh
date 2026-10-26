@@ -6,7 +6,7 @@ umask 077
 here="$(cd "$(dirname "$0")" && pwd -P)"
 manifest="$here/release-nine-manifest.json"
 [[ -f "$manifest" ]] || { echo 'Missing release-nine-manifest.json' >&2; exit 2; }
-[[ $# -ge 1 && $# -le 2 ]] || { echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--migrate-all|--runtime-plan|--provision-runtimes|--runtime-verify|--images-plan|--build-candidates|--apply' >&2; exit 2; }
+[[ $# -ge 1 && $# -le 2 ]] || { echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--migrate-all|--runtime-all|--runtime-plan|--provision-runtimes|--runtime-verify|--images-plan|--build-candidates|--apply' >&2; exit 2; }
 mode="$1"
 case "$mode" in
   --plan)
@@ -104,6 +104,13 @@ PY
     echo 'ADS_FIVE_SCHEMA_MIGRATIONS=PASS'
     echo 'RUNTIME_LOGINS=NOT_COMPLETE; APPS=NOT_STARTED; HTTPS=NOT_PUBLISHED'
     ;;
+  --runtime-all)
+    [[ $# -eq 1 ]] || exit 2
+    bash "$here/provision-five-demo-runtime-logins.sh" --plan
+    bash "$here/provision-five-demo-runtime-logins.sh" --provision
+    bash "$here/provision-five-demo-runtime-logins.sh" --verify
+    echo 'ADS_FIVE_RESTRICTED_RUNTIME_GATE=PASS'
+    ;;
   --runtime-plan)
     [[ $# -eq 1 ]] || exit 2
     bash "$here/provision-five-demo-runtime-logins.sh" --plan
@@ -128,7 +135,7 @@ PY
     exit 3
     ;;
   *)
-    echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--migrate-all|--runtime-plan|--provision-runtimes|--runtime-verify|--images-plan|--build-candidates|--apply' >&2
+    echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--migrate-all|--runtime-all|--runtime-plan|--provision-runtimes|--runtime-verify|--images-plan|--build-candidates|--apply' >&2
     exit 2
     ;;
 esac
