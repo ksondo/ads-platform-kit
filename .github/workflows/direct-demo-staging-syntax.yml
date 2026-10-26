@@ -42,6 +42,8 @@ jobs:
             ! grep -En '(docker (run|rm|compose .*up|system prune)|nginx -s reload|systemctl (restart|reload)|certbot|psql -c|git (pull|reset))' "$sh"
           done
           ! grep -En '(docker (run|rm|compose .*up|system prune)|nginx -s reload|systemctl (restart|reload)|certbot|psql -c)' deploy/contabo-demo/stage-direct-apps.sh
-          bash deploy/contabo-demo/prepare-private-app-github-access.sh --plan | grep -q 'KEY_REQUIRED education'
-          bash deploy/contabo-demo/bootstrap-direct-app-cache.sh --plan education | grep -q 'PLAN_ONLY'
+          bash deploy/contabo-demo/prepare-private-app-github-access.sh --plan > /tmp/ads-readonly-keys-plan.txt
+          grep -q 'KEY_REQUIRED education' /tmp/ads-readonly-keys-plan.txt
+          bash deploy/contabo-demo/bootstrap-direct-app-cache.sh --plan education > /tmp/ads-readonly-cache-plan.txt
+          grep -q 'PLAN_ONLY' /tmp/ads-readonly-cache-plan.txt
           echo ADS_NINE_RELEASE_PLAN_CHECKS=PASS
