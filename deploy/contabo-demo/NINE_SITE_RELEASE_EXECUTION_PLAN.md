@@ -131,6 +131,31 @@ bash deploy/contabo-demo/release-nine-demo-apps.sh --databases-verify
 
 **A healthy empty Postgres database is not an application deployment or certification.** Run app-specific schema migrations, safe demo seeds, OIDC/HTTPS and browser checks before publishing any portal links.
 
+## Next gate: per-app forward-only database migrations (after five DB health checks)
+
+The VPS operator confirmed all five new Postgres 16 demo containers healthy, with no host-published ports. A dedicated guarded migration runner now invokes the actual migrator **from each pinned, immutable Git archive** over only that app's private Docker network. The owner credentials never go into GitHub or command-line arguments, and the temporary migration container is removed after execution.
+
+Inspect the five migrations first:
+
+~~~bash
+bash deploy/contabo-demo/release-nine-demo-apps.sh --schemas-plan
+~~~
+
+Run and verify **one app at a time**, stopping on the first error; recommended: Education, Fleet Guard, Home Services, MamaCare, Tontine. Example:
+
+~~~bash
+bash deploy/contabo-demo/release-nine-demo-apps.sh --migrate-app education
+bash deploy/contabo-demo/release-nine-demo-apps.sh --schema-verify education
+~~~
+
+Repeat for other app names only if the prior one passes: fleetguard, home-services, mamacare, tontine. These operations change the five NEW DATABASE SCHEMAS only. They do not create app containers, publish HTTP/HTTPS, grant all runtime memberships, load seeded data, or alter any old ADS service.
+
+- The runner enforces exact staged SHA, existing protected owner credentials, app-labelled healthy DB, no published DB ports, and the app's own immutable migration files.
+- The verification compares expected migration files to ledger rows and requires at least one FORCE RLS table. Further policy and least-privilege user tests are mandatory before app release.
+- Home Services migrator can establish its dedicated `home_runtime` login, with a protected generated password; the others still require explicit restricted runtime and webhook/worker login provisioning after migrations.
+- The migration runner does NOT roll back schema changes automatically. On any error, stop and inspect the failing isolated database; don't delete volumes, rerun on a production DB, or try to restore other apps.
+- This is an intermediate *schema-ready* stage, not a certified, public demo site.
+
 ## Work packages in GitHub (concrete backlog)
 
 | WP | Deliverable | Completion evidence |
