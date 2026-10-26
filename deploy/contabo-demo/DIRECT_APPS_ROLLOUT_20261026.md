@@ -23,28 +23,36 @@ Seven targets, each independently deployed on the same VPS (`vmi3191089`, `161.9
 
 ## Direct run from Contabo SSH (NO SCP)
 
-The original on-host checkout is expected at `/opt/ads/demo-platform-kit`; check it exists first and do not reset or overwrite it.
+Use the previously successful pinned-release pattern for EACH app: fetch a reviewed exact commit, verify it belongs to main, stage via git archive under a protected versioned directory, check the application-specific release script with bash -n, and execute that script. Each app release script must own its isolated DB preparation, safe migrator, canary, rollback and HTTPS verification. No deployment orchestrator is needed.
 
-```bash
+### A. Inspect existing services without changes
+
+~~~bash
 ssh root@161.97.128.153
 test -d /opt/ads/demo-platform-kit/.git
-git -C /opt/ads/demo-platform-kit remote -v
 git -C /opt/ads/demo-platform-kit fetch origin refs/heads/ops/direct-contabo-seven-apps-20261026
 git -C /opt/ads/demo-platform-kit worktree add --detach /opt/ads/direct-app-rollout FETCH_HEAD
 cd /opt/ads/direct-app-rollout
 bash deploy/contabo-demo/direct-apps-preflight.sh | tee /root/ads-direct-apps-preflight.txt
-bash deploy/contabo-demo/stage-direct-apps.sh --plan
-```
+~~~
 
-Only after reviewing the report and confirming GitHub SSH access:
+If the separate worktree already exists, do not create it again; inspect its state. Reuse existing VentureWorks and Morphoo runtime/database containers after verification.
 
-```bash
-bash deploy/contabo-demo/stage-direct-apps.sh --stage
-```
+### B. Stage ONE reviewed application from its existing repository checkout
 
-The staging command clones only seven GitHub source trees under `/opt/ads/demo-rollout-sources/`, pins each to its currently fetched SHA, and **does not** run migrations, create or change databases, start containers, alter Nginx, request certificates or publish URLs.
+~~~bash
+APP=education
+REPO=/opt/ads/EXISTING_EDUCATION_GIT_CHECKOUT
+SHA=APPROVED_FULL_40_CHARACTER_COMMIT_SHA
+bash deploy/contabo-demo/stage-direct-apps.sh --check "$APP" "$REPO" "$SHA"
+bash deploy/contabo-demo/stage-direct-apps.sh --stage "$APP" "$REPO" "$SHA"
+~~~
 
-If the worktree path already exists, check its status and version instead of recreating it. If the VPS does not have access to all private repositories, stop and adjust the existing deploy key or approved GitHub App access on the VPS (never paste credentials into chat). If the active portal checkout is not at the documented path, inspect it first and replace that path with the real cloned kit checkout.
+These are placeholders, not ready-to-run release values. The helper implements only the git fetch, commit existence, ancestry check and git archive part of the proven method. It stages the exact SHA into /var/lib/ads-demo/app-releases/<app>/<sha>, without running Docker, database migrations, Nginx, HTTPS or portal edits. The application's OWN release script is required for actual deployment.
+
+Root SSH access failed for six app repositories in the 26 October live preflight; only the Morphoo repo passed. Reuse an already authorized checkout/account or install read-only scoped GitHub deploy keys, without pasting secrets in chat. The helper refuses any checkout whose remote origin does not match the expected ADS app repo.
+
+Existing ports to preserve: landing 18089; Commerce 18086; demo Identity 18090; VentureWorks staging web 18480; Morphoo existing web is published on 18100. Morphoo's existing source Compose currently proposes host 18089 and therefore cannot be applied unchanged.
 
 ## Per-app release procedure after the read-only inspection
 
