@@ -2,9 +2,21 @@
 # Five new ADS apps; localhost-only Docker startup. Demo data/HTTPS are separate.
 set -Eeuo pipefail
 umask 077
-[[ $# == 1 ]] || { echo 'Usage: launch-five-demo-apps.sh --plan|--launch|--verify'; exit 2; }
-mode="$1"
-case "$mode" in --plan|--launch|--verify) ;; *) exit 2 ;; esac
+mode="${1:-}"
+case "$mode" in
+ --plan|--launch|--verify)
+  [[ $# == 1 ]] || exit 2
+  targets=(education fleetguard home-services mamacare tontine)
+  ;;
+ --plan-one|--launch-one|--verify-one)
+  [[ $# == 2 ]] || exit 2
+  case "$2" in education|fleetguard|home-services|mamacare|tontine) targets=("$2");; *) exit 2;; esac
+  ;;
+ *)
+  echo 'Usage: launch-five-demo-apps.sh --plan|--launch|--verify|--plan-one APP|--launch-one APP|--verify-one APP' >&2
+  exit 2
+  ;;
+esac
 [[ "$(id -u)" == 0 && "$(hostname -s)" == vmi3191089 ]] || exit 2
 here="$(cd "$(dirname "$0")" && pwd -P)"
 issuer=https://login.demo.africadigitalsynergy.com
@@ -48,15 +60,17 @@ verify_app() {
  [[ "$ok" == 1 ]] || { echo "APP_PRIVATE_HEALTH_FAILED $app" >&2; return 1; }
  echo "APP_PRIVATE_HEALTH=PASS app=$app loopback=127.0.0.1:$port"
 }
-if [[ "$mode" == --plan ]]; then
- for item in education fleetguard home-services mamacare tontine; do
+if [[ "$mode" == --plan || "$mode" == --plan-one ]]; then
+ for item in "${targets[@]}"; do
   set_app "$item"; echo "PRIVATE_LAUNCH_PLAN app=$app sha=$sha loopback=127.0.0.1:$port"
  done
  exit 0
 fi
-if [[ "$mode" == --verify ]]; then
- for item in education fleetguard home-services mamacare tontine; do verify_app "$item"; done
- echo 'ADS_FIVE_PRIVATE_APPS=PASS'; exit 0
+if [[ "$mode" == --verify || "$mode" == --verify-one ]]; then
+ for item in "${targets[@]}"; do verify_app "$item"; done
+ if [[ "$mode" == --verify-one ]]; then echo "ADS_ONE_PRIVATE_APP=PASS app=${targets[0]}";
+ else echo 'ADS_FIVE_PRIVATE_APPS=PASS'; fi
+ exit 0
 fi
 disk_free_kib="$(df -Pk / | awk 'NR==2 {print $4}')"
 memory_free_kib="$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)"
@@ -70,13 +84,13 @@ flock -n 9 || { echo 'APP_LAUNCH_ALREADY_RUNNING' >&2; exit 2; }
 bash "$here/release-nine-demo-apps.sh" --runtime-verify
 curl -fsS --max-time 10 "$issuer/.well-known/openid-configuration" |
  python3 -c 'import json,sys;assert json.load(sys.stdin)["issuer"]=="https://login.demo.africadigitalsynergy.com"'
-for item in education fleetguard home-services mamacare tontine; do
+for item in "${targets[@]}"; do
  set_app "$item"
  [[ "$sha" =~ ^[a-f0-9]{40}$ ]] || { echo "NOT_APPROVED_SHA $app" >&2; exit 2; }
  [[ -f "$secret" && ! -L "$secret" && "$(stat -c '%u:%a' "$secret")" == 0:600 ]] || exit 2
  [[ "$(docker inspect -f '{{.State.Health.Status}}' "ads-demo-$app-db")" == healthy ]] || exit 2
 done
-for item in education fleetguard home-services mamacare tontine; do
+for item in "${targets[@]}"; do
  set_app "$item"
  echo "=== PRIVATE APP DEPLOYMENT $app ==="
  if [[ ! -d "$source" ]]; then
@@ -139,5 +153,6 @@ for item in education fleetguard home-services mamacare tontine; do
  fi
  verify_app "$app"
 done
-echo 'ADS_FIVE_PRIVATE_APPS=PASS'
+if [[ "$mode" == --launch-one ]]; then echo "ADS_ONE_PRIVATE_APP=PASS app=${targets[0]}";
+else echo 'ADS_FIVE_PRIVATE_APPS=PASS'; fi
 echo 'PUBLIC_HTTPS=NOT_CONFIGURED; LANDING_UNCHANGED'
