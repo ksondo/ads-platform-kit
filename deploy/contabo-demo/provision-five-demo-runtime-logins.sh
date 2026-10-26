@@ -178,6 +178,7 @@ for app in education fleetguard home-services mamacare tontine; do
         printf 'MAMACARE_JOB_DATABASE_URL=postgresql://ads_mamacare_worker:%s@%s:5432/%s\n' "$WORKER_PASSWORD" "$container" "$database"
         ;;
       tontine)
+        printf 'TONTINE_LOGIN_PREFIX=ads_tontine\n'
         printf 'DATABASE_URL=postgresql://ads_tontine_api:%s@%s:5432/%s\n' "$API_PASSWORD" "$container" "$database"
         printf 'TONTINE_WORKER_DATABASE_URL=postgresql://ads_tontine_worker:%s@%s:5432/%s\n' "$WORKER_PASSWORD" "$container" "$database"
         printf 'TONTINE_WEBHOOK_DATABASE_URL=postgresql://ads_tontine_webhook:%s@%s:5432/%s\n' "$WEBHOOK_PASSWORD" "$container" "$database"
