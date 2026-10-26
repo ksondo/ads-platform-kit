@@ -37,6 +37,19 @@ for i,x in enumerate(q,1):
 print("GATES:",", ".join(p["requiredGates"]))
 print("BLOCKED_RELEASES:",",".join(missing) if missing else "none")
 print("STATUS=PLAN_ONLY; no source fetched, files changed, database touched or services restarted")
+review=sys.argv[1].rsplit("/",1)[0]+"/release-nine-source-review-20261026.json"
+try:
+ with open(review,encoding="utf8") as fh: baseline=json.load(fh)
+ print("=== GITHUB SOURCE REVIEW SNAPSHOT (NOT RELEASE APPROVAL) ===")
+ for r in baseline.get("applications",[]):
+  c=r.get("demoCandidatePR")
+  print("REVIEW",r["key"],"main",r["mainShaObserved"][:12],
+        "demo_pr",str(c["pr"]) if c else "none",
+        "demo_head",c["head"] if c else "none",
+        "approved",r.get("releaseApproved",False))
+ print("NOTE: These are Oct 26 observed main/PR versions and can change; recheck before freezing.")
+except FileNotFoundError:
+ print("SOURCE_REVIEW_SNAPSHOT=NOT_PRESENT")
 PY
     ;;
   --preflight)
