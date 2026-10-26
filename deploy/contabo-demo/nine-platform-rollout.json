@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "environment": "demo",
+  "host": "vmi3191089",
+  "serverIpv4": "161.97.128.153",
+  "loginIssuer": "https://login.demo.africadigitalsynergy.com",
+  "portal": {
+    "url": "https://demo.africadigitalsynergy.com",
+    "status": "preserve"
+  },
+  "commerce": {
+    "id": "commerce",
+    "url": "https://commerce.demo.africadigitalsynergy.com/commerce",
+    "status": "preserve_existing_verified_demo_link"
+  },
+  "activationPolicy": "Keep portal demoUrl null until TLS, browser app, database, and OIDC return journey checks pass. Publish one platform at a time in a separate tested PR.",
+  "candidates": [
+    {
+      "catalogueId": "education",
+      "repository": "ksondo/Education-and-intelligent-services",
+      "targetUrl": "https://education.demo.africadigitalsynergy.com",
+      "oidcClientId": "education-web",
+      "status": "planned_not_verified"
+    },
+    {
+      "catalogueId": "fleet-guard",
+      "repository": "ksondo/Fleet-guard-and-intelligent-services",
+      "targetUrl": "https://fleetguard.demo.africadigitalsynergy.com",
+      "oidcClientId": "fleet-guard-web",
+      "status": "planned_not_verified"
+    },
+    {
+      "catalogueId": "home-services",
+      "repository": "ksondo/Home-Services",
+      "targetUrl": "https://home-services.demo.africadigitalsynergy.com",
+      "oidcClientId": "home-services",
+      "status": "planned_not_verified"
+    },
+    {
+      "catalogueId": "mama-care",
+      "repository": "ksondo/Mama-care-and-intelligent-services",
+      "targetUrl": "https://mamacare.demo.africadigitalsynergy.com",
+      "oidcClientId": "mamacare-web",
+      "status": "planned_not_verified"
+    },
+    {
+      "catalogueId": "morphoo",
+      "repository": "ksondo/go-ahead-guesser",
+      "targetUrl": "https://morphoo.demo.africadigitalsynergy.com",
+      "oidcClientId": "morphoo-web",
+      "status": "planned_not_verified"
+    },
+    {
+      "catalogueId": "digital-tontine",
+      "repository": "ksondo/Digital-tontine-and-intelligent-services",
+      "targetUrl": "https://tontine.demo.africadigitalsynergy.com",
+      "oidcClientId": "tontine-web",
+      "status": "planned_not_verified"
+    },
+    {
+      "catalogueId": "ventureworks",
+      "repository": "ksondo/Africa-Digital-Synergy-VentureWorks",
+      "targetUrl": "https://ventureworks.demo.africadigitalsynergy.com",
+      "oidcClientId": "ventureworks-web",
+      "status": "planned_not_verified"
+    }
+  ]
+}
