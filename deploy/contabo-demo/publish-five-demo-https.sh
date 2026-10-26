@@ -69,7 +69,7 @@ for app in education fleetguard home-services mamacare tontine; do
  if [[ -e "$site" ]]; then
    grep -q "ADS-CONTABO-FIVE:$app" "$site" || { echo "UNRECOGNISED_NGINX_SITE $site" >&2; exit 2; }
  else
-   if nginx -T 2>/dev/null | grep -Fq "server_name $domain;"; then
+   if nginx -T 2>/dev/null | grep -F "server_name $domain;" >/dev/null; then
      echo "NGINX_HOSTNAME_ALREADY_REGISTERED $domain" >&2; exit 2;
    fi
    tmp="$(mktemp /etc/nginx/sites-available/.ads-five-XXXXXX)"
