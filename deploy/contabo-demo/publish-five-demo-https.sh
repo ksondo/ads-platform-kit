@@ -56,6 +56,7 @@ bash "$here/launch-five-demo-apps.sh" --verify
 [[ -d /etc/nginx/sites-available && -d /etc/nginx/sites-enabled ]] || exit 2
 [[ ! -L "$webroot" ]] || exit 2
 install -d -m 0755 "$webroot/.well-known/acme-challenge"
+chmod 0755 "$webroot" "$webroot/.well-known" "$webroot/.well-known/acme-challenge"
 for app in education fleetguard home-services mamacare tontine; do
  get_app "$app"
  echo "=== HTTPS $domain ==="
@@ -93,6 +94,7 @@ EOF
  fi
  probe="ads-five-$app-$(openssl rand -hex 8)"
  echo verified > "$webroot/.well-known/acme-challenge/$probe"
+chmod 0644 "$webroot/.well-known/acme-challenge/$probe"
  if ! curl --noproxy '*' -fsS --max-time 10 \
    --resolve "$domain:80:127.0.0.1" \
    "http://$domain/.well-known/acme-challenge/$probe" | grep -qx verified; then
