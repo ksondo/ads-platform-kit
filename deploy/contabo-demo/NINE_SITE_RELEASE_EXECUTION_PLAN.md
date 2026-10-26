@@ -82,6 +82,34 @@ Delivery order (logical, one master command, serialized application promotions):
 
 **Current implementation limit:** The committed coordinator supports `--plan` and `--preflight` only. It intentionally refuses `--apply` until all per-app scripts and gates are installed, tested and the release manifest is populated with approved SHAs. Running plan or preflight is not a live deployment.
 
+
+## Source staging and image-build checkpoint (26 October)
+
+Operator confirmed six private repositories' read-only deploy key access and direct Git cache initialization. The five new app sources were staged using checked main-ancestor, immutable SHA git archives:
+
+| Application | Pinned source staged on Contabo | Candidate image |
+| --- | --- | --- |
+| Education | b3202c70d926599793fc0c4957d49c4eb255d847 | API Dockerfile available; web image needs approved OIDC build inputs |
+| Fleet Guard | ce3a4883862104e05a4fafd3da023089c5f46052 | Dockerfile.api available |
+| Home Services | 8eee741b0181b5ab7d21cd51d58918c97d0c1619 | Existing pinned SHA lacks Dockerfile; see Home-Services PR #11, then stage a NEW approved SHA |
+| MamaCare | c8cb4d2aa0e11d62f6c2a24c485df6c06fbdb573 | Dockerfile available |
+| Digital Tontine | 125e2b6a2c6507efd566912445254102d2d63834 | Dockerfile.api available; journey acceptance unresolved |
+
+Candidate image-builder entry point, after a new master fetch:
+
+~~~bash
+bash deploy/contabo-demo/release-nine-demo-apps.sh --images-plan
+~~~
+
+Only if the plan is correct and host capacity remains acceptable:
+
+~~~bash
+bash deploy/contabo-demo/release-nine-demo-apps.sh --build-candidates
+~~~
+
+This serially builds the pinned **Education API, Fleet Guard, MamaCare and Tontine** images, using unique SHA-derived local tags; it does not start containers or migrate databases. Tontine image build is NOT Tontine journey certification. Home Services needs its reviewed Dockerfile included in an approved new source SHA; Education web needs exact OIDC build inputs before image creation. No public site will be marked verified on the basis of image build alone.
+
+
 ## Work packages in GitHub (concrete backlog)
 
 | WP | Deliverable | Completion evidence |
