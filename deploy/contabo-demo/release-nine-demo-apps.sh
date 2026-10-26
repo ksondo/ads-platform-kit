@@ -6,7 +6,7 @@ umask 077
 here="$(cd "$(dirname "$0")" && pwd -P)"
 manifest="$here/release-nine-manifest.json"
 [[ -f "$manifest" ]] || { echo 'Missing release-nine-manifest.json' >&2; exit 2; }
-[[ $# -eq 1 ]] || { echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--apply' >&2; exit 2; }
+[[ $# -eq 1 ]] || { echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--images-plan|--build-candidates|--apply' >&2; exit 2; }
 mode="$1"
 case "$mode" in
   --plan)
@@ -57,13 +57,19 @@ PY
     bash "$here/direct-apps-preflight.sh"
     bash "$0" --plan
     ;;
+  --images-plan)
+    bash "$here/build-staged-demo-images.sh" --plan
+    ;;
+  --build-candidates)
+    bash "$here/build-staged-demo-images.sh" --build
+    ;;
   --apply)
     echo 'ADS_NINE_DEPLOYMENT_REFUSED: master --apply is not yet implemented or certified.' >&2
     echo 'Finish per-application pinned SHA release scripts, database, HTTPS and portal acceptance gates before enabling.' >&2
     exit 3
     ;;
   *)
-    echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--apply' >&2
+    echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--images-plan|--build-candidates|--apply' >&2
     exit 2
     ;;
 esac
