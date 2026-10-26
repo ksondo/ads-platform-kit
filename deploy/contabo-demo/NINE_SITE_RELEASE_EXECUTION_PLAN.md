@@ -177,6 +177,26 @@ DB roles by application:
 
 Verification checks privileged capabilities, role membership count and ownership. This role gate is not equivalent to end-to-end tenant isolation or successful credential-authentication tests; those remain mandatory before app release.
 
+## Five new browser sites: first public launch (26 October 2026)
+
+- Source GitHub access, SHA staging, all 100 migrations/5 isolated DBs and restricted runtime login provisioning were reported complete by the operator.
+- Home Services Docker packaging PR #11 was merged into main at `5f31b1cbf8244cfc02306fc9ec2458e852509317`; MamaCare restricted background job DB login fix PR #24 was merged at `d37e104ac3e20051c04fc21234945b58d5fd4eb0`. Both SHAs are pinned in the new private launcher; it stages their main commit archives and builds fresh images.
+- Five NEW demo containers bind only to localhost ports 18501 (Education web, internal API unexposed), 18502 (Fleet Guard), 18503 (Home Services), 18504 (MamaCare), 18505 (Digital Tontine). Each runs against its app-isolated PostgreSQL private network with restricted runtime credentials.
+- `--five-plan` previews; `--deploy-five-private` builds and starts five on loopback; `--deploy-five-apps` starts/checks them then configures five isolated Nginx virtual hosts with webroot ACME certificates and strictly validated HTTPS; `--verify-five-apps` rechecks.
+- HTTP vhosts for domain-specific Certbot webroot challenge are created **only after all private apps are healthy**; no other site file is overwritten. ACME HTTP probe, DNS, certificate hostname and expiry, `nginx -t` plus host-local TLS checks are mandatory. Issuance/activation stops on first failure; earlier activated independent new sites remain active.
+- URLs: `https://education.demo.africadigitalsynergy.com/`, `https://fleetguard.demo.africadigitalsynergy.com/`, `https://home-services.demo.africadigitalsynergy.com/`, `https://mamacare.demo.africadigitalsynergy.com/`, `https://tontine.demo.africadigitalsynergy.com/`.
+- Demo APIs never receive migration-owner DB passwords. External live payments/messaging are NOT enabled. Tontine uses fail-closed unconfigured providers, not real financial services. MamaCare uses test-only fixture content, not real patient records.
+- Startup/strict HTTPS tests are **not full business-journey certification**; OAuth2+PKCE callbacks, role E2E, EN/FR at target viewports, test-only fixtures, and Tontine's previously failing journeys remain separate gates.
+- Landing catalogue and existing Commerce, VentureWorks and Morphoo services remain untouched. Portal publication is part of the later full nine-site launch.
+
+**Run from a clean existing Contabo rollout checkout, after freezing the approved master script SHA and checking all CI jobs green:**
+
+~~~bash
+bash deploy/contabo-demo/release-nine-demo-apps.sh --five-plan
+bash deploy/contabo-demo/release-nine-demo-apps.sh --deploy-five-apps
+bash deploy/contabo-demo/release-nine-demo-apps.sh --verify-five-apps
+~~~
+
 ## Work packages in GitHub (concrete backlog)
 
 | WP | Deliverable | Completion evidence |
