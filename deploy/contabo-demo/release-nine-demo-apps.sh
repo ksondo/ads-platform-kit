@@ -6,7 +6,7 @@ umask 077
 here="$(cd "$(dirname "$0")" && pwd -P)"
 manifest="$here/release-nine-manifest.json"
 [[ -f "$manifest" ]] || { echo 'Missing release-nine-manifest.json' >&2; exit 2; }
-[[ $# -eq 1 ]] || { echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--images-plan|--build-candidates|--apply' >&2; exit 2; }
+[[ $# -eq 1 ]] || { echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--images-plan|--build-candidates|--apply' >&2; exit 2; }
 mode="$1"
 case "$mode" in
   --plan)
@@ -57,6 +57,15 @@ PY
     bash "$here/direct-apps-preflight.sh"
     bash "$0" --plan
     ;;
+  --databases-plan)
+    bash "$here/prepare-five-demo-databases.sh" --plan
+    ;;
+  --prepare-databases)
+    bash "$here/prepare-five-demo-databases.sh" --init
+    ;;
+  --databases-verify)
+    bash "$here/prepare-five-demo-databases.sh" --verify
+    ;;
   --images-plan)
     bash "$here/build-staged-demo-images.sh" --plan
     ;;
@@ -69,7 +78,7 @@ PY
     exit 3
     ;;
   *)
-    echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--images-plan|--build-candidates|--apply' >&2
+    echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--images-plan|--build-candidates|--apply' >&2
     exit 2
     ;;
 esac
