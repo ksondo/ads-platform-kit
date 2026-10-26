@@ -378,17 +378,25 @@
       "admin_roles": [
         "tenant_admin"
       ],
-      "admin_scopes": [],
+      "admin_scopes": [
+        "members:read",
+        "roles:write",
+        "invitations:write"
+      ],
       "assignable_roles": [
         "founder",
         "venture_manager",
         "evidence_reviewer",
         "regulatory_reviewer",
-        "tenant_admin"
+        "contributor",
+        "adviser",
+        "investor",
+        "partner",
+        "employee"
       ],
       "ads_only_roles": [],
-      "needs_client_secret": false,
-      "client_secret_setting": null,
+      "needs_client_secret": true,
+      "client_secret_setting": "VENTUREWORKS_DEMO_CLIENT_SECRET",
       "demo_orgs": [
         {
           "key": "main",
@@ -398,12 +406,17 @@
             "founder",
             "venture_manager",
             "evidence_reviewer",
-            "regulatory_reviewer"
+            "regulatory_reviewer",
+            "contributor",
+            "adviser",
+            "investor",
+            "partner",
+            "employee"
           ]
         }
       ],
       "tenant_settings": {},
-      "notes": "No self role (owner decision 9). The 5 ecosystem roles are not named on main and are left out. Grants go through the kit once ACC-10 lands."
+      "notes": "Named demo roles; tenant-admin provisioning uses delegated ADS authority. Ecosystem roles grant no private venture access by default."
     },
     {
       "slug": "commerce",
