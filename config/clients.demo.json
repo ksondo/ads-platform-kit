@@ -228,10 +228,12 @@
       "display_name": "ADS Education",
       "accent": "#2456A6",
       "redirect_uris": [
-        "https://education.test.africadigitalsynergy.com/"
+        "https://education.test.africadigitalsynergy.com/",
+        "https://education.demo.africadigitalsynergy.com/"
       ],
       "post_logout_redirect_uris": [
-        "https://education.test.africadigitalsynergy.com/"
+        "https://education.test.africadigitalsynergy.com/",
+        "https://education.demo.africadigitalsynergy.com/"
       ],
       "self_service_roles": [
         "applicant"
@@ -308,10 +310,13 @@
       "accent": null,
       "redirect_uris": [
         "https://morphoo.test.africadigitalsynergy.com/auth",
-        "https://morphoo.test.africadigitalsynergy.com/"
+        "https://morphoo.test.africadigitalsynergy.com/",
+        "https://morphoo.demo.africadigitalsynergy.com/auth",
+        "https://morphoo.demo.africadigitalsynergy.com/"
       ],
       "post_logout_redirect_uris": [
-        "https://morphoo.test.africadigitalsynergy.com/"
+        "https://morphoo.test.africadigitalsynergy.com/",
+        "https://morphoo.demo.africadigitalsynergy.com/"
       ],
       "self_service_roles": [
         "member"
@@ -368,10 +373,12 @@
       "display_name": "ADS VentureWorks",
       "accent": "#18764B",
       "redirect_uris": [
-        "https://ventureworks.test.africadigitalsynergy.com/"
+        "https://ventureworks.test.africadigitalsynergy.com/",
+        "https://ventureworks.demo.africadigitalsynergy.com/"
       ],
       "post_logout_redirect_uris": [
-        "https://ventureworks.test.africadigitalsynergy.com/"
+        "https://ventureworks.test.africadigitalsynergy.com/",
+        "https://ventureworks.demo.africadigitalsynergy.com/"
       ],
       "self_service_roles": [],
       "allow_personal_workspace": false,
@@ -543,10 +550,12 @@
       "display_name": "ADS Mama Care",
       "accent": "#7D3677",
       "redirect_uris": [
-        "https://mamacare.test.africadigitalsynergy.com/"
+        "https://mamacare.test.africadigitalsynergy.com/",
+        "https://mamacare.demo.africadigitalsynergy.com/"
       ],
       "post_logout_redirect_uris": [
-        "https://mamacare.test.africadigitalsynergy.com/"
+        "https://mamacare.test.africadigitalsynergy.com/",
+        "https://mamacare.demo.africadigitalsynergy.com/"
       ],
       "self_service_roles": [],
       "allow_personal_workspace": false,
@@ -607,10 +616,12 @@
       "display_name": "ADS Fleet Guard",
       "accent": "#134E73",
       "redirect_uris": [
-        "https://fleetguard.test.africadigitalsynergy.com/"
+        "https://fleetguard.test.africadigitalsynergy.com/",
+        "https://fleetguard.demo.africadigitalsynergy.com/"
       ],
       "post_logout_redirect_uris": [
-        "https://fleetguard.test.africadigitalsynergy.com/"
+        "https://fleetguard.test.africadigitalsynergy.com/",
+        "https://fleetguard.demo.africadigitalsynergy.com/"
       ],
       "self_service_roles": [],
       "allow_personal_workspace": false,
@@ -678,10 +689,12 @@
       "display_name": "ADS Digital Tontine",
       "accent": "#3E46A5",
       "redirect_uris": [
-        "https://tontine.test.africadigitalsynergy.com/"
+        "https://tontine.test.africadigitalsynergy.com/",
+        "https://tontine.demo.africadigitalsynergy.com/"
       ],
       "post_logout_redirect_uris": [
-        "https://tontine.test.africadigitalsynergy.com/"
+        "https://tontine.test.africadigitalsynergy.com/",
+        "https://tontine.demo.africadigitalsynergy.com/"
       ],
       "self_service_roles": [],
       "allow_personal_workspace": false,
@@ -913,10 +926,12 @@
       "display_name": "ADS Home Services",
       "accent": "#164940",
       "redirect_uris": [
-        "https://home-services.test.africadigitalsynergy.com/"
+        "https://home-services.test.africadigitalsynergy.com/",
+        "https://home-services.demo.africadigitalsynergy.com/"
       ],
       "post_logout_redirect_uris": [
-        "https://home-services.test.africadigitalsynergy.com/"
+        "https://home-services.test.africadigitalsynergy.com/",
+        "https://home-services.demo.africadigitalsynergy.com/"
       ],
       "self_service_roles": [
         "service_customer"
