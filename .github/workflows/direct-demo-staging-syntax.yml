@@ -1,0 +1,26 @@
+name: Direct Contabo app staging script checks
+on:
+  pull_request:
+    paths:
+      - 'deploy/contabo-demo/direct-apps-preflight.sh'
+      - 'deploy/contabo-demo/stage-direct-apps.sh'
+      - 'deploy/contabo-demo/DIRECT_APPS_ROLLOUT_20261026.md'
+      - '.github/workflows/direct-demo-staging-syntax.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate shell scripts and no mutation in read-only preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n deploy/contabo-demo/direct-apps-preflight.sh
+          bash -n deploy/contabo-demo/stage-direct-apps.sh
+          ! grep -En '(docker (run|rm|compose .*up|system prune)|nginx -s reload|systemctl (restart|reload)|certbot|psql -c|git (pull|reset))' deploy/contabo-demo/direct-apps-preflight.sh
+          ! grep -En '(docker (run|rm|compose .*up|system prune)|nginx -s reload|systemctl (restart|reload)|certbot|psql -c)' deploy/contabo-demo/stage-direct-apps.sh
+          echo ADS_DIRECT_APP_STAGING_SYNTAX=PASS
