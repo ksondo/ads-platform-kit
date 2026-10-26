@@ -6,7 +6,7 @@ umask 077
 here="$(cd "$(dirname "$0")" && pwd -P)"
 manifest="$here/release-nine-manifest.json"
 [[ -f "$manifest" ]] || { echo 'Missing release-nine-manifest.json' >&2; exit 2; }
-[[ $# -ge 1 && $# -le 2 ]] || { echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--migrate-all|--runtime-all|--runtime-plan|--provision-runtimes|--runtime-verify|--images-plan|--build-candidates|--five-plan|--deploy-five-private|--deploy-five-apps|--verify-five-apps|--apply' >&2; exit 2; }
+[[ $# -ge 1 && $# -le 2 ]] || { echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--migrate-all|--runtime-all|--runtime-plan|--provision-runtimes|--runtime-verify|--images-plan|--build-candidates|--five-plan|--deploy-five-private|--deploy-five-apps|--verify-five-apps|--education-https-plan|--repair-education-https|--verify-education-https|--apply' >&2; exit 2; }
 mode="$1"
 case "$mode" in
   --plan)
@@ -148,13 +148,27 @@ PY
     bash "$here/launch-five-demo-apps.sh" --verify
     bash "$here/publish-five-demo-https.sh" --verify
     ;;
+  --education-https-plan)
+    [[ $# -eq 1 ]] || exit 2
+    bash "$here/publish-five-demo-https.sh" --plan-one education
+    ;;
+  --repair-education-https)
+    [[ $# -eq 1 ]] || exit 2
+    bash "$here/publish-five-demo-https.sh" --publish-one education
+    bash "$here/publish-five-demo-https.sh" --verify-one education
+    echo 'ADS_EDUCATION_HTTPS_REPAIR=PASS'
+    ;;
+  --verify-education-https)
+    [[ $# -eq 1 ]] || exit 2
+    bash "$here/publish-five-demo-https.sh" --verify-one education
+    ;;
   --apply)
     echo 'ADS_NINE_DEPLOYMENT_REFUSED: master --apply is not yet implemented or certified.' >&2
     echo 'Finish per-application pinned SHA release scripts, database, HTTPS and portal acceptance gates before enabling.' >&2
     exit 3
     ;;
   *)
-    echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--migrate-all|--runtime-all|--runtime-plan|--provision-runtimes|--runtime-verify|--images-plan|--build-candidates|--five-plan|--deploy-five-private|--deploy-five-apps|--verify-five-apps|--apply' >&2
+    echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--migrate-all|--runtime-all|--runtime-plan|--provision-runtimes|--runtime-verify|--images-plan|--build-candidates|--five-plan|--deploy-five-private|--deploy-five-apps|--verify-five-apps|--education-https-plan|--repair-education-https|--verify-education-https|--apply' >&2
     exit 2
     ;;
 esac
