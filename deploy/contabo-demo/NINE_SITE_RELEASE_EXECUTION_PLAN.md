@@ -110,6 +110,27 @@ bash deploy/contabo-demo/release-nine-demo-apps.sh --build-candidates
 This serially builds the pinned **Education API, Fleet Guard, MamaCare and Tontine** images, using unique SHA-derived local tags; it does not start containers or migrate databases. Tontine image build is NOT Tontine journey certification. Home Services needs its reviewed Dockerfile included in an approved new source SHA; Education web needs exact OIDC build inputs before image creation. No public site will be marked verified on the basis of image build alone.
 
 
+## Create-only database foundations (after successful image builds)
+
+Five isolated PostgreSQL 16 database containers can be initialized on the existing VPS without publishing PostgreSQL host ports. Unlike per-app schema migrations and RLS grants, this phase creates ONLY new database containers and migration-owner credentials. Existing Portal, Commerce, Identity, VentureWorks and Morphoo databases remain untouched.
+
+Commands after fetching an approved deployment-script SHA:
+
+~~~bash
+bash deploy/contabo-demo/release-nine-demo-apps.sh --databases-plan
+bash deploy/contabo-demo/release-nine-demo-apps.sh --prepare-databases
+bash deploy/contabo-demo/release-nine-demo-apps.sh --databases-verify
+~~~
+
+- Each app has its own named PostgreSQL 16 container (ads-demo-<app>-db), Docker private bridge network, and dedicated persistent Docker volume.
+- Root-only credentials are generated on Contabo under /etc/ads-demo/apps/<app>-db.env, permissions 0600. Never print, copy into GitHub or share owner credentials.
+- No TCP host-published Postgres ports, production data or payment connections.
+- Application runtimes must **NOT** use the migration owner (the PostgreSQL Docker bootstrap owner is privileged). Before launching the application, each requires reviewed forward-only migrations, a separately authenticated least-privileged login, worker/webhook separation and RLS checks.
+- Repeated runs refuse unexpected existing containers, resource collisions and unsafe pre-existing secret paths rather than deleting volumes.
+- This consumes VPS RAM and disk; the script checks basic capacity before creating anything.
+
+**A healthy empty Postgres database is not an application deployment or certification.** Run app-specific schema migrations, safe demo seeds, OIDC/HTTPS and browser checks before publishing any portal links.
+
 ## Work packages in GitHub (concrete backlog)
 
 | WP | Deliverable | Completion evidence |
