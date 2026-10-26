@@ -121,7 +121,14 @@ for item in "${targets[@]}"; do
  printf 'ADS_IDENTITY_URL=%s\nADS_IDENTITY_CLIENT_ID=%s\nPUBLIC_URL=https://%s\n' "$issuer" "$client" "$domain" >> "$transient"
  printf 'DATABASE_SSL_MODE=disable\nADAPTERS_MODE=off\nCONTENT_MODE=test\nASSISTANT_ENABLED=false\nREMINDER_SWEEP_MINUTES=0\n' >> "$transient"
  # Financial demonstration must never invoke live external providers.
- if [[ "$app" == mamacare || "$app" == tontine ]]; then echo 'EXTERNAL_MODE=test' >> "$transient"
+ if [[ "$app" == mamacare ]]; then echo 'EXTERNAL_MODE=test' >> "$transient"
+ elif [[ "$app" == tontine ]]; then
+  # Digital Tontine accepts only mock|live; demo money flows require mock.
+  # Refuse the launch unless the reviewed mock provider endpoint and signing secret
+  # are already configured in the protected application connections file.
+  grep -qE '^ADS_MOCKS_URL=https?://' "$secret" || { echo 'TONTINE_MOCKS_URL_MISSING' >&2; exit 2; }
+  grep -qE '^ADS_MOCKS_WEBHOOK_SECRET=.{24,}' "$secret" || { echo 'TONTINE_MOCK_WEBHOOK_SECRET_MISSING' >&2; exit 2; }
+  echo 'EXTERNAL_MODE=mock' >> "$transient"
  else echo 'EXTERNAL_MODE=live' >> "$transient"; fi
  chmod 0600 "$transient"
  if ! docker inspect "$container" >/dev/null 2>&1; then
