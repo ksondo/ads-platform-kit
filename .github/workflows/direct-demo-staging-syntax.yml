@@ -1,30 +1,43 @@
-name: Direct Contabo app staging script checks
+name: Direct Contabo nine-site release plan checks
 on:
   pull_request:
     paths:
       - 'deploy/contabo-demo/direct-apps-preflight.sh'
       - 'deploy/contabo-demo/direct-apps-runtime-audit.sh'
       - 'deploy/contabo-demo/stage-direct-apps.sh'
+      - 'deploy/contabo-demo/release-nine-demo-apps.sh'
+      - 'deploy/contabo-demo/release-nine-manifest.json'
       - 'deploy/contabo-demo/DIRECT_APPS_ROLLOUT_20261026.md'
+      - 'deploy/contabo-demo/NINE_SITE_RELEASE_EXECUTION_PLAN.md'
       - '.github/workflows/direct-demo-staging-syntax.yml'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
-  syntax:
+  syntax-and-plan:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Validate shell syntax and read-only checks
+      - name: Validate shell syntax, schema and fail-closed deployment
         shell: bash
         run: |
           set -euo pipefail
-          for sh in deploy/contabo-demo/direct-apps-preflight.sh deploy/contabo-demo/direct-apps-runtime-audit.sh deploy/contabo-demo/stage-direct-apps.sh; do
+          for sh in deploy/contabo-demo/direct-apps-preflight.sh deploy/contabo-demo/direct-apps-runtime-audit.sh deploy/contabo-demo/stage-direct-apps.sh deploy/contabo-demo/release-nine-demo-apps.sh; do
             bash -n "$sh"
           done
+          python3 -m json.tool deploy/contabo-demo/release-nine-manifest.json > /dev/null
+          bash deploy/contabo-demo/release-nine-demo-apps.sh --plan | tee /tmp/ads-nine-plan.txt
+          grep -q 'BLOCKED_RELEASES:' /tmp/ads-nine-plan.txt
+          grep -q 'STATUS=PLAN_ONLY' /tmp/ads-nine-plan.txt
+          set +e
+          bash deploy/contabo-demo/release-nine-demo-apps.sh --apply > /tmp/ads-nine-refusal.txt 2>&1
+          rc=$?
+          set -e
+          test "$rc" -eq 3
+          grep -q 'ADS_NINE_DEPLOYMENT_REFUSED' /tmp/ads-nine-refusal.txt
           for sh in deploy/contabo-demo/direct-apps-preflight.sh deploy/contabo-demo/direct-apps-runtime-audit.sh; do
             ! grep -En '(docker (run|rm|compose .*up|system prune)|nginx -s reload|systemctl (restart|reload)|certbot|psql -c|git (pull|reset))' "$sh"
           done
           ! grep -En '(docker (run|rm|compose .*up|system prune)|nginx -s reload|systemctl (restart|reload)|certbot|psql -c)' deploy/contabo-demo/stage-direct-apps.sh
-          echo ADS_DIRECT_APP_STAGING_SYNTAX=PASS
+          echo ADS_NINE_RELEASE_PLAN_CHECKS=PASS
