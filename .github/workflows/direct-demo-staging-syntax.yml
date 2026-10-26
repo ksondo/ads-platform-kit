@@ -10,6 +10,7 @@ on:
       - 'deploy/contabo-demo/build-staged-demo-images.sh'
       - 'deploy/contabo-demo/prepare-five-demo-databases.sh'
       - 'deploy/contabo-demo/migrate-five-demo-schemas.sh'
+      - 'deploy/contabo-demo/provision-five-demo-runtime-logins.sh'
       - 'deploy/contabo-demo/release-nine-demo-apps.sh'
       - 'deploy/contabo-demo/release-nine-manifest.json'
       - 'deploy/contabo-demo/DIRECT_APPS_ROLLOUT_20261026.md'
@@ -28,7 +29,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for sh in deploy/contabo-demo/direct-apps-preflight.sh deploy/contabo-demo/direct-apps-runtime-audit.sh deploy/contabo-demo/stage-direct-apps.sh deploy/contabo-demo/prepare-private-app-github-access.sh deploy/contabo-demo/bootstrap-direct-app-cache.sh deploy/contabo-demo/build-staged-demo-images.sh deploy/contabo-demo/prepare-five-demo-databases.sh deploy/contabo-demo/migrate-five-demo-schemas.sh deploy/contabo-demo/release-nine-demo-apps.sh; do
+          for sh in deploy/contabo-demo/direct-apps-preflight.sh deploy/contabo-demo/direct-apps-runtime-audit.sh deploy/contabo-demo/stage-direct-apps.sh deploy/contabo-demo/prepare-private-app-github-access.sh deploy/contabo-demo/bootstrap-direct-app-cache.sh deploy/contabo-demo/build-staged-demo-images.sh deploy/contabo-demo/prepare-five-demo-databases.sh deploy/contabo-demo/migrate-five-demo-schemas.sh deploy/contabo-demo/provision-five-demo-runtime-logins.sh deploy/contabo-demo/release-nine-demo-apps.sh; do
             bash -n "$sh"
           done
           python3 -m json.tool deploy/contabo-demo/release-nine-manifest.json > /dev/null
@@ -55,4 +56,10 @@ jobs:
           grep -q 'REFUSED: unexpected published DB port' deploy/contabo-demo/prepare-five-demo-databases.sh
           grep -q 'DATABASE_URL=postgresql://' deploy/contabo-demo/migrate-five-demo-schemas.sh
           grep -q 'SCHEMA_VERIFICATION_FAILED' deploy/contabo-demo/migrate-five-demo-schemas.sh
+          grep -q 'ADS_FIVE_RESTRICTED_RUNTIME_LOGINS=PASS' deploy/contabo-demo/provision-five-demo-runtime-logins.sh
+          grep -q 'MAMACARE_JOB_POOL=REQUIRES_APP_CHANGE' deploy/contabo-demo/provision-five-demo-runtime-logins.sh
+          grep -q 'APPS=NOT_STARTED' deploy/contabo-demo/provision-five-demo-runtime-logins.sh
+          grep -q -- '--runtime-plan' deploy/contabo-demo/release-nine-demo-apps.sh
+          grep -q -- '--provision-runtimes' deploy/contabo-demo/release-nine-demo-apps.sh
+          grep -q -- '--runtime-verify' deploy/contabo-demo/release-nine-demo-apps.sh
           echo ADS_NINE_RELEASE_PLAN_CHECKS=PASS
