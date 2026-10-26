@@ -58,6 +58,13 @@ if [[ "$mode" == --verify ]]; then
  for item in education fleetguard home-services mamacare tontine; do verify_app "$item"; done
  echo 'ADS_FIVE_PRIVATE_APPS=PASS'; exit 0
 fi
+disk_free_kib="$(df -Pk / | awk 'NR==2 {print $4}')"
+memory_free_kib="$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)"
+[[ "$disk_free_kib" =~ ^[0-9]+$ && "$memory_free_kib" =~ ^[0-9]+$ ]] || exit 2
+if (( disk_free_kib < 15728640 || memory_free_kib < 1572864 )); then
+ echo "REFUSED_LOW_VPS_CAPACITY disk_free_kib=$disk_free_kib memory_free_kib=$memory_free_kib" >&2
+ exit 2
+fi
 exec 9>/var/lock/ads-five-new-apps.lock
 flock -n 9 || { echo 'APP_LAUNCH_ALREADY_RUNNING' >&2; exit 2; }
 bash "$here/release-nine-demo-apps.sh" --runtime-verify
