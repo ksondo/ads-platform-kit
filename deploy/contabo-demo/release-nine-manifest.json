@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "releaseId": "ads-demo-nine-20261026",
+  "mode": "demo-only",
+  "target": {
+    "hostname": "vmi3191089",
+    "ipv4": "161.97.128.153",
+    "portal": "https://demo.africadigitalsynergy.com",
+    "identityIssuer": "https://login.demo.africadigitalsynergy.com"
+  },
+  "notes": "Planning manifest only. No release SHA is approved by this file; null SHA or releaseScript means deployment MUST refuse.",
+  "protectedServices": [
+    {
+      "container": "ads-demo-portal",
+      "port": 18089
+    },
+    {
+      "container": "ads-commerce-demo-commerce-web-1",
+      "port": 18086
+    },
+    {
+      "container": "ads-demo-identity",
+      "port": 18090
+    },
+    {
+      "container": "ads-business-opportunities-api",
+      "port": 18190
+    }
+  ],
+  "sequence": [
+    {
+      "key": "commerce",
+      "portalId": "commerce",
+      "mode": "update-existing",
+      "repository": "ksondo/ADS-Commerce-Platform",
+      "domain": "commerce.demo.africadigitalsynergy.com",
+      "landingPath": "/commerce",
+      "existingLocalPort": 18086,
+      "database": "reuse-and-backup",
+      "releaseSha": null,
+      "releaseScript": null
+    },
+    {
+      "key": "education",
+      "portalId": "education",
+      "mode": "new",
+      "repository": "ksondo/Education-and-intelligent-services",
+      "domain": "education.demo.africadigitalsynergy.com",
+      "landingPath": "/",
+      "existingLocalPort": null,
+      "database": "new-isolated",
+      "releaseSha": null,
+      "releaseScript": null
+    },
+    {
+      "key": "fleetguard",
+      "portalId": "fleet-guard",
+      "mode": "new",
+      "repository": "ksondo/Fleet-guard-and-intelligent-services",
+      "domain": "fleetguard.demo.africadigitalsynergy.com",
+      "landingPath": "/",
+      "existingLocalPort": null,
+      "database": "new-isolated",
+      "releaseSha": null,
+      "releaseScript": null
+    },
+    {
+      "key": "home-services",
+      "portalId": "home-services",
+      "mode": "new",
+      "repository": "ksondo/Home-Services",
+      "domain": "home-services.demo.africadigitalsynergy.com",
+      "landingPath": "/",
+      "existingLocalPort": null,
+      "database": "new-isolated",
+      "releaseSha": null,
+      "releaseScript": null
+    },
+    {
+      "key": "mamacare",
+      "portalId": "mama-care",
+      "mode": "new",
+      "repository": "ksondo/Mama-care-and-intelligent-services",
+      "domain": "mamacare.demo.africadigitalsynergy.com",
+      "landingPath": "/",
+      "existingLocalPort": null,
+      "database": "new-isolated",
+      "releaseSha": null,
+      "releaseScript": null
+    },
+    {
+      "key": "tontine",
+      "portalId": "digital-tontine",
+      "mode": "new",
+      "repository": "ksondo/Digital-tontine-and-intelligent-services",
+      "domain": "tontine.demo.africadigitalsynergy.com",
+      "landingPath": "/",
+      "existingLocalPort": null,
+      "database": "new-isolated",
+      "releaseSha": null,
+      "releaseScript": null
+    },
+    {
+      "key": "ventureworks",
+      "portalId": "ventureworks",
+      "mode": "reuse-or-update",
+      "repository": "ksondo/Africa-Digital-Synergy-VentureWorks",
+      "domain": "ventureworks.demo.africadigitalsynergy.com",
+      "landingPath": "/",
+      "existingLocalPort": 18480,
+      "database": "reuse-verify",
+      "releaseSha": null,
+      "releaseScript": null
+    },
+    {
+      "key": "morphoo",
+      "portalId": "morphoo",
+      "mode": "reuse-or-update",
+      "repository": "ksondo/go-ahead-guesser",
+      "domain": "morphoo.demo.africadigitalsynergy.com",
+      "landingPath": "/",
+      "existingLocalPort": 18100,
+      "database": "reuse-verify",
+      "releaseSha": null,
+      "releaseScript": null
+    },
+    {
+      "key": "landing",
+      "portalId": null,
+      "mode": "publish-last",
+      "repository": "ksondo/ads-platform-kit",
+      "domain": "demo.africadigitalsynergy.com",
+      "landingPath": "/",
+      "existingLocalPort": 18089,
+      "database": "preserve-opportunities",
+      "releaseSha": null,
+      "releaseScript": null
+    }
+  ],
+  "requiredGates": [
+    "server_capacity",
+    "scoped_github_read_access",
+    "approved_green_main_shas",
+    "snapshot_and_restore_test",
+    "separate_demo_databases_rls",
+    "demo_identity_oidc_clients",
+    "per_app_canary",
+    "verified_dns_and_https",
+    "all_platform_url_launches",
+    "commerce_pos_regression",
+    "portal_publish_last"
+  ],
+  "rollbackPolicy": "Stop on first failure before portal publish; keep existing portal links unchanged. Independently roll back only modified app containers to known-good images; never undo forward-only schema changes automatically."
+}
