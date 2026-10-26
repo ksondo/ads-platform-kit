@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "name": "ADS Demo Access Policy",
+  "status": "proposed-not-deployed",
+  "environment": "demo",
+  "defaultEffect": "deny",
+  "principles": [
+    "Business Opportunities and the ADS landing page remain public and unaffected.",
+    "Product-specific authorization always requires server-verified identity, product audience, tenant and role.",
+    "Restricted preview access also requires a separate, server-verified, expiring operator approval.",
+    "Never expose admin, reviewer, bank or regulatory roles through shared public demo credentials.",
+    "All demo mutations must be isolated from real money, real filings, real institutions and production data."
+  ],
+  "rules": [
+    {
+      "id": "portal.discovery.read",
+      "clientId": null,
+      "audience": "public",
+      "roles": [],
+      "approvalRequired": false,
+      "description": "Public Business Opportunities and sector catalogue"
+    },
+    {
+      "id": "commerce.marketplace.read",
+      "clientId": null,
+      "audience": "public",
+      "roles": [],
+      "approvalRequired": false,
+      "description": "Public, read-only Commerce demonstration"
+    },
+    {
+      "id": "commerce.buyer.preview",
+      "clientId": "commerce-web",
+      "audience": "registered_demo",
+      "roles": [
+        "commerce_buyer"
+      ],
+      "approvalRequired": false,
+      "description": "Buyer journey with sample records only"
+    },
+    {
+      "id": "commerce.shop.manage.preview",
+      "clientId": "commerce-web",
+      "audience": "qualified_business",
+      "roles": [
+        "merchant_owner",
+        "commerce_manager"
+      ],
+      "approvalRequired": true,
+      "description": "Approved merchant sample workspace"
+    },
+    {
+      "id": "commerce.cashier.preview",
+      "clientId": "commerce-web",
+      "audience": "qualified_business",
+      "roles": [
+        "commerce_cashier"
+      ],
+      "approvalRequired": true,
+      "description": "Cashier POS sample transactions, never actual provider payments"
+    },
+    {
+      "id": "commerce.bank.preview",
+      "clientId": "commerce-web",
+      "audience": "institutional_partner",
+      "roles": [
+        "bank_officer",
+        "bank_agent"
+      ],
+      "approvalRequired": true,
+      "description": "Bank/agent test-only workflows subject to institutional qualification"
+    },
+    {
+      "id": "commerce.review.preview",
+      "clientId": "commerce-web",
+      "audience": "ads_staff",
+      "roles": [
+        "commerce_reviewer",
+        "commerce_support"
+      ],
+      "approvalRequired": true,
+      "staffTenantRequired": true,
+      "description": "Internal ADS reviewer/support sandbox only"
+    },
+    {
+      "id": "education.learner.preview",
+      "clientId": "education-web",
+      "audience": "registered_demo",
+      "roles": [
+        "learner",
+        "applicant"
+      ],
+      "approvalRequired": false,
+      "releaseDisabled": true,
+      "description": "Education demo is not yet certified for public exposure"
+    },
+    {
+      "id": "ventureworks.founder.preview",
+      "clientId": "ventureworks-web",
+      "audience": "qualified_business",
+      "roles": [
+        "founder"
+      ],
+      "approvalRequired": true,
+      "releaseDisabled": true,
+      "description": "VentureWorks demo requires separate release acceptance"
+    }
+  ]
+}
