@@ -12,11 +12,16 @@ test('preserve live portal and Commerce demo route while staging seven new desti
   assert.equal(commerce?.demoUrl,manifest.commerce.url);
   assert.equal(manifest.candidates.length,7);
   for(const item of manifest.candidates){
-    assert.equal(item.status,'planned_not_verified');
+    assert.ok(['planned_not_verified','verified_demo'].includes(item.status), 'unknown rollout status: '+item.catalogueId);
     assert.equal(new URL(item.targetUrl).protocol,'https:');
     const entry=catalogue.platforms.find(x=>x.id===item.catalogueId);
     assert.ok(entry, 'missing portal catalogue entry: '+item.catalogueId);
-    assert.equal(entry.demoUrl,null,'unverified launch exposed: '+item.catalogueId);
+    if(item.status==='planned_not_verified') {
+      assert.equal(entry.demoUrl,null,'unverified launch exposed: '+item.catalogueId);
+    } else {
+      assert.equal(entry.demoUrl,item.targetUrl,'verified application route not registered: '+item.catalogueId);
+      assert.equal(entry.availability,'verified_demo','verified application must be labelled verified: '+item.catalogueId);
+    }
     const client=clients.products.find(x=>x.client_id===item.oidcClientId);
     assert.ok(client,'missing OIDC client: '+item.oidcClientId);
     assert.ok(client.redirect_uris.some(u=>u.startsWith(item.targetUrl+'/')), 'demo OIDC redirect missing for '+item.catalogueId);
