@@ -20,9 +20,9 @@ roles_for() {
     fleetguard) printf '%s\n' 'ads_fleetguard_api fleetguard_app API' ;;
     mamacare) printf '%s\n' 'ads_mamacare_api mamacare_app API' \
        'ads_mamacare_worker mamacare_job WORKER' ;;
-    tontine) printf '%s\n' 'tontine_api tontine_app API' \
-       'tontine_worker tontine_worker WORKER' \
-       'tontine_webhook tontine_webhook WEBHOOK' ;;
+    tontine) printf '%s\n' 'ads_tontine_api tontine_app API' \
+       'ads_tontine_worker tontine_worker WORKER' \
+       'ads_tontine_webhook tontine_webhook WEBHOOK' ;;
     home-services) : ;;
     *) exit 2 ;;
   esac
@@ -134,6 +134,13 @@ for app in education fleetguard home-services mamacare tontine; do
     [[ "$value" =~ ^[a-f0-9]{64}$ ]] || exit 2
   done
   if [[ "$mode" == --provision ]]; then
+    # Existing migration-created permission groups must remain NOLOGIN.
+    while read -r login group kind; do
+      [[ "$login" != "$group" ]] || { echo "REFUSED_ROLE_LOGIN_COLLISION $login" >&2; exit 2; }
+      role_state="$(docker exec "$container" psql -X -qAt -U "$owner" -d "$database" -c \
+        "SELECT CASE WHEN rolcanlogin THEN 'LOGIN' ELSE 'NOLOGIN' END FROM pg_roles WHERE rolname='$group'")"
+      [[ "$role_state" == NOLOGIN ]] || { echo "REFUSED_UNEXPECTED_ROLE_STATE $group" >&2; exit 2; }
+    done < <(roles_for "$app")
     # SQL and credentials are streamed on stdin, never command-line parameters.
     {
       while read -r login group kind; do
@@ -171,9 +178,9 @@ for app in education fleetguard home-services mamacare tontine; do
         printf 'MAMACARE_JOB_DATABASE_URL=postgresql://ads_mamacare_worker:%s@%s:5432/%s\n' "$WORKER_PASSWORD" "$container" "$database"
         ;;
       tontine)
-        printf 'DATABASE_URL=postgresql://tontine_api:%s@%s:5432/%s\n' "$API_PASSWORD" "$container" "$database"
-        printf 'TONTINE_WORKER_DATABASE_URL=postgresql://tontine_worker:%s@%s:5432/%s\n' "$WORKER_PASSWORD" "$container" "$database"
-        printf 'TONTINE_WEBHOOK_DATABASE_URL=postgresql://tontine_webhook:%s@%s:5432/%s\n' "$WEBHOOK_PASSWORD" "$container" "$database"
+        printf 'DATABASE_URL=postgresql://ads_tontine_api:%s@%s:5432/%s\n' "$API_PASSWORD" "$container" "$database"
+        printf 'TONTINE_WORKER_DATABASE_URL=postgresql://ads_tontine_worker:%s@%s:5432/%s\n' "$WORKER_PASSWORD" "$container" "$database"
+        printf 'TONTINE_WEBHOOK_DATABASE_URL=postgresql://ads_tontine_webhook:%s@%s:5432/%s\n' "$WEBHOOK_PASSWORD" "$container" "$database"
         ;;
     esac > "$tmp"
     chmod 0600 "$tmp"
