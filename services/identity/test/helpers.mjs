@@ -31,10 +31,13 @@ export async function listenForTest(server, host = '127.0.0.1') {
 }
 
 // Starts a fresh identity service against a clean database. Google is replaced by a stub.
-export async function startService({ env = {}, google } = {}) {
-  const admin = new pg.Pool({ connectionString: DATABASE_URL, max: 2 });
-  await admin.query('DROP SCHEMA IF EXISTS platform CASCADE; DROP TABLE IF EXISTS public.ads_identity_migrations;');
-  await admin.end();
+// keepDb: reuse the current database (to restart the service with other settings).
+export async function startService({ env = {}, google, keepDb = false } = {}) {
+  if (!keepDb) {
+    const admin = new pg.Pool({ connectionString: DATABASE_URL, max: 2 });
+    await admin.query('DROP SCHEMA IF EXISTS platform CASCADE; DROP TABLE IF EXISTS public.ads_identity_migrations;');
+    await admin.end();
+  }
   const config = loadConfig({
     IDENTITY_PUBLIC_URL: 'http://127.0.0.1:0', IDENTITY_DEV_MODE: 'true', DATABASE_URL, MAIL_TRANSPORT: 'memory',
     GOOGLE_CLIENT_ID: google ? 'google-test' : '', GOOGLE_CLIENT_SECRET: google ? 'secret' : '', ...env,

@@ -1,0 +1,43 @@
+{
+  "$id": "https://contracts.africadigitalsynergy.com/ai-gateway-v1/graph-request.schema.json",
+  "title": "graph-request",
+  "type": "object",
+  "required": [
+    "useCase",
+    "collection"
+  ],
+  "properties": {
+    "useCase": {
+      "type": "string"
+    },
+    "collection": {
+      "type": "string"
+    },
+    "entity": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "value",
+        "group"
+      ],
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "group": {
+          "type": "string"
+        }
+      }
+    },
+    "undirected": {
+      "type": "boolean"
+    },
+    "topK": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100
+    }
+  }
+}

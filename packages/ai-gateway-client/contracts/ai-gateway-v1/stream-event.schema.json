@@ -1,0 +1,134 @@
+{
+  "$id": "https://contracts.africadigitalsynergy.com/ai-gateway-v1/stream-event.schema.json",
+  "title": "stream-event",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "text"
+      ],
+      "properties": {
+        "type": {
+          "const": "answer-chunk",
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "citations"
+      ],
+      "properties": {
+        "type": {
+          "const": "citations",
+          "type": "string"
+        },
+        "citations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "ref",
+              "resourceId",
+              "title",
+              "sourceUri",
+              "score"
+            ],
+            "properties": {
+              "ref": {
+                "type": "string"
+              },
+              "resourceId": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "sourceUri": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "score": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "status"
+      ],
+      "properties": {
+        "type": {
+          "const": "status",
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "GROUNDED",
+            "INSUFFICIENT_EVIDENCE"
+          ]
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "code",
+        "retryable"
+      ],
+      "properties": {
+        "type": {
+          "const": "error",
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "runId"
+      ],
+      "properties": {
+        "type": {
+          "const": "done",
+          "type": "string"
+        },
+        "runId": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+        }
+      }
+    }
+  ]
+}

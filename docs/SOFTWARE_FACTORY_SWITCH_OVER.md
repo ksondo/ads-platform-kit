@@ -4,7 +4,7 @@ Software Factory signs users in through the "ADS Identity Service" whose code li
 
 ## What stays the same
 
-`/v1/identity/register`, `/login`, `/onboard`, `/session`, `/logout`, `/internal/session` and `/internal/verify` keep their request and response shapes. Existing users, passwords (scrypt hashes), organisations, tenants, projects and memberships in the `platform` schema are used as they are: migration `002` only adds tables and columns.
+`/v1/identity/register`, `/login`, `/onboard`, `/session`, `/logout`, `/internal/session` and `/internal/verify` keep their request and response shapes. **Change (ACC-03, 20 Oct 2026):** `POST /v1/identity/onboard` is now **off by default** and answers 404. It can be switched on only outside production and demo with `IDENTITY_LEGACY_ONBOARD_ENABLED=true`; organisations are created by ADS operators (`cli.mjs create-organization`). In production (`ADS_ENV=production`, the default) only roles listed in a product's `assignable_roles` can be granted on `/admin` or `/admin/v1`, and a product with an empty list allows no grants. Existing users, passwords (scrypt hashes), organisations, tenants, projects and memberships in the `platform` schema are used as they are: migration `002` only adds tables and columns.
 
 ## What changes for users
 

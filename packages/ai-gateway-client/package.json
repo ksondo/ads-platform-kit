@@ -1,0 +1,17 @@
+{
+  "name": "@ads/ai-gateway-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Server-side client for the ADS AI Gateway contract v1 (Progress Agentic RAG behind one governed gateway), plus a contract-faithful test double and the shared contract schemas. No dependencies.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "exports": {
+    ".": { "types": "./src/index.d.ts", "default": "./src/index.mjs" },
+    "./test-double": "./src/test-double.mjs",
+    "./schema-check": "./src/schema-check.mjs",
+    "./contracts/*": "./contracts/ai-gateway-v1/*"
+  },
+  "scripts": {
+    "test": "node --test --test-concurrency=1 test/*.test.mjs"
+  }
+}

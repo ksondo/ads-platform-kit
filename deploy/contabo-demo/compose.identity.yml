@@ -1,0 +1,55 @@
+# Dedicated DEMO identity environment; no shared user database and no legacy container changes.
+# ADS_ENV=demo and DEMO_MODE=1 are hard-set; the production identity is not replaced.
+name: ads-demo-identity
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ads_demo_identity
+      POSTGRES_DB: ads_demo_identity
+      POSTGRES_PASSWORD: ${ADS_DEMO_DB_PASSWORD:?Provide a unique demo DB password in /etc/ads-demo/images.env}
+    volumes:
+      - ads-demo-identity-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ads_demo_identity -d ads_demo_identity"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    security_opt:
+      - no-new-privileges:true
+    networks: [demo-private]
+
+  identity:
+    image: ${ADS_DEMO_IDENTITY_IMAGE:?Provide an approved immutable GHCR identity image tag}
+    container_name: ads-demo-identity
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - /etc/ads-demo/identity.env
+    environment:
+      ADS_ENV: demo
+      DEMO_MODE: "1"
+      IDENTITY_LEGACY_ONBOARD_ENABLED: "false"
+      IDENTITY_TRUST_PROXY: "true"
+      DATABASE_URL: postgres://ads_demo_identity:${ADS_DEMO_DB_PASSWORD}@db:5432/ads_demo_identity
+    ports:
+      - "127.0.0.1:${ADS_DEMO_IDENTITY_PORT:-18090}:8084"
+    security_opt:
+      - no-new-privileges:true
+    networks: [demo-private]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8084/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
+networks:
+  demo-private:
+    name: ads-demo-private
+    # Not attached to Software Factory's africorestack-developer network.
+volumes:
+  ads-demo-identity-postgres:
+    name: ads-demo-identity-postgres

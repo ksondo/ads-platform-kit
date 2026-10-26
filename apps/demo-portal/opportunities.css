@@ -1,0 +1,35 @@
+/* Scoped exclusively to the ADS Business Opportunities routes. */
+#opportunities-app .opp-controls{display:grid;grid-template-columns:1fr 1.35fr 1.2fr;gap:20px;padding:22px;background:white;border:1px solid #dfe7f0;border-radius:16px;margin-bottom:26px}
+#opportunities-app .opp-controls label{display:block;font-size:13px;font-weight:800;color:#102039;margin-bottom:7px}
+#opportunities-app .opp-controls select,#opportunities-app .opp-controls input{width:100%;padding:12px;border:1px solid #cbd4df;border-radius:9px;background:white;color:#102039}
+#opportunities-app #opp-tool-search .btn{margin-top:9px}
+#opportunities-app .opp-controls small{color:#647187;font-size:11px}
+#opportunities-app .opp-business{position:relative}
+#opportunities-app #opp-suggestions{position:absolute;left:0;right:0;top:75px;z-index:4;max-height:240px;overflow:auto;background:white;box-shadow:0 6px 24px #10203927;border-radius:8px}
+#opportunities-app #opp-suggestions:empty{display:none}
+#opportunities-app .opp-suggestion{display:block;padding:11px 14px;border-bottom:1px solid #e4e9ef;font-size:12px}
+#opportunities-app .opp-suggestion:hover{background:#f3f7fc}
+#opportunities-app .opp-results-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+#opportunities-app .opp-results-head h2{font-size:23px}
+#opportunities-app .opp-results-head p{max-width:400px;color:#637184;font-size:11px}
+#opportunities-app .opp-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+#opportunities-app .opp-card{background:white;border:1px solid #dde5ee;border-radius:13px;box-shadow:0 4px 14px #0b1b310d;padding:22px;display:flex;flex-direction:column;gap:10px}
+#opportunities-app .opp-card h3{font-size:19px;margin:0}
+#opportunities-app .opp-card p{font-size:13px;line-height:1.65;color:#48596e}
+#opportunities-app .opp-card .text-link{margin-top:auto}
+#opportunities-app .opp-sector{color:#98701a;font-size:11px;font-weight:800;letter-spacing:.03em}
+#opportunities-app .opp-notice{font-size:11px!important;color:#667387!important;margin-top:auto}
+#opportunities-app .opp-message{padding:28px;border:1px solid #dce4ed;background:white;border-radius:11px}
+#opportunities-app .opp-pagination{display:flex;gap:14px;justify-content:center;align-items:center;margin:30px auto}
+#opportunities-app .opp-pagination button{padding:10px 16px;border-radius:9px;border:1px solid #cad4df;background:white}
+#opportunities-app .opp-selected-business{padding:20px;background:#e9f3ff;border-radius:13px;margin:0 0 22px}
+#opportunities-app .opp-selected-business h2{font-size:21px}
+#opportunities-app .opp-detail{background:white;border:1px solid #dce5ee;border-radius:16px;padding:32px;max-width:890px;margin:24px auto}
+#opportunities-app .opp-detail h2{font-size:32px;margin:11px 0 14px}
+#opportunities-app .opp-detail h3{margin-top:24px;font-size:18px}
+#opportunities-app .opp-detail p{line-height:1.7;color:#4f5f73}
+#opportunities-app .opp-actions{display:flex;gap:12px;flex-wrap:wrap}
+#opportunities-app .opp-footer-cta{margin:36px 0 10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+#opportunities-app .opp-footer-cta p{width:100%;color:#687688;font-size:12px}
+@media(max-width:990px){#opportunities-app .opp-controls{grid-template-columns:1fr 1fr}#opportunities-app .opp-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:650px){#opportunities-app .opp-controls,#opportunities-app .opp-grid{grid-template-columns:1fr}#opportunities-app .opp-results-head{display:block}#opportunities-app .opp-detail{padding:20px}}

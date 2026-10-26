@@ -7,7 +7,7 @@ import { TOKEN_EXCHANGE, createAdmin } from './admin.mjs';
 import { renderAdminPage } from './admin-page.mjs';
 import { createLegacyApi } from './legacy.mjs';
 import { createOAuth } from './oauth.mjs';
-import { pickLocale, renderPage } from './pages.mjs';
+import { langOf, pickLocale, renderPage } from './pages.mjs';
 import { HttpError, RateLimiter, cookie, fail, isEmail, normalizeEmail, parseCookies, randomToken, sha256, signValue, unsignValue } from './security.mjs';
 
 const MINUTE = 60_000;
@@ -69,7 +69,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     req.on('error', reject);
   });
 
-  function baseHeaders(res, nonce) {
+  function baseHeaders(res, nonce, { demo = false } = {}) {
     res.setHeader('cache-control', 'no-store');
     res.setHeader('x-content-type-options', 'nosniff');
     res.setHeader('referrer-policy', 'no-referrer');
@@ -77,7 +77,10 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     res.setHeader('cross-origin-opener-policy', 'same-origin');
     if (config.secureCookies) res.setHeader('strict-transport-security', 'max-age=31536000; includeSubDomains');
     // form-action also governs the redirect back to the product after a form post, so allow https targets.
-    res.setHeader('content-security-policy', `default-src 'none'; style-src 'nonce-${nonce}'; img-src https: data:; form-action 'self' https:${config.devMode ? ' http:' : ''}; frame-ancestors 'none'; base-uri 'none'`);
+    // The demo sign-in panel adds its one nonce'd script ("Use demo account") and the landing fonts.
+    const demoCsp = demo ? `; script-src 'nonce-${nonce}'; font-src https://fonts.gstatic.com` : '';
+    const styles = demo ? `'nonce-${nonce}' https://fonts.googleapis.com` : `'nonce-${nonce}'`;
+    res.setHeader('content-security-policy', `default-src 'none'; style-src ${styles}; img-src https: data:; form-action 'self' https:${config.devMode ? ' http:' : ''}; frame-ancestors 'none'; base-uri 'none'${demoCsp}`);
   }
   const json = (res, status, body, extra = {}) => {
     res.writeHead(status, { 'content-type': 'application/json; charset=utf-8', ...extra });
@@ -106,17 +109,21 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
   async function currentSso(req) {
     const raw = unsignValue(parseCookies(req.headers.cookie)[C.sso], config.cookieSecret);
     if (!raw) return null;
-    const row = (await pool.query(`SELECT s.id,s.user_id,u.email,u.status FROM platform.sso_sessions s JOIN platform.users u ON u.id=s.user_id
+    const row = (await pool.query(`SELECT s.id,s.user_id,u.email,u.status,u.is_demo FROM platform.sso_sessions s JOIN platform.users u ON u.id=s.user_id
       WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>now()`, [sha256(raw)])).rows[0];
     if (!row || row.status !== 'active') return null;
+    if (row.is_demo && !config.demo.enabled) return null;
     return { id: row.id, user: { id: row.user_id, email: row.email } };
   }
-  async function startSso(req, res, user, method) {
+  // locale: the language of this sign-in (page choice or the product's ui_locales), carried in the
+  // `locale` token claim. It is never written to the account (shared demo accounts keep no language).
+  async function startSso(req, res, user, method, locale = null) {
     const previous = unsignValue(parseCookies(req.headers.cookie)[C.sso], config.cookieSecret);
     if (previous) await pool.query('UPDATE platform.sso_sessions SET revoked_at=now() WHERE token_hash=$1 AND revoked_at IS NULL', [sha256(previous)]);
     const raw = randomToken(32);
     const id = crypto.randomUUID();
-    await pool.query('INSERT INTO platform.sso_sessions(id,user_id,token_hash,method,expires_at) VALUES ($1,$2,$3,$4,now()+make_interval(secs => $5))', [id, user.id, sha256(raw), method, config.ssoSessionTtl]);
+    await pool.query('INSERT INTO platform.sso_sessions(id,user_id,token_hash,method,expires_at,locale) VALUES ($1,$2,$3,$4,now()+make_interval(secs => $5),$6)',
+      [id, user.id, sha256(raw), method, config.ssoSessionTtl, langOf(locale)]);
     addCookie(res, cookie(C.sso, signValue(raw, config.cookieSecret), { secure: config.secureCookies, maxAge: config.ssoSessionTtl }));
     return { id, user };
   }
@@ -133,14 +140,35 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     return Boolean(id) && current.includes(id);
   }
 
+  // Demo credentials on the sign-in page: demo mode + DEMO_SHOW_CREDENTIALS=1, demo USER only.
+  const demoShown = config.demo.showCredentials ? { email: config.demo.accounts.user.email, password: config.demo.shownPassword } : null;
+
+  // BRIEF16: the demo personas of the product the tester came from (written by demo-orgs/demo-reset),
+  // under the same rule, and only when the persona password is configured. Cached briefly per product.
+  const personaCache = new Map();
+  async function personasFor(clientId) {
+    if (!config.demo.showCredentials || !config.demo.shownPersonaPassword || !clientId) return null;
+    const hit = personaCache.get(clientId);
+    if (hit && Date.now() - hit.at < 30_000) return hit.value;
+    const list = (await pool.query(`SELECT p.persona_key AS key, p.label, p.hint, u.email FROM platform.demo_personas p
+      JOIN platform.users u ON u.id=p.user_id AND u.is_demo AND u.status='active'
+      WHERE p.client_id=$1 AND p.demo_set='' ORDER BY p.position, p.persona_key`, [clientId])).rows;
+    const value = list.length ? { password: config.demo.shownPersonaPassword, list } : null;
+    personaCache.set(clientId, { at: Date.now(), value });
+    return value;
+  }
+
   function page(req, res, view, ctx = {}, status = 200) {
     const nonce = randomToken(12);
-    baseHeaders(res, nonce);
-    const locale = ctx.locale ?? pickLocale(ctx.lang, req.headers['accept-language'], ctx.authRequest?.locale);
+    const demo = view === 'login' ? demoShown : null;
+    const personas = view === 'login' ? ctx.personas ?? null : null;
+    baseHeaders(res, nonce, { demo: Boolean(demo || personas) });
+    // The page's own choice (?lang=), then the product's (ui_locales, kept on the sign-in request), then the browser.
+    const locale = ctx.locale ?? pickLocale(ctx.lang ?? ctx.authRequest?.locale, req.headers['accept-language']);
     const body = renderPage(view, {
       locale, nonce, client: ctx.authRequest?.client ?? ctx.client ?? null, req: ctx.authRequest?.id ?? ctx.req ?? null,
       csrf: csrfToken(req, res), error: ctx.error, values: ctx.values, googleEnabled: config.google.enabled,
-      minPassword: config.passwordMinLength, path: ctx.path ?? safePath(new URL(req.url, 'http://x').pathname), next: safeNext(ctx.next),
+      minPassword: config.passwordMinLength, path: ctx.path ?? safePath(new URL(req.url, 'http://x').pathname), next: safeNext(ctx.next), demo, personas,
     });
     res.writeHead(status, { 'content-type': 'text/html; charset=utf-8' });
     res.end(body);
@@ -238,7 +266,8 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
         jwks_uri: `${config.publicUrl}/.well-known/jwks.json`, userinfo_endpoint: `${config.publicUrl}/userinfo`, revocation_endpoint: `${config.publicUrl}/revoke`,
         end_session_endpoint: `${config.publicUrl}/logout`, response_types_supported: ['code'], grant_types_supported: ['authorization_code', 'refresh_token', TOKEN_EXCHANGE],
         code_challenge_methods_supported: ['S256'], token_endpoint_auth_methods_supported: ['none', 'client_secret_basic', 'client_secret_post'],
-        access_token_signing_alg_values_supported: ['RS256'], claims_supported: ['sub', 'tenant_id', 'roles', 'email', 'email_verified', 'name'],
+        access_token_signing_alg_values_supported: ['RS256'], claims_supported: ['sub', 'tenant_id', 'roles', 'email', 'email_verified', 'name', 'locale', 'demo', 'ads_staff'],
+        ui_locales_supported: ['en', 'fr'],
       }, { 'cache-control': 'public, max-age=300', 'access-control-allow-origin': '*' });
     }
     if (method === 'GET' && path === '/sdk/ads-identity.js') {
@@ -250,12 +279,17 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     // ----- product sign-in (OAuth 2.0 + PKCE) -----
     if (method === 'GET' && path === '/authorize') {
       limiter.enforce(`authorize-ip:${ip}`, 60, MINUTE);
-      const locale = pickLocale(q.lang ?? q.ui_locales, req.headers['accept-language']);
+      const asked = langOf(q.lang) ?? langOf(q.ui_locales);
+      const locale = asked ?? pickLocale(null, req.headers['accept-language']);
       const { id } = await oauth.createAuthRequest(q, locale);
       const authRequest = await oauth.loadAuthRequest(id);
       bindAuthRequest(req, res, id);
       const sso = q.prompt === 'login' ? null : await currentSso(req);
-      if (sso) return finishSignIn(req, res, authRequest, sso);
+      if (sso) {
+        // Already signed in: the product's language choice applies to this sign-in.
+        if (asked) await pool.query('UPDATE platform.sso_sessions SET locale=$2 WHERE id=$1', [sso.id, asked]);
+        return finishSignIn(req, res, authRequest, sso);
+      }
       if (q.prompt === 'none') {
         const back = new URL(authRequest.redirect_uri);
         back.searchParams.set('error', 'login_required');
@@ -275,13 +309,14 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     const boundRequest = async id => (isBound(req, id) ? oauth.loadAuthRequest(id) : null);
 
     if (method === 'GET' && (path === '/login' || path === '/' )) {
-      return page(req, res, 'login', { authRequest: await authRequestFrom(q), lang: q.lang, next: q.next });
+      const authRequest = await authRequestFrom(q);
+      return page(req, res, 'login', { authRequest, lang: q.lang, next: q.next, personas: await personasFor(authRequest?.client_id) });
     }
     if (method === 'POST' && path === '/login') {
       const form = await readBody(req);
       const authRequest = await authRequestFrom(form);
       const next = safeNext(form.next);
-      const ctx = { authRequest, lang: form.lang, values: { email: form.email }, next };
+      const ctx = { authRequest, lang: form.lang, values: { email: form.email }, next, personas: await personasFor(authRequest?.client_id) };
       try {
         checkCsrf(req, form);
         const email = normalizeEmail(form.email);
@@ -299,7 +334,13 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
           throw error;
         }
         limiter.reset(`login-email:${emailKey(email)}`);
-        const sso = await startSso(req, res, user, 'password');
+        // The language the page was in wins (kept on the sign-in request for the next pages and the token).
+        const lang = langOf(form.lang) ?? authRequest?.locale;
+        if (authRequest && lang && lang !== authRequest.locale) {
+          await pool.query('UPDATE platform.auth_requests SET locale=$2 WHERE id=$1', [authRequest.id, lang]);
+          authRequest.locale = lang;
+        }
+        const sso = await startSso(req, res, user, 'password', lang ?? pickLocale(null, req.headers['accept-language']));
         await audit('login', { userId: user.id, outcome: 'allowed', reason: 'password', ip, clientId: authRequest?.client_id });
         return finishSignIn(req, res, authRequest, sso, undefined, next);
       } catch (error) {
@@ -352,7 +393,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
         limiter.enforce(`activate-ip:${ip}`, config.limits.loginPerIp, 15 * MINUTE);
         limiter.enforce(`activate-token:${sha256(String(form.token ?? ''))}`, 10, 15 * MINUTE);
         const user = await accounts.activate({ token: String(form.token ?? ''), password: form.password, ip });
-        const sso = await startSso(req, res, user, 'password');
+        const sso = await startSso(req, res, user, 'password', langOf(form.lang) ?? authRequest?.locale);
         return finishSignIn(req, res, authRequest, sso, undefined, next);
       } catch (error) {
         if (error instanceof HttpError && error.code === 'LINK_INVALID') return page(req, res, 'link_invalid', { ...ctx, values: { retry: '/login' } }, 400);
@@ -411,6 +452,8 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       if (!authRequest) fail(400, 'SIGN_IN_REQUEST_EXPIRED');
       const sso = await currentSso(req);
       if (!sso) return redirect(res, `/login?req=${encodeURIComponent(authRequest.id)}`);
+      const lang = langOf(form.lang);
+      if (lang) await pool.query('UPDATE platform.sso_sessions SET locale=$2 WHERE id=$1', [sso.id, lang]);
       return finishSignIn(req, res, authRequest, sso, String(form.tenant ?? ''));
     }
 
@@ -442,7 +485,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       try {
         const profile = await google.exchange({ code: q.code, codeVerifier: row.code_verifier, nonce: row.nonce });
         const user = await accounts.googleUser({ ...profile, ip, locale: authRequest?.locale ?? 'en' });
-        const sso = await startSso(req, res, user, 'google');
+        const sso = await startSso(req, res, user, 'google', authRequest?.locale ?? pickLocale(null, req.headers['accept-language']));
         return finishSignIn(req, res, authRequest, sso, undefined, row.next);
       } catch (error) {
         const code = error instanceof HttpError ? error.code : 'GOOGLE_SIGN_IN_FAILED';
@@ -488,7 +531,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       const auth = String(req.headers.authorization ?? '');
       try {
         const { payload } = await jwtVerify(auth.replace(/^Bearer /, ''), localJwks, { issuer: config.issuer, algorithms: ['RS256'] });
-        return json(res, 200, { sub: payload.sub, email: payload.email, email_verified: payload.email_verified, name: payload.name, tenant_id: payload.tenant_id, roles: payload.roles });
+        return json(res, 200, { sub: payload.sub, email: payload.email, email_verified: payload.email_verified, name: payload.name, tenant_id: payload.tenant_id, roles: payload.roles, locale: payload.locale, demo: payload.demo, ads_staff: payload.ads_staff });
       } catch {
         return json(res, 401, { error: 'invalid_token' });
       }
@@ -501,6 +544,11 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       // A bare GET (no registered product return address) asks for confirmation, so other sites cannot sign people out.
       if (method === 'GET' && !back) return page(req, res, 'confirm_logout', { client, lang: q.lang, values: { clientId } });
       if (method === 'POST') checkCsrf(req, form);
+      // A wrong-account switch may return only to the EXISTING browser-bound,
+      // unexpired OAuth request. Never accept an arbitrary return URL.
+      const switchAuth = method === 'POST' && form.switch_account === '1'
+        ? await authRequestFrom(form) : null;
+      if (form.switch_account === '1' && !switchAuth) fail(400, 'SIGN_IN_REQUEST_EXPIRED');
       const raw = unsignValue(parseCookies(req.headers.cookie)[C.sso], config.cookieSecret);
       if (raw) {
         const row = (await pool.query('UPDATE platform.sso_sessions SET revoked_at=now() WHERE token_hash=$1 AND revoked_at IS NULL RETURNING id,user_id', [sha256(raw)])).rows[0];
@@ -510,6 +558,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
         }
       }
       addCookie(res, cookie(C.sso, '', { secure: config.secureCookies, maxAge: 0 }));
+      if (switchAuth) return redirect(res, '/login?req=' + encodeURIComponent(switchAuth.id) + '&lang=' + encodeURIComponent(langOf(form.lang) || switchAuth.locale || 'fr'));
       if (!back && method === 'POST' && safeNext(form.next)) return redirect(res, safeNext(form.next));
       if (back) {
         const url = new URL(back);
@@ -625,7 +674,14 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       limiter.reset(`login-email:${emailKey(body.email)}`);
       return json(res, 200, result);
     }
-    if (method === 'POST' && path === '/v1/identity/onboard') return json(res, 201, await legacy.onboard(req, await readBody(req)));
+    // ACC-03: off unless IDENTITY_LEGACY_ONBOARD_ENABLED (never in production or demo). Answers as if it did not exist.
+    if (method === 'POST' && path === '/v1/identity/onboard') {
+      if (!config.legacyOnboard) {
+        await audit('workspace_onboard', { outcome: 'denied', reason: 'ONBOARD_DISABLED', ip });
+        fail(404, 'NOT_FOUND');
+      }
+      return json(res, 201, await legacy.onboard(req, await readBody(req)));
+    }
     if (method === 'GET' && path === '/v1/identity/session') return json(res, 200, await legacy.sessionContext(req));
     if (method === 'POST' && path === '/internal/session') return json(res, 200, await legacy.sessionContext(req));
     if (method === 'POST' && path === '/internal/verify') return json(res, 200, await legacy.verify(req));

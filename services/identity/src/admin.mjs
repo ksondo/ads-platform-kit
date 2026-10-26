@@ -43,10 +43,10 @@ export function createAdmin({ pool, config, keys, jwks, audit, mailer, log = con
   async function authority(userId, tenantId, db = pool) {
     if (!UUID.test(String(userId)) || !UUID.test(String(tenantId))) return null;
     const row = (await db.query(`SELECT m.role, t.name AS tenant_name, o.id AS organization_id, o.name AS organization_name
-      FROM platform.memberships m JOIN platform.users u ON u.id=m.user_id AND u.status='active'
+      FROM platform.memberships m JOIN platform.users u ON u.id=m.user_id AND u.status='active' AND (NOT u.is_demo OR $3)
       JOIN platform.tenants t ON t.id=m.tenant_id AND t.status='active'
       JOIN platform.organizations o ON o.id=t.organization_id AND o.status='active' AND o.kind='organization'
-      WHERE m.user_id=$1 AND m.tenant_id=$2 AND m.status='active'`, [userId, tenantId])).rows[0];
+      WHERE m.user_id=$1 AND m.tenant_id=$2 AND m.status='active'`, [userId, tenantId, config.demo.enabled])).rows[0];
     if (!row) return null;
     const products = (await db.query(`SELECT p.client_id FROM platform.product_roles p JOIN platform.oauth_clients c ON c.client_id=p.client_id AND c.status='active'
       WHERE p.user_id=$1 AND p.tenant_id=$2 AND p.roles && c.admin_roles`, [userId, tenantId])).rows.map(r => r.client_id);
@@ -90,12 +90,15 @@ export function createAdmin({ pool, config, keys, jwks, audit, mailer, log = con
     return { auth, client };
   }
 
-  const cleanRoles = (roles, client, auth) => {
+  // `grant` is false for revocations: any held role may be taken away.
+  const cleanRoles = (roles, client, auth, grant = true) => {
     const list = [...new Set((Array.isArray(roles) ? roles : String(roles ?? '').split(/[\s,]+/)).map(r => String(r).trim()).filter(Boolean))];
     if (!list.length || list.length > 20) fail(400, 'ROLES_INVALID');
+    // ACC-03 (strict grants, always on in production): a product with no assignable_roles allows no grants.
+    if (grant && config.strictRoleGrants && !client.assignable_roles.length) fail(403, 'NO_ASSIGNABLE_ROLES');
     for (const r of list) {
       if (!ROLE.test(r)) fail(400, 'ROLES_INVALID', { role: r });
-      if (client.assignable_roles.length && !client.assignable_roles.includes(r)) fail(400, 'ROLE_NOT_ASSIGNABLE', { role: r });
+      if (grant && client.assignable_roles.length && !client.assignable_roles.includes(r)) fail(400, 'ROLE_NOT_ASSIGNABLE', { role: r });
       if (client.admin_roles.includes(r) && !auth.orgAdmin) fail(403, 'FORBIDDEN');
     }
     return list;
@@ -186,7 +189,8 @@ export function createAdmin({ pool, config, keys, jwks, audit, mailer, log = con
 
   async function memberRow(db, tenantId, userId, lock = false) {
     if (!UUID.test(String(userId))) fail(404, 'MEMBER_NOT_FOUND');
-    return (await db.query(`SELECT m.user_id, m.role, m.status FROM platform.memberships m WHERE m.tenant_id=$1 AND m.user_id=$2${lock ? ' FOR UPDATE' : ''}`, [tenantId, userId])).rows[0] ?? null;
+    return (await db.query(`SELECT m.user_id, m.role, m.status, u.is_demo FROM platform.memberships m JOIN platform.users u ON u.id=m.user_id
+      WHERE m.tenant_id=$1 AND m.user_id=$2${lock ? ' FOR UPDATE OF m' : ''}`, [tenantId, userId])).rows[0] ?? null;
   }
   const currentRoles = async (db, tenantId, userId, clientId) => (await db.query('SELECT roles FROM platform.product_roles WHERE user_id=$1 AND tenant_id=$2 AND client_id=$3 FOR UPDATE', [userId, tenantId, clientId])).rows[0]?.roles ?? [];
 
@@ -213,7 +217,7 @@ export function createAdmin({ pool, config, keys, jwks, audit, mailer, log = con
   async function revokeRoles(ctx, userId, roles) {
     return withTransaction(pool, async c => {
       const { auth, client } = await authorize(ctx, 'roles:write', c);
-      const list = cleanRoles(roles, { ...client, assignable_roles: [] }, auth);
+      const list = cleanRoles(roles, client, auth, false);
       const member = await memberRow(c, ctx.tenantId, userId, true);
       if (!member) fail(404, 'MEMBER_NOT_FOUND');
       const before = await currentRoles(c, ctx.tenantId, userId, client.client_id);
@@ -238,6 +242,7 @@ export function createAdmin({ pool, config, keys, jwks, audit, mailer, log = con
       const member = await memberRow(c, ctx.tenantId, userId, true);
       if (!member) fail(404, 'MEMBER_NOT_FOUND');
       if (member.role === 'owner') fail(403, 'FORBIDDEN');
+      if (member.is_demo) fail(403, 'DEMO_ACCOUNT_LOCKED');
       if (member.role === 'admin' && !auth.owner) fail(403, 'FORBIDDEN');
       await c.query('UPDATE platform.memberships SET status=$3 WHERE user_id=$1 AND tenant_id=$2', [userId, ctx.tenantId, active ? 'active' : 'disabled']);
       let revoked = 0;
@@ -257,6 +262,7 @@ export function createAdmin({ pool, config, keys, jwks, audit, mailer, log = con
       const member = await memberRow(c, ctx.tenantId, userId, true);
       if (!member) fail(404, 'MEMBER_NOT_FOUND');
       if (member.role === 'owner' || (!admin && member.role === 'admin' && !auth.owner)) fail(403, 'FORBIDDEN');
+      if (member.is_demo) fail(403, 'DEMO_ACCOUNT_LOCKED');
       if (member.status !== 'active') fail(409, 'MEMBER_DEACTIVATED');
       const role = admin ? 'admin' : 'member';
       await c.query('UPDATE platform.memberships SET role=$3 WHERE user_id=$1 AND tenant_id=$2', [userId, ctx.tenantId, role]);

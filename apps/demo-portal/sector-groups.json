@@ -1,0 +1,80 @@
+{
+  "schemaVersion": 1,
+  "groups": {
+    "business-agriculture": [
+      "agriculture-crop-farming",
+      "livestock-poultry"
+    ],
+    "business-processing": [
+      "food-agricultural-processing",
+      "wood-forest-processing",
+      "animal-products-processing",
+      "industrial-manufacturing",
+      "mineral-processing",
+      "recycling-circular-economy"
+    ],
+    "business-commerce": [
+      "retail-neighborhood-shops",
+      "wholesale-distribution",
+      "e-commerce-marketplaces",
+      "food-service-restaurants",
+      "pharmacies-medical-retail"
+    ],
+    "business-construction": [
+      "construction-contractors",
+      "real-estate-property"
+    ],
+    "business-mobility": [
+      "passenger-transport",
+      "logistics-courier-warehousing",
+      "fleet-services-equipment",
+      "car-sales-dealerships"
+    ],
+    "business-tourism": [
+      "tourism-hospitality",
+      "events-recreation-entertainment",
+      "sports-gyms-fitness"
+    ],
+    "business-education": [
+      "schools-education",
+      "training-certification",
+      "careers-employment-skills"
+    ],
+    "business-health": [
+      "healthcare-clinics",
+      "maternal-newborn-family-care",
+      "mental-wellness-counselling",
+      "nutrition-food-planning-dietetics"
+    ],
+    "business-services": [
+      "home-domestic-services",
+      "beauty-personal-services",
+      "legal-professional-services",
+      "family-heritage-ancestry",
+      "creative-industries-media"
+    ],
+    "business-finance": [
+      "banking-credit-facilitation",
+      "cooperatives-tontines",
+      "insurance-risk-services",
+      "personal-household-finance",
+      "investment-preparation-opportunities"
+    ],
+    "business-communities": [
+      "ngos-charities-social-projects",
+      "community-services-public-infrastructure",
+      "churches-faith-communities"
+    ],
+    "business-technology": [
+      "software-it-services",
+      "cloud-managed-operations",
+      "business-formation-advisory",
+      "project-organizational-management",
+      "telecom-digital-communications",
+      "regulatory-compliance-service-providers"
+    ],
+    "business-environment": [
+      "waste-collection-environmental-services"
+    ]
+  }
+}

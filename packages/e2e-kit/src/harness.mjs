@@ -232,26 +232,39 @@ export function createHarness({ url, issuer, databaseUrl, signingKeyPem, kid = '
 
     // Deletes users and organisations this harness created (and personal workspaces made at sign-in).
     async cleanup() {
-      if (created.emails.size) {
-        const extra = await pool.query('SELECT id FROM platform.users WHERE email = ANY($1::text[])', [[...created.emails]]);
-        for (const r of extra.rows) created.users.add(r.id);
+      // Serialise cross-worker fixture deletion. Identity membership and personal-workspace
+      // cascades can otherwise deadlock when separate Playwright workers delete in parallel.
+      const client = await pool.connect();
+      try {
+        await client.query('BEGIN');
+        await client.query("SELECT pg_advisory_xact_lock(hashtextextended('ads-e2e-kit:identity-cleanup',0))");
+        if (created.emails.size) {
+          const extra = await client.query('SELECT id FROM platform.users WHERE email = ANY($1::text[])', [[...created.emails]]);
+          for (const r of extra.rows) created.users.add(r.id);
+        }
+        const users = [...created.users];
+        const orgs = [...created.organizations];
+        if (users.length) {
+          const personal = await client.query(`SELECT DISTINCT t.organization_id FROM platform.memberships m JOIN platform.tenants t ON t.id=m.tenant_id
+            JOIN platform.organizations o ON o.id=t.organization_id WHERE o.kind='personal' AND m.user_id = ANY($1::uuid[])`, [users]);
+          orgs.push(...personal.rows.map(r => r.organization_id));
+        }
+        if (orgs.length) {
+          await client.query('DELETE FROM platform.tenants WHERE organization_id = ANY($1::uuid[])', [orgs]);
+          await client.query('DELETE FROM platform.organizations WHERE id = ANY($1::uuid[])', [orgs]);
+        }
+        if (users.length) await client.query('DELETE FROM platform.users WHERE id = ANY($1::uuid[])', [users]);
+        await client.query('COMMIT');
+        created.users.clear();
+        created.organizations.clear();
+        created.tenants.clear();
+        created.emails.clear();
+      } catch (error) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw error;
+      } finally {
+        client.release();
       }
-      const users = [...created.users];
-      const orgs = [...created.organizations];
-      if (users.length) {
-        const personal = await pool.query(`SELECT DISTINCT t.organization_id FROM platform.memberships m JOIN platform.tenants t ON t.id=m.tenant_id
-          JOIN platform.organizations o ON o.id=t.organization_id WHERE o.kind='personal' AND m.user_id = ANY($1::uuid[])`, [users]);
-        orgs.push(...personal.rows.map(r => r.organization_id));
-      }
-      if (orgs.length) {
-        await pool.query('DELETE FROM platform.tenants WHERE organization_id = ANY($1::uuid[])', [orgs]);
-        await pool.query('DELETE FROM platform.organizations WHERE id = ANY($1::uuid[])', [orgs]);
-      }
-      if (users.length) await pool.query('DELETE FROM platform.users WHERE id = ANY($1::uuid[])', [users]);
-      created.users.clear();
-      created.organizations.clear();
-      created.tenants.clear();
-      created.emails.clear();
     },
 
     async close() {

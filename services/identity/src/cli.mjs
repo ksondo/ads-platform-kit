@@ -2,8 +2,13 @@
 // /admin or through the admin API; these commands are for ADS operators. Run inside the identity container:
 //   node src/cli.mjs <command> [--flag value ...]
 import crypto from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import pg from 'pg';
+import { DEMO_ACCOUNTS, demoSettings, isProductionEnv, readSecret, redirectAllowed } from './config.mjs';
 import { migrate } from './db.mjs';
+import { bootstrapDemoAccounts, demoAccountSubs, ensureDemoOrgs, personaAccounts, resetDemo, tenantsDocument } from './demo.mjs';
 
 const [command, ...rest] = process.argv.slice(2);
 const args = {};
@@ -20,7 +25,56 @@ const usage = `Commands:
   create-organization --name "Ecole Les Pins" --owner owner@example.com
   grant-role --email user@example.com --client health-web --tenant <tenant uuid> --roles facility_admin,reviewer
   make-org-admin --email user@example.com --tenant <tenant uuid>
-  disable-user --email user@example.com`;
+  disable-user --email user@example.com
+  mark-staff-org --tenant <tenant uuid> [--staff true|false]   ADS staff organisation flag (ACC-04, token claim ads_staff)
+
+Demo environment only (ADS_ENV=demo AND DEMO_MODE=1; refused everywhere else):
+  demo-bootstrap [--clients ...] [--personas config/demo-personas.json]
+                                       create or refresh the demo user, second demo user and demo admin, and the demo personas
+                                       passwords from DEMO_USER_PASSWORD, DEMO_USER2_PASSWORD, DEMO_ADMIN_PASSWORD, DEMO_PERSONA_PASSWORD (or *_FILE); never printed
+                                       (without DEMO_PERSONA_PASSWORD the personas are skipped, with a warning)
+  demo-orgs [--clients config/clients.demo.json] [--personas config/demo-personas.json] [--out demo-tenants.json]
+                                       demo organisations per product (+ ADS staff ones); demo user and checker get every role; each persona
+                                       exactly its roles in its one organisation; writes product -> tenant ids and persona subs
+  demo-reset [--clients ...] [--personas ...] [--out ...]   nightly: restore the demo accounts and personas, end their sign-ins, restore memberships and roles`;
+const here = path.dirname(fileURLToPath(import.meta.url));
+const defaultClients = path.resolve(here, '../../../config/clients.demo.json');
+const defaultPersonas = path.resolve(here, '../../../config/demo-personas.json');
+const demoPasswords = () => ({
+  ...Object.fromEntries(DEMO_ACCOUNTS.map(k => [k, readSecret(process.env, { user: 'DEMO_USER_PASSWORD', user2: 'DEMO_USER2_PASSWORD', admin: 'DEMO_ADMIN_PASSWORD' }[k])])),
+  persona: readSecret(process.env, 'DEMO_PERSONA_PASSWORD'),
+});
+const minPasswordLength = Number(process.env.IDENTITY_PASSWORD_MIN_LENGTH || 10);
+const readClients = () => JSON.parse(readFileSync(args.clients ?? defaultClients, 'utf8'));
+// The personas file is optional (none: no personas). An explicit --personas must exist.
+const readPersonas = clients => {
+  const file = args.personas ?? defaultPersonas;
+  if (!args.personas && !existsSync(file)) return [];
+  return personaAccounts(demo, JSON.parse(readFileSync(file, 'utf8')), clients);
+};
+// Personas need their password; without it they are skipped (the three demo accounts still work).
+const bootstrapPersonas = (personas, passwords) => {
+  if (personas.length && !passwords.persona) {
+    console.warn(`demo personas skipped: ${demo.personaPasswordVar} (or ${demo.personaPasswordVar}_FILE) is not set`);
+    return [];
+  }
+  return personas;
+};
+const writeTenants = async (file, map) => {
+  writeFileSync(file, `${JSON.stringify(tenantsDocument(map, await demoAccountSubs(pool)), null, 2)}\n`);
+  for (const [slug, e] of Object.entries(map)) {
+    const personas = Object.keys(e.personas ?? {}).length;
+    console.log(`${slug.padEnd(20)} ${Object.entries(e.tenants).map(([k, v]) => `${k}=${v}`).join(' ')}${Object.keys(e.settings).length ? `  [${Object.keys(e.settings).join(', ')}]` : ''}${personas ? `  personas=${personas}` : ''}`);
+  }
+  console.log(`tenant ids written to ${file}`);
+};
+const printAccounts = accounts => {
+  for (const a of accounts.filter(x => !x.persona)) console.log(`demo ${a.key.padEnd(5)} ${a.email} ${a.created ? 'created' : 'refreshed'} (password from ${demo.accounts[a.key].passwordVar}, not shown)`);
+  const personas = accounts.filter(x => x.persona);
+  if (personas.length) console.log(`demo personas: ${personas.length} (${personas.filter(a => a.created).length} created, ${personas.filter(a => !a.created).length} refreshed; password from ${demo.personaPasswordVar}, not shown)`);
+};
+// Demo accounts are refused outside demo mode; the operator CLI does not hand them roles or organisations there either.
+const isDemoAccount = async email => (await pool.query('SELECT is_demo FROM platform.users WHERE email=$1', [String(email).toLowerCase()])).rows[0]?.is_demo === true;
 
 if (command === 'generate-key') {
   const { privateKey } = crypto.generateKeyPairSync('rsa', { modulusLength: 2048 });
@@ -28,6 +82,17 @@ if (command === 'generate-key') {
   process.exit(0);
 }
 if (!command || command === 'help') { console.log(usage); process.exit(0); }
+let demo;
+try {
+  demo = demoSettings(process.env);
+} catch (error) {
+  console.error(error.message);
+  process.exit(2);
+}
+if (command.startsWith('demo-') && !demo.enabled) {
+  console.error('refused: demo accounts and organisations exist only when ADS_ENV=demo and DEMO_MODE=1');
+  process.exit(2);
+}
 if (!process.env.DATABASE_URL) { console.error('DATABASE_URL required'); process.exit(2); }
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 2 });
@@ -47,7 +112,7 @@ try {
       need('id', 'name', 'redirect');
       for (const u of [...list(args.redirect), ...list(args.logout)]) {
         const parsed = new URL(u);
-        if (parsed.protocol !== 'https:' && parsed.hostname !== 'localhost') throw new Error(`redirect must be https: ${u}`);
+        if (!redirectAllowed(parsed, { production: isProductionEnv() })) throw new Error(`redirect must be https: ${u}`);
       }
       const scopes = list(args['admin-scopes']);
       const known = ['members:read', 'roles:write', 'members:write', 'invitations:write'];
@@ -66,6 +131,7 @@ try {
     }
     case 'create-organization': {
       need('name', 'owner');
+      if (await isDemoAccount(args.owner)) throw new Error('demo accounts cannot own organisations made here; use demo-orgs');
       const owner = await userId(args.owner);
       const orgId = crypto.randomUUID();
       const tenantId = crypto.randomUUID();
@@ -89,6 +155,7 @@ try {
     }
     case 'grant-role': {
       need('email', 'client', 'tenant', 'roles');
+      if (!demo.enabled && await isDemoAccount(args.email)) throw new Error('refused: demo accounts get roles only in demo mode (demo-orgs)');
       const uid = await userId(args.email);
       await pool.query("INSERT INTO platform.memberships(user_id,tenant_id,role,scopes) VALUES ($1,$2,'member','{}') ON CONFLICT DO NOTHING", [uid, args.tenant]);
       await pool.query(`INSERT INTO platform.product_roles(user_id,tenant_id,client_id,roles) VALUES ($1,$2,$3,$4)
@@ -124,6 +191,35 @@ try {
       await pool.query('UPDATE platform.sessions SET revoked_at=now() WHERE user_id=$1 AND revoked_at IS NULL', [uid]);
       await audit('user_disabled', { userId: uid });
       console.log(`${args.email} disabled and signed out everywhere`);
+      break;
+    }
+    case 'mark-staff-org': {
+      need('tenant');
+      const staff = args.staff !== 'false';
+      const r = await pool.query('UPDATE platform.organizations o SET is_staff=$2 FROM platform.tenants t WHERE t.organization_id=o.id AND t.id=$1 AND o.kind=\'organization\'', [args.tenant, staff]);
+      if (!r.rowCount) throw new Error('no organisation workspace with that tenant id');
+      await audit(staff ? 'staff_org_marked' : 'staff_org_unmarked', { tenantId: args.tenant });
+      console.log(`tenant ${args.tenant} ${staff ? 'is' : 'is no longer'} an ADS staff organisation`);
+      break;
+    }
+    case 'demo-bootstrap': {
+      const passwords = demoPasswords();
+      const personas = bootstrapPersonas(readPersonas(readClients()), passwords);
+      printAccounts(await bootstrapDemoAccounts(pool, demo, passwords, { minPasswordLength, personas }));
+      break;
+    }
+    case 'demo-orgs': {
+      const doc = readClients();
+      await writeTenants(args.out ?? 'demo-tenants.json', await ensureDemoOrgs(pool, demo, doc, { personas: readPersonas(doc) }));
+      break;
+    }
+    case 'demo-reset': {
+      const doc = readClients();
+      const passwords = demoPasswords();
+      const personas = bootstrapPersonas(readPersonas(doc), passwords);
+      const result = await resetDemo(pool, demo, passwords, doc, { minPasswordLength, personas });
+      console.log(`demo reset: accounts ${result.accounts.filter(a => !a.persona).map(a => a.key).join(', ')} restored; personas ${result.accounts.filter(a => a.persona).length} restored; ${JSON.stringify(result.cleaned)}`);
+      await writeTenants(args.out ?? 'demo-tenants.json', result.tenants);
       break;
     }
     default:

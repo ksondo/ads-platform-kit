@@ -1,0 +1,31 @@
+{
+  "$id": "https://contracts.africadigitalsynergy.com/ai-gateway-v1/ingest-accepted.schema.json",
+  "title": "ingest-accepted",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "requestId",
+    "jobId",
+    "state"
+  ],
+  "properties": {
+    "requestId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "jobId": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "PROCESSING",
+        "WITHDRAWN"
+      ]
+    },
+    "testMode": {
+      "type": "boolean"
+    }
+  }
+}
