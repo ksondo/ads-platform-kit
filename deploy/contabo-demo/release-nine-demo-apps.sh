@@ -6,7 +6,7 @@ umask 077
 here="$(cd "$(dirname "$0")" && pwd -P)"
 manifest="$here/release-nine-manifest.json"
 [[ -f "$manifest" ]] || { echo 'Missing release-nine-manifest.json' >&2; exit 2; }
-[[ $# -eq 1 ]] || { echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--images-plan|--build-candidates|--apply' >&2; exit 2; }
+[[ $# -ge 1 && $# -le 2 ]] || { echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--images-plan|--build-candidates|--apply' >&2; exit 2; }
 mode="$1"
 case "$mode" in
   --plan)
@@ -66,6 +66,20 @@ PY
   --databases-verify)
     bash "$here/prepare-five-demo-databases.sh" --verify
     ;;
+  --schemas-plan)
+    [[ $# -eq 1 ]] || exit 2
+    for app in education fleetguard home-services mamacare tontine; do
+      bash "$here/migrate-five-demo-schemas.sh" --plan "$app"
+    done
+    ;;
+  --migrate-app)
+    [[ $# -eq 2 ]] || { echo 'Usage: --migrate-app APP' >&2; exit 2; }
+    bash "$here/migrate-five-demo-schemas.sh" --migrate "$2"
+    ;;
+  --schema-verify)
+    [[ $# -eq 2 ]] || { echo 'Usage: --schema-verify APP' >&2; exit 2; }
+    bash "$here/migrate-five-demo-schemas.sh" --verify "$2"
+    ;;
   --images-plan)
     bash "$here/build-staged-demo-images.sh" --plan
     ;;
@@ -78,7 +92,7 @@ PY
     exit 3
     ;;
   *)
-    echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--images-plan|--build-candidates|--apply' >&2
+    echo 'Usage: bash release-nine-demo-apps.sh --plan|--preflight|--databases-plan|--prepare-databases|--databases-verify|--schemas-plan|--migrate-app APP|--schema-verify APP|--images-plan|--build-candidates|--apply' >&2
     exit 2
     ;;
 esac
