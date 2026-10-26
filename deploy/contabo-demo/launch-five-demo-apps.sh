@@ -14,7 +14,7 @@ set_app() {
   education) sha=b3202c70d926599793fc0c4957d49c4eb255d847; port=18501; inner=3000; client=education-web; image="ads-demo-education-api:candidate-$sha" ;;
   fleetguard) sha=ce3a4883862104e05a4fafd3da023089c5f46052; port=18502; inner=8793; client=fleet-guard-web; image="ads-demo-fleetguard:candidate-$sha" ;;
   home-services) sha=5f31b1cbf8244cfc02306fc9ec2458e852509317; port=18503; inner=8787; client=home-services; image="ads-demo-home-services:candidate-$sha" ;;
-  mamacare) sha=BLOCKED_PENDING_MAMACARE_PR24; port=18504; inner=8080; client=mamacare-web; image="ads-demo-mamacare:candidate-$sha" ;;
+  mamacare) sha=d37e104ac3e20051c04fc21234945b58d5fd4eb0; port=18504; inner=8080; client=mamacare-web; image="ads-demo-mamacare:candidate-$sha" ;;
   tontine) sha=125e2b6a2c6507efd566912445254102d2d63834; port=18505; inner=8794; client=tontine-web; image="ads-demo-tontine:candidate-$sha" ;;
   *) exit 2 ;;
  esac
