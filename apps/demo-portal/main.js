@@ -42,7 +42,8 @@ const t = key => i18n[lang][key] || i18n.en[key] || key;
 // The feature flag remains disabled until the corporate website is publicly released.
 const site = path => {
  const suffix=path==='/partners'?'/partnerships/':path==='/about'?'/about/':'/';
- return catalogue.publicSite.replace(/\\/$/,"")+'/'+lang+suffix;
+ const base=catalogue.publicSite.endsWith('/')?catalogue.publicSite.slice(0,-1):catalogue.publicSite;
+ return base+'/'+lang+suffix;
 };
 const photo = imageUrl;
 const title = p => lang === "fr" && p.fr ? p.fr : p.name;
