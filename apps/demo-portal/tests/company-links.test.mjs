@@ -13,7 +13,7 @@ const sandbox = {
   localStorage: { getItem: () => null },
   navigator: { language: "en-US" },
 };
-vm.runInNewContext(script.replace(/start\(\);\s*$/, "globalThis.__test = { companyNav, companyAction, whatsAppContact, link };"), sandbox);
+vm.runInNewContext(script.replace(/start\(\);\s*$/, "globalThis.__test = { companyNav, companyAction, whatsAppContact, link, site, corporateReturnBar, setFlag:value=>{catalogue.companySiteLinksEnabled=value;} };"), sandbox);
 const { companyNav, companyAction, whatsAppContact, link } = sandbox.__test;
 
 test("corporate website navigation is disabled by default in the catalogue", () => {
@@ -49,4 +49,19 @@ test("Contact uses the user-provided WhatsApp number, never the company website"
 });
 test("WhatsApp contact also works as a footer link", () => {
   assert.match(whatsAppContact("Contact","footer-link"), /class="footer-link"/);
+});
+
+
+test("corporate deep links and banner are mapped but not activated before company release",()=>{
+ const {site,corporateReturnBar,setFlag}=sandbox.__test;
+ assert.equal(site('/about'),'https://africadigitalsynergy.com/en/about/');
+ assert.equal(site('/partners'),'https://africadigitalsynergy.com/en/partnerships/');
+ assert.equal(site('/'),'https://africadigitalsynergy.com/en/');
+ assert.equal(corporateReturnBar(),'');
+ setFlag(true);
+ try{
+  assert.match(corporateReturnBar(),/href="https:\/\/africadigitalsynergy\.com\/en\/"/);
+  assert.match(corporateReturnBar(),/demonstration portal/);
+  assert.match(companyNav('/partners','Partners'),/\/en\/partnerships\//);
+ }finally{setFlag(false)}
 });

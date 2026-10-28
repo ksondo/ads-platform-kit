@@ -38,7 +38,13 @@ let catalogue = {platforms:[],tools:[],publicSite:"https://africadigitalsynergy.
 let opportunityCounts={sectors:null,businesses:null,institutional:null};
 const s = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const t = key => i18n[lang][key] || i18n.en[key] || key;
-const site = path => catalogue.publicSite.replace(/\/$/,"") + path;
+// The corporate website uses /en and /fr routes; the legacy /partners route is mapped.
+// The feature flag remains disabled until the corporate website is publicly released.
+const site = path => {
+ const suffix=path==='/partners'?'/partnerships/':path==='/about'?'/about/':'/';
+ const base=catalogue.publicSite.endsWith('/')?catalogue.publicSite.slice(0,-1):catalogue.publicSite;
+ return base+'/'+lang+suffix;
+};
 const photo = imageUrl;
 const title = p => lang === "fr" && p.fr ? p.fr : p.name;
 const summary=p=>lang==="fr"&&p.summary_fr?p.summary_fr:p.summary;
@@ -73,6 +79,10 @@ function launch(target, label) {
   // ADS Identity redirects to sign-in and then back to the same platform.
   // noopener prevents the new tab from controlling the portal.
   return url ? link(url,s(label)+' ↗',"btn btn-gold",'target="_blank" rel="noopener noreferrer"') : pill(t("demoPending"),"muted");
+}
+function corporateReturnBar(){
+ if(catalogue.companySiteLinksEnabled!==true)return '';
+ return '<aside class="corporate-return-strip" role="note"><span>'+(lang==='fr'?'Portail de découverte et de démonstration · pas un service commercial en direct':'Discovery and demonstration portal · not a live commercial service')+'</span><a href="'+s(site('/'))+'" rel="noopener noreferrer">'+(lang==='fr'?'← Retour à Africa Digital Synergy':'← Back to Africa Digital Synergy')+'</a></aside>';
 }
 function header() {
   const path=window.location.pathname;
@@ -221,7 +231,7 @@ function render(){
  const sectionTitle=path==="/"?"ADS":path==="/platforms"?t("platforms"):path==="/opportunities"?t("opportunities"):path==="/cloud"?t("cloud"):path==="/photo-credits"?(lang==="fr"?"Crédits photos":"Photo credits"):path==="/demo-access"?t("demos"):path.includes("/platforms/")?title(catalogue.platforms.find(p=>p.id===path.split("/")[2])||{name:"ADS"}):path.includes("/opportunities/")?t("opportunities"):t("platforms");
  document.title=sectionTitle+" · ADS";
  document.querySelector(".skip-link").textContent=lang==="fr"?"Aller au contenu":"Skip to content";
- app.innerHTML=header()+'<main id="main">'+main+'</main>'+footer();
+ app.innerHTML=header()+corporateReturnBar()+'<main id="main">'+main+'</main>'+footer();
  app.removeAttribute("aria-busy");
  const menu=app.querySelector(".menu-toggle"),nav=app.querySelector(".nav-links");
  menu.addEventListener("click",()=>{const open=nav.classList.toggle("is-open");menu.setAttribute("aria-expanded",String(open));});
