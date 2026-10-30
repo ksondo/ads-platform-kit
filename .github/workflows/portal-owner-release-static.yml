@@ -1,0 +1,36 @@
+name: ADS portal owner-repo publisher static regression
+on:
+  pull_request:
+    paths:
+      - deploy/contabo-demo/portal-owner-release.py
+      - deploy/contabo-demo/test_portal_owner_release.py
+      - .github/workflows/portal-owner-release-static.yml
+  push:
+    branches: [main]
+    paths:
+      - deploy/contabo-demo/portal-owner-release.py
+      - deploy/contabo-demo/test_portal_owner_release.py
+      - .github/workflows/portal-owner-release-static.yml
+permissions:
+  contents: read
+jobs:
+  static-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Source integrity and non-network regression
+        run: |
+          set -euo pipefail
+          python3 -m py_compile deploy/contabo-demo/portal-owner-release.py
+          python3 -m unittest discover -s deploy/contabo-demo -p 'test_portal_owner_release.py' -v
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('deploy/contabo-demo/portal-owner-release.py').read_text()
+          assert 'if sys.argv[1:] != ["--apply-approved-demo-portal"]:' in s
+          assert 'docker system prune' not in s
+          assert 'down -v' not in s
+          print('ADS_PORTAL_OWNER_RELEASE_STATIC=PASS')
+          PY
