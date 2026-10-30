@@ -1,0 +1,8 @@
+fr_id,story_id,ac_id,journey,screen,api,table,sequence_diagram,test,status
+SH-1;COM-ADOPT-05,SH-1-S01,SH1-AC-01,operator configure tariff,not built,POST /v1/subscriptions/admin/plans;POST /v1/subscriptions/admin/plans/{id}/tariffs,001_plans_tariffs.sql,docs/design.md,test/subscriptions.test.mjs operator token authority,in_progress
+SH-1,SH-1-S01,SH1-AC-02,choose plan,not built,POST /v1/subscriptions,001_plans_tariffs.sql,docs/design.md,test/subscriptions.test.mjs free and paid selection,in_progress
+SH-1;COM-ADOPT-05,SH-1-S01,SH1-AC-03,price change,not built,POST /v1/subscriptions/admin/plans/{id}/tariffs,001_plans_tariffs.sql,docs/design.md,test/subscriptions.test.mjs immutable versions and agreement,in_progress
+SH-1,SH-1-S01,SH1-AC-04,retry plan selection,not built,POST /v1/subscriptions,001_plans_tariffs.sql,docs/design.md,test/subscriptions.test.mjs concurrent retries and cross-product keys,in_progress
+SH-1;PLAT-ROLE-001,SH-1-S01,SH1-AC-05,tenant isolation,not built,GET /v1/subscriptions;POST /v1/subscriptions/{id}/cancel,001_plans_tariffs.sql,docs/design.md,test/subscriptions.test.mjs RLS and tampering,in_progress
+SH-1,SH-1-S01,SH1-AC-06,eligible plan selection,not built,GET /v1/subscriptions/plans;POST /v1/subscriptions,001_plans_tariffs.sql,docs/design.md,test/subscriptions.test.mjs latest effective eligibility,in_progress
+SH-1,SH-1-S01,SH1-AC-07,query entitlement,not built,GET /v1/subscriptions/entitlements/{key},001_plans_tariffs.sql,docs/design.md,test/subscriptions.test.mjs interval and overlap behavior,in_progress

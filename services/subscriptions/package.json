@@ -1,0 +1,6 @@
+{
+  "name":"@ads/subscriptions-service","version":"0.1.0","private":true,"type":"module",
+  "engines":{"node":">=22"},
+  "scripts":{"start":"node src/main.mjs","migrate":"node src/migrate.mjs","test":"node --test --test-concurrency=1 test/*.test.mjs"},
+  "dependencies":{"jose":"^6.1.0","pg":"^8.16.3"}
+}
