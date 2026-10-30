@@ -243,5 +243,47 @@ export function createAccounts({ pool, config, mailer, audit, log = console }) {
     });
   }
 
-  return { register, checkVerifyToken, activate, authenticate, requestPasswordReset, checkResetToken, resetPassword, googleUser, sendVerification, findByEmail };
+  async function requestEmailLink({ userId, email, password, locale = 'en', ip }) {
+    const normalized = normalizeEmail(email);
+    if (!isEmail(normalized) || isDemoDomain(normalized, config.demo.domain)) fail(400, 'EMAIL_INVALID');
+    const weak = checkPasswordStrength(password, config.passwordMinLength);
+    if (weak) fail(400, weak);
+    const passwordHash = await hashPassword(String(password));
+    const token = await withTransaction(pool, async c => {
+      await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`email-user:${userId}`]);
+      const user = (await c.query("SELECT id,email,phone_verified_at,is_demo,status FROM platform.users WHERE id=$1 FOR UPDATE", [userId])).rows[0];
+      if (!user || user.email || !user.phone_verified_at || user.is_demo || user.status !== 'active') fail(400, 'LINK_INVALID');
+      // Generic acknowledgement: do not disclose that this mailbox already belongs to an account.
+      if ((await c.query('SELECT 1 FROM platform.users WHERE email=$1', [normalized])).rowCount) return null;
+      await c.query("UPDATE platform.email_tokens SET used_at=now() WHERE user_id=$1 AND purpose='link_email' AND used_at IS NULL", [userId]);
+      const value = await issueEmailToken(c, userId, 'link_email', config.resetPasswordTtl, passwordHash);
+      await c.query("UPDATE platform.email_tokens SET pending_email=$2 WHERE token_hash=$1", [sha256(value), normalized]);
+      await audit('email_link_requested', { userId, outcome: 'allowed', ip }, c);
+      return value;
+    });
+    if (token) send(normalized, 'verify_email', { link: link('/phone/email/verify', { token, lang: locale }), hours: Math.round(config.resetPasswordTtl / 3600), product: 'ADS' });
+  }
+
+  async function completeEmailLink({ userId, token, password, ip }) {
+    if (typeof token !== 'string' || !token) fail(400, 'LINK_INVALID');
+    const result = await withTransaction(pool, async c => {
+      await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`email-user:${userId}`]);
+      const row = (await c.query(`SELECT * FROM platform.email_tokens WHERE token_hash=$1 AND user_id=$2
+        AND purpose='link_email' AND used_at IS NULL AND expires_at>now() FOR UPDATE`, [sha256(token), userId])).rows[0];
+      if (!row || !row.pending_email || !(await verifyPassword(String(password ?? ''), row.password_hash ?? DUMMY_HASH))) return false;
+      const user = (await c.query("SELECT email,phone_verified_at,status,is_demo FROM platform.users WHERE id=$1 FOR UPDATE", [userId])).rows[0];
+      if (!user || user.email || !user.phone_verified_at || user.status !== 'active' || user.is_demo) return false;
+      // Serialize ownership of the mailbox and never merge/overwrite an existing identity.
+      await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`email-link:${row.pending_email}`]);
+      if ((await c.query('SELECT 1 FROM platform.users WHERE email=$1', [row.pending_email])).rowCount) return false;
+      await c.query('UPDATE platform.users SET email=$2,email_verified_at=now(),password_hash=$3,updated_at=now() WHERE id=$1', [userId, row.pending_email, row.password_hash]);
+      await c.query("UPDATE platform.email_tokens SET used_at=now() WHERE user_id=$1 AND purpose='link_email' AND used_at IS NULL", [userId]);
+      await revokeAllSessions(c, userId);
+      await audit('email_linked', { userId, outcome: 'allowed', ip }, c);
+      return true;
+    }).catch(error => { if (error.code === '23505') return false; throw error; });
+    if (!result) fail(400, 'LINK_INVALID');
+  }
+
+  return { requestEmailLink, completeEmailLink, register, checkVerifyToken, activate, authenticate, requestPasswordReset, checkResetToken, resetPassword, googleUser, sendVerification, findByEmail };
 }

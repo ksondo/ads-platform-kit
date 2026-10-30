@@ -146,7 +146,8 @@ tr{border:1px solid var(--line);border-radius:8px;margin:0 0 10px;padding:6px}td
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:20px;font-weight:600}.brand img{height:36px;width:auto}
 h1{font-size:22px;margin:0 0 8px}p{margin:0 0 16px;color:var(--muted)}
 label{display:block;font-size:14px;margin:14px 0 6px;color:var(--ink)}
-input[type=email],input[type=password],input[type=text]{width:100%;padding:11px 12px;font-size:16px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+input[type=email],input[type=password],input[type=text],input[type=tel]{width:100%;padding:11px 12px;font-size:16px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+input[type=tel],input[autocomplete=one-time-code]{min-height:44px}
 input:focus,button:focus,a:focus{outline:2px solid var(--accent);outline-offset:2px}
 button,.button{display:block;width:100%;margin-top:20px;padding:12px;font-size:16px;font-weight:600;border:0;border-radius:8px;background:var(--accent);color:#fff;cursor:pointer;text-align:center;text-decoration:none}
 .secondary{background:transparent;color:var(--ink);border:1px solid var(--line);margin-top:12px}
@@ -234,6 +235,32 @@ export function renderPage(view, ctx) {
   const base = { locale, client, nonce, langPath };
   const csrfField = hidden('csrf', csrf) + hidden('req', req) + hidden('lang', locale) + hidden('next', ctx.next);
   switch (view) {
+    case 'email_link': {
+      const title = locale === 'fr' ? 'Associer une adresse e-mail' : 'Link an email address';
+      const verify = values.verifying;
+      const fields = verify ? hidden('token', values.token) : `<label for="email">${esc(t.email)}</label><input id="email" name="email" type="email" autocomplete="email" required value="${esc(values.email)}">`;
+      return layout({ ...base, title, body: `<h1>${title}</h1>${errorBox(locale, error)}<form method="post" action="${verify ? '/phone/email/verify' : '/phone/email/request'}">${csrfField}${fields}<label for="password">${esc(t.password)}</label><input id="password" name="password" type="password" autocomplete="${verify ? 'current-password' : 'new-password'}" required minlength="${minPassword}">${verify ? '' : `<label for="confirm">${esc(t.confirm)}</label><input id="confirm" name="confirm" type="password" autocomplete="new-password" required>`}<button type="submit">${esc(t.continue)}</button></form>` });
+    }
+    case 'email_linked':
+      return layout({ ...base, title: t.verified, body: `<h1>${esc(t.verified)}</h1><p>${locale === 'fr' ? 'Reconnectez-vous avec votre adresse e-mail, Google ou votre t\u00e9l\u00e9phone. Votre compte reste le m\u00eame.' : 'Sign in again with your email, Google or phone. Your account stays the same.'}</p><a href="/login">${esc(t.signIn)}</a>` });
+    case 'phone': {
+      const fr = locale === 'fr';
+      const title = values.linking ? (fr ? 'Associer mon numéro' : 'Link my phone number') : (fr ? 'Connexion par téléphone' : 'Sign in by phone');
+      const phoneLabel = fr ? 'Numéro de téléphone au Cameroun' : 'Cameroon phone number';
+      const errors = {
+        PHONE_INVALID: fr ? 'Saisissez un numéro mobile camerounais valide.' : 'Enter a valid Cameroon mobile number.',
+        PHONE_CODE_INVALID: fr ? 'Code incorrect ou expiré. Réessayez ou demandez un nouveau code.' : 'Incorrect or expired code. Try again or request a new code.',
+        PHONE_UNAVAILABLE: fr ? 'Le SMS est indisponible. Réessayez plus tard.' : 'SMS is unavailable. Try again later.',
+        PHONE_REAUTH_REQUIRED: fr ? 'Reconnectez-vous avant d’associer votre numéro.' : 'Sign in again before linking your number.',
+      };
+      const message = error ? (errors[error] ?? t.errors[error] ?? t.errors.INVALID_REQUEST) : null;
+      const state = csrfField + hidden('purpose', values.linking ? 'link' : 'signin');
+      const request = `<form method="post" action="/phone/request">${state}<label for="phone">${phoneLabel}</label><input id="phone" name="phone" type="tel" autocomplete="tel" required maxlength="40" placeholder="+237 6XX XXX XXX" value="${esc(values.phone)}"><button type="submit">${fr ? 'Envoyer un code SMS' : 'Send SMS code'}</button></form>`;
+      const verify = values.challenge ? `<p role="status">${fr ? 'Si le numéro peut recevoir un SMS, un code a été envoyé. Attendez une minute avant un nouvel envoi.' : 'If the number can receive SMS, a code was sent. Wait a minute before resending.'}</p><form method="post" action="/phone/verify">${state}${hidden('challenge', values.challenge)}${hidden('phone', values.phone)}<label for="code">${fr ? 'Code SMS à 6 chiffres' : '6-digit SMS code'}</label><input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required><button type="submit">${esc(t.continue)}</button></form>` : '';
+      return layout({ ...base, title, body: `<h1>${title}</h1>${ctx.phoneTestMode ? `<p role="status">${fr ? 'Mode test : SMS de démonstration uniquement.' : 'Test mode: demonstration SMS only.'}</p>` : ''}${message ? `<div class="error" role="alert">${esc(message)}</div>` : ''}${verify}${request}<div class="links"><a href="/login${q}">${esc(t.backToSignIn)}</a></div>` });
+    }
+    case 'phone_linked':
+      return layout({ ...base, title: locale === 'fr' ? 'Numéro associé' : 'Phone linked', body: `<h1>${locale === 'fr' ? 'Votre numéro est associé à votre compte ADS.' : 'Your phone number is linked to your ADS account.'}</h1><a href="/login">${esc(t.backToSignIn)}</a>` });
     case 'login':
       return layout({ ...base, demo: Boolean(ctx.demo || ctx.personas), title: t.signIn, body: `${ctx.demo || ctx.personas ? demoPanel(t, ctx.demo, nonce, ctx.personas, locale) : ''}<h1>${fill(t.signInTo, { product })}</h1>${errorBox(locale, error)}
 <form method="post" action="/login" novalidate>${csrfField}
@@ -241,7 +268,7 @@ export function renderPage(view, ctx) {
 <label for="password">${esc(t.password)}</label><input id="password" name="password" type="password" autocomplete="current-password" required>
 <button type="submit" id="signin-submit">${esc(t.continue)}</button></form>
 ${googleEnabled ? `<div class="or">${esc(t.or)}</div><a class="button secondary" href="/google/start${q}">${esc(t.google)}</a>` : ''}
-<div class="links"><a href="/forgot-password${q}">${esc(t.forgot)}</a><br>${esc(t.noAccount)} <a href="/register${q}">${esc(t.createAccount)}</a></div>` });
+<div class="links"><a href="/phone${q}${q ? '&amp;' : '?'}lang=${locale}">${locale === 'fr' ? 'Connexion par téléphone' : 'Sign in by phone'}</a><br><a href="/forgot-password${q}">${esc(t.forgot)}</a><br>${esc(t.noAccount)} <a href="/register${q}">${esc(t.createAccount)}</a></div>` });
     case 'register':
       return layout({ ...base, title: t.register, body: `<h1>${esc(t.register)}</h1>${errorBox(locale, error)}
 <form method="post" action="/register" novalidate>${csrfField}
@@ -290,7 +317,7 @@ ${values.workspaces.map((w, i) => `<label class="choice"><input type="radio" nam
       return layout({ ...base, title: t.confirmLogout, body: `<h1>${esc(t.confirmLogout)}</h1><p>${esc(t.confirmLogoutBody)}</p>
 <form method="post" action="/logout">${csrfField}${hidden('client_id', values.clientId)}<button type="submit">${esc(t.signOut)}</button></form>` });
     case 'signed_in':
-      return layout({ ...base, title: t.signedIn, body: `<h1>${esc(t.signedIn)}</h1><p>${fill(t.signedInBody, { email: values.email })}</p>` });
+      return layout({ ...base, title: t.signedIn, body: `<h1>${esc(t.signedIn)}</h1><p>${fill(t.signedInBody, { email: values.email })}</p><a href="/phone/link">${locale === 'fr' ? 'Associer mon numéro' : 'Link my phone number'}</a><br><a href="/phone/email">${locale === 'fr' ? 'Associer une adresse e-mail' : 'Link an email address'}</a>` });
     case 'signed_out':
       return layout({ ...base, title: t.signedOut, body: `<h1>${esc(t.signedOut)}</h1><p>${esc(t.signedOutBody)}</p><a class="button" href="/login">${esc(t.signIn)}</a>` });
     case 'invite': {

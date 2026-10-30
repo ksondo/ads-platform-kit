@@ -1,0 +1,8 @@
+requirement,criterion,test,status
+PLAT-ID-003,canonical Cameroon mobile validation,services/identity/test/phone-rules.test.mjs,in_progress
+PLAT-ID-003,EN FR hosted forms and Test mode,services/identity/test/phone-rules.test.mjs,in_progress
+PLAT-ID-003,phone signup signin existing token claims and stable account,services/identity/test/phone.test.mjs,in_progress
+PLAT-ID-003,OTP expiry attempts browser binding replay concurrency,services/identity/test/phone.test.mjs,in_progress
+PLAT-ID-003,resend cooldown invalidation and no plaintext codes,services/identity/test/phone.test.mjs,in_progress
+PLAT-ID-001,authenticated phone and email Google linking stable sub,services/identity/test/phone.test.mjs,in_progress
+PLAT-EXT-001,failed mock SMS cannot authenticate,services/identity/test/phone.test.mjs,in_progress

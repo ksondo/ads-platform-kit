@@ -160,6 +160,13 @@ export function loadConfig(env = process.env) {
     invitationTtl: num(env.IDENTITY_INVITATION_TTL_SECONDS, 7 * 86400),
     // Optional SMS hook for invitations: POST {to, text} (the shared mocks' /sms/v1/messages in tests).
     smsUrl: env.IDENTITY_SMS_URL ?? '',
+    // Phone SMS stays visibly in test mode until the operator explicitly connects a live hook.
+    phoneSmsLive: bool(env.IDENTITY_PHONE_SMS_LIVE, false),
+    phoneCodeTtl: Math.min(600, Math.max(60, num(env.IDENTITY_PHONE_CODE_TTL_SECONDS, 300))),
+    phoneResendWait: Math.max(30, num(env.IDENTITY_PHONE_RESEND_SECONDS, 60)),
+    phoneMaxAttempts: Math.min(10, Math.max(1, num(env.IDENTITY_PHONE_MAX_ATTEMPTS, 5))),
+    phoneRequestsPerIp: Math.max(1, num(env.IDENTITY_PHONE_REQUESTS_PER_IP, 30)),
+    phoneRequestsPerHour: Math.min(20, Math.max(1, num(env.IDENTITY_PHONE_REQUESTS_PER_HOUR, 5))),
 
     mail: {
       transport: env.MAIL_TRANSPORT ?? (devMode ? 'log' : 'smtp'),

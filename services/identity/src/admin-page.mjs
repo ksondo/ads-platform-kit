@@ -59,7 +59,7 @@ export function renderAdminPage(ctx) {
   const t = T[locale];
   const langPath = `/admin${current ? `?tenant=${encodeURIComponent(current.tenantId)}&product=${encodeURIComponent(current.clientId)}` : ''}`;
   const base = { locale, nonce, client: null, langPath, wide: true, title: t.title };
-  const head = `<h1>${esc(t.title)}</h1><p>${fill(t.signedInAs, { email: user.email })}</p>`;
+  const head = `<h1>${esc(t.title)}</h1><p>${fill(t.signedInAs, { email: user.email ?? user.phone_number ?? user.id })}</p>`;
   const signOut = `<form method="post" action="/logout" class="inline">${hidden('csrf', csrf)}${hidden('lang', locale)}<button type="submit" class="secondary small">${esc(t.signOut)}</button></form>`;
   if (!workspaces.length) return layout({ ...base, body: `${head}<p>${esc(t.none)}</p>${signOut}` });
 
@@ -85,7 +85,7 @@ export function renderAdminPage(ctx) {
       ? (m.status === 'active' ? button('deactivate', t.deactivate, hidden('user_id', m.userId), 'secondary small') : button('reactivate', t.reactivate, hidden('user_id', m.userId), 'secondary small'))
         + (m.status === 'active' ? button(m.orgRole === 'admin' ? 'remove_admin' : 'make_admin', m.orgRole === 'admin' ? t.removeAdmin : t.makeAdmin, hidden('user_id', m.userId), 'secondary small') : '')
       : '';
-    return `<tr data-member="${esc(m.email)}"><td>${esc(m.email)}${m.name ? `<br><span class="muted">${esc(m.name)}</span>` : ''}</td><td class="hide">${orgRoleLabel(m.orgRole)}</td>
+    return `<tr data-member="${esc(m.email ?? m.phoneNumber ?? m.userId)}"><td>${esc(m.email ?? m.phoneNumber ?? m.userId)}${m.name ? `<br><span class="muted">${esc(m.name)}</span>` : ''}</td><td class="hide">${orgRoleLabel(m.orgRole)}</td>
 <td>${esc(m.status === 'active' ? t.active : t.deactivated)}</td><td>${roleTags}</td><td>${self ? '' : grant}${manage}</td></tr>`;
   }).join('');
 

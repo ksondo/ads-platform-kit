@@ -176,13 +176,13 @@ export function createAdmin({ pool, config, keys, jwks, audit, mailer, log = con
   // ---------- members and roles ----------
   async function listMembers(ctx) {
     const { client } = await authorize(ctx, 'members:read');
-    const rows = (await pool.query(`SELECT m.user_id, u.email, u.display_name, u.status AS account_status, m.role, m.status, m.created_at,
+    const rows = (await pool.query(`SELECT m.user_id, u.email, u.phone_number, u.display_name, u.status AS account_status, m.role, m.status, m.created_at,
         coalesce(p.roles, '{}') AS roles
       FROM platform.memberships m JOIN platform.users u ON u.id=m.user_id
       LEFT JOIN platform.product_roles p ON p.user_id=m.user_id AND p.tenant_id=m.tenant_id AND p.client_id=$2
-      WHERE m.tenant_id=$1 ORDER BY lower(u.email)`, [ctx.tenantId, client.client_id])).rows;
+      WHERE m.tenant_id=$1 ORDER BY lower(coalesce(u.email,u.phone_number))`, [ctx.tenantId, client.client_id])).rows;
     return rows.map(r => ({
-      userId: r.user_id, email: r.email, name: r.display_name, orgRole: r.role, status: r.status === 'active' && r.account_status === 'active' ? 'active' : 'deactivated',
+      userId: r.user_id, email: r.email, phoneNumber: r.phone_number, name: r.display_name, orgRole: r.role, status: r.status === 'active' && r.account_status === 'active' ? 'active' : 'deactivated',
       roles: r.roles, joinedAt: r.created_at,
     }));
   }

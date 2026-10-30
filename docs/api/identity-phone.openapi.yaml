@@ -1,0 +1,116 @@
+openapi: 3.1.0
+info:
+  title: ADS hosted phone identity forms
+  version: 0.1.0
+  description: SH-0 form contract. Products continue using the existing OIDC contract.
+paths:
+  /phone:
+    get:
+      summary: Phone sign-up and sign-in form
+      responses:
+        '200': {description: Bilingual HTML form}
+  /phone/link:
+    get:
+      summary: Link a phone to a recently authenticated ADS user
+      responses:
+        '200': {description: HTML form}
+        '403': {description: Recent authenticated session required}
+  /phone/request:
+    post:
+      summary: Send a code using the configured SMS hook
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [csrf, phone]
+              properties:
+                csrf: {type: string}
+                phone: {type: string, maxLength: 40}
+                lang: {type: string, enum: [en, fr]}
+                req: {type: string, description: Existing browser-bound OAuth request}
+                next: {type: string, description: Existing allowlisted ADS destination}
+                purpose: {type: string, enum: [signin, link]}
+      responses:
+        '200': {description: HTML code form with opaque challenge; same response for known and unknown phones}
+        '400': {description: Invalid phone or CSRF}
+        '403': {description: Recent session required for linking}
+        '429': {description: Rate limit or resend cooldown}
+        '503': {description: SMS unavailable; challenge invalidated}
+  /phone/verify:
+    post:
+      summary: Verify one code and complete existing SSO or phone linking
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [csrf, challenge, code]
+              properties:
+                csrf: {type: string}
+                challenge: {type: string, format: uuid}
+                code: {type: string, pattern: '^[0-9]{6}$'}
+                lang: {type: string, enum: [en, fr]}
+                req: {type: string}
+                next: {type: string}
+                purpose: {type: string, enum: [signin, link]}
+      responses:
+        '200': {description: Signed-in, workspace-selection or linked HTML page}
+        '302': {description: Existing validated OAuth or allowlisted ADS continuation}
+        '400': {description: Generic invalid/expired/consumed code or CSRF}
+        '403': {description: Linking requires recent SSO or product access denied}
+        '429': {description: IP rate limit}
+  /phone/email:
+    get:
+      summary: Add email to recently authenticated phone-first account
+      responses:
+        '200': {description: Email and chosen-password form}
+        '403': {description: Recent SSO required}
+  /phone/email/request:
+    post:
+      summary: Request email proof without disclosing existing ownership
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [csrf, email, password, confirm]
+              properties:
+                csrf: {type: string}
+                email: {type: string, format: email}
+                password: {type: string, format: password}
+                confirm: {type: string, format: password}
+                lang: {type: string, enum: [en, fr]}
+      responses:
+        '200': {description: Generic check-mail acknowledgement}
+        '400': {description: Invalid CSRF, password or account state}
+        '403': {description: Recent SSO required}
+        '429': {description: User or IP rate limit}
+  /phone/email/verify:
+    get:
+      summary: Show mailbox-link password confirmation while authenticated
+      responses:
+        '200': {description: Confirmation form}
+        '403': {description: Authenticated ADS session required}
+    post:
+      summary: Prove mailbox and chosen password for same user; revoke old sessions
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [csrf, token, password]
+              properties:
+                csrf: {type: string}
+                token: {type: string}
+                password: {type: string, format: password}
+                lang: {type: string, enum: [en, fr]}
+      responses:
+        '200': {description: Email linked; sign in again with same ADS account}
+        '400': {description: Invalid proof or existing ownership conflict; no merge}
+        '403': {description: Authenticated session required}
+        '429': {description: IP or proof-token rate limit}

@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { createLocalJWKSet, jwtVerify } from 'jose';
 import { createAccounts } from './accounts.mjs';
+import { createPhone } from './phone.mjs';
 import { TOKEN_EXCHANGE, createAdmin } from './admin.mjs';
 import { renderAdminPage } from './admin-page.mjs';
 import { createLegacyApi } from './legacy.mjs';
@@ -19,6 +20,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9)`, [eventType, userId, tenantId, projectId, outcome, reason, JSON.stringify(metadata), ip, clientId]);
   }
   const accounts = createAccounts({ pool, config, mailer, audit, log });
+  const phone = createPhone({ pool, config, audit });
   const oauth = createOAuth({ pool, config, keys, audit });
   const legacy = createLegacyApi({ pool, config, accounts, audit });
   const localJwks = createLocalJWKSet(keys.jwks);
@@ -109,11 +111,11 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
   async function currentSso(req) {
     const raw = unsignValue(parseCookies(req.headers.cookie)[C.sso], config.cookieSecret);
     if (!raw) return null;
-    const row = (await pool.query(`SELECT s.id,s.user_id,u.email,u.status,u.is_demo FROM platform.sso_sessions s JOIN platform.users u ON u.id=s.user_id
+    const row = (await pool.query(`SELECT s.id,s.user_id,s.created_at,u.email,u.phone_number,u.status,u.is_demo FROM platform.sso_sessions s JOIN platform.users u ON u.id=s.user_id
       WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>now()`, [sha256(raw)])).rows[0];
     if (!row || row.status !== 'active') return null;
     if (row.is_demo && !config.demo.enabled) return null;
-    return { id: row.id, user: { id: row.user_id, email: row.email } };
+    return { id: row.id, createdAt: row.created_at, user: { id: row.user_id, email: row.email, phone_number: row.phone_number } };
   }
   // locale: the language of this sign-in (page choice or the product's ui_locales), carried in the
   // `locale` token claim. It is never written to the account (shared demo accounts keep no language).
@@ -125,7 +127,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     await pool.query('INSERT INTO platform.sso_sessions(id,user_id,token_hash,method,expires_at,locale) VALUES ($1,$2,$3,$4,now()+make_interval(secs => $5),$6)',
       [id, user.id, sha256(raw), method, config.ssoSessionTtl, langOf(locale)]);
     addCookie(res, cookie(C.sso, signValue(raw, config.cookieSecret), { secure: config.secureCookies, maxAge: config.ssoSessionTtl }));
-    return { id, user };
+    return { id, user, locale: langOf(locale) };
   }
 
   // Sign-in requests are bound to the browser that started them, so a link with someone else's
@@ -168,7 +170,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     const body = renderPage(view, {
       locale, nonce, client: ctx.authRequest?.client ?? ctx.client ?? null, req: ctx.authRequest?.id ?? ctx.req ?? null,
       csrf: csrfToken(req, res), error: ctx.error, values: ctx.values, googleEnabled: config.google.enabled,
-      minPassword: config.passwordMinLength, path: ctx.path ?? safePath(new URL(req.url, 'http://x').pathname), next: safeNext(ctx.next), demo, personas,
+      minPassword: config.passwordMinLength, path: ctx.path ?? safePath(new URL(req.url, 'http://x').pathname), next: safeNext(ctx.next), demo, personas, phoneTestMode: !config.phoneSmsLive,
     });
     res.writeHead(status, { 'content-type': 'text/html; charset=utf-8' });
     res.end(body);
@@ -178,7 +180,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
   async function finishSignIn(req, res, authRequest, sso, chosenTenant, next) {
     if (!authRequest) {
       if (safeNext(next)) return redirect(res, safeNext(next));
-      return page(req, res, 'signed_in', { values: { email: sso.user.email } });
+      return page(req, res, 'signed_in', { lang: sso.locale, values: { email: sso.user.email ?? sso.user.phone_number } });
     }
     const result = await oauth.resolveWorkspace(sso.user, authRequest, chosenTenant);
     if (result.choose) return page(req, res, 'choose_workspace', { authRequest, values: { workspaces: result.choose } });
@@ -212,7 +214,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     }
   }
 
-  const KNOWN_PAGES = new Set(['/login', '/register', '/forgot-password', '/logout']);
+  const KNOWN_PAGES = new Set(['/login', '/register', '/forgot-password', '/logout', '/phone', '/phone/link', '/phone/email']);
   const safePath = p => (KNOWN_PAGES.has(p) ? p : '/login');
 
   const invitePageValues = (invitation, token, sso) => ({
@@ -311,6 +313,65 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     if (method === 'GET' && (path === '/login' || path === '/' )) {
       const authRequest = await authRequestFrom(q);
       return page(req, res, 'login', { authRequest, lang: q.lang, next: q.next, personas: await personasFor(authRequest?.client_id) });
+    }
+    if (['/phone/email', '/phone/email/request', '/phone/email/verify'].includes(path)) {
+      const form = method === 'POST' ? await readBody(req) : q;
+      const sso = await currentSso(req);
+      const verifying = path === '/phone/email/verify';
+      const ctx = { lang: form.lang, path: '/phone/email', values: { token: form.token, email: form.email, verifying } };
+      if (!sso || (!verifying && Date.now() - new Date(sso.createdAt).getTime() > 10 * MINUTE)) {
+        return page(req, res, 'phone', { lang: form.lang, error: 'PHONE_REAUTH_REQUIRED', values: {} }, 403);
+      }
+      if (method === 'GET' && ['/phone/email', '/phone/email/verify'].includes(path)) return page(req, res, 'email_link', ctx);
+      if (method !== 'POST' || !['/phone/email/request', '/phone/email/verify'].includes(path)) fail(404, 'NOT_FOUND');
+      try {
+        checkCsrf(req, form);
+        limiter.enforce(`email-link-ip:${ip}`, 20, 15 * MINUTE);
+        if (verifying) {
+          limiter.enforce(`email-link-token:${sha256(String(form.token ?? ''))}`, 5, 60 * MINUTE);
+          await accounts.completeEmailLink({ userId: sso.user.id, token: form.token, password: form.password, ip });
+          return page(req, res, 'email_linked', { lang: form.lang });
+        }
+        if (form.password !== form.confirm) fail(400, 'PASSWORDS_DO_NOT_MATCH');
+        limiter.enforce(`email-link-user:${sso.user.id}`, 5, 60 * MINUTE);
+        await accounts.requestEmailLink({ userId: sso.user.id, email: form.email, password: form.password, locale: langOf(form.lang) ?? 'en', ip });
+        return page(req, res, 'check_email', { lang: form.lang, values: { email: form.email } });
+      } catch (error) {
+        if (error instanceof HttpError) return page(req, res, 'email_link', { ...ctx, error: error.code }, error.status);
+        throw error;
+      }
+    }
+    if (['/phone', '/phone/link', '/phone/email', '/phone/request', '/phone/verify'].includes(path)) {
+      const form = method === 'POST' ? await readBody(req) : q;
+      const authRequest = await authRequestFrom(form);
+      const linking = path === '/phone/link' || form.purpose === 'link';
+      const signedIn = linking ? await currentSso(req) : null;
+      // Linking needs recent possession of the existing account, plus proof of the new phone.
+      if (linking && (!signedIn || Date.now() - new Date(signedIn.createdAt).getTime() > 10 * MINUTE)) {
+        return page(req, res, 'phone', { authRequest, lang: form.lang, error: 'PHONE_REAUTH_REQUIRED', values: { linking: true } }, 403);
+      }
+      const ctx = { authRequest, lang: form.lang, next: form.next, path: linking ? '/phone/link' : '/phone',
+        values: { phone: form.phone, challenge: form.challenge, linking } };
+      if (method === 'GET' && ['/phone', '/phone/link', '/phone/email'].includes(path)) return page(req, res, 'phone', ctx);
+      if (method !== 'POST' || !['/phone/request', '/phone/verify'].includes(path)) fail(404, 'NOT_FOUND');
+      try {
+        checkCsrf(req, form);
+        limiter.enforce(`phone-ip:${ip}`, config.phoneRequestsPerIp, 15 * MINUTE);
+        if (path === '/phone/request') {
+          const challenge = await phone.request({ phone: form.phone, browser: form.csrf, userId: signedIn?.user.id ?? null,
+            locale: langOf(form.lang) ?? authRequest?.locale ?? 'en', ip });
+          return page(req, res, 'phone', { ...ctx, values: { ...ctx.values, challenge, sent: true } });
+        }
+        const user = await phone.verify({ id: form.challenge, code: form.code, browser: form.csrf, userId: signedIn?.user.id ?? null, ip });
+        if (linking) return page(req, res, 'phone_linked', { lang: form.lang });
+        const lang = langOf(form.lang) ?? authRequest?.locale ?? pickLocale(null, req.headers['accept-language']);
+        if (authRequest) { await pool.query('UPDATE platform.auth_requests SET locale=$2 WHERE id=$1', [authRequest.id, lang]); authRequest.locale = lang; }
+        const sso = await startSso(req, res, user, 'phone', lang);
+        return finishSignIn(req, res, authRequest, sso, undefined, safeNext(form.next));
+      } catch (error) {
+        if (error instanceof HttpError) return page(req, res, 'phone', { ...ctx, error: error.code }, error.status);
+        throw error;
+      }
     }
     if (method === 'POST' && path === '/login') {
       const form = await readBody(req);
@@ -712,6 +773,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
   async function purgeExpired() {
     await pool.query('DELETE FROM platform.auth_requests WHERE expires_at < now()');
     await pool.query('DELETE FROM platform.google_states WHERE expires_at < now()');
+    await pool.query("DELETE FROM platform.phone_challenges WHERE expires_at < now()-interval '1 day'");
     await pool.query("DELETE FROM platform.auth_codes WHERE expires_at < now() - interval '1 day'");
     await pool.query("DELETE FROM platform.email_tokens WHERE expires_at < now() - interval '7 days'");
     await pool.query("DELETE FROM platform.refresh_tokens WHERE expires_at < now() - interval '7 days'");
@@ -721,5 +783,5 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     await pool.query("DELETE FROM platform.sessions WHERE expires_at < now() - interval '30 days'");
   }
 
-  return { handler, server: http.createServer(handler), accounts, oauth, admin, audit, purgeExpired };
+  return { handler, server: http.createServer(handler), accounts, phone, oauth, admin, audit, purgeExpired };
 }

@@ -61,7 +61,7 @@ export function createOAuth({ pool, config, keys, audit }) {
       if (existing) return existing.tenant_id;
       const orgId = crypto.randomUUID();
       const tenantId = crypto.randomUUID();
-      const label = `Personal · ${user.email}`;
+      const label = `Personal · ${user.email ?? user.phone_number ?? user.id}`;
       await c.query("INSERT INTO platform.organizations(id,name,slug,kind) VALUES ($1,$2,$3,'personal')", [orgId, label, `personal-${orgId}`]);
       await c.query('INSERT INTO platform.tenants(id,organization_id,name) VALUES ($1,$2,$3)', [tenantId, orgId, 'Personal']);
       await c.query("INSERT INTO platform.memberships(user_id,tenant_id,role,scopes) VALUES ($1,$2,'owner','{}')", [user.id, tenantId]);
