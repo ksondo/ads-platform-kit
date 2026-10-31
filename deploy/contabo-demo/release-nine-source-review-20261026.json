@@ -1,0 +1,106 @@
+{
+  "purpose": "Snapshot of candidate GitHub code versions at 2026-10-26; informational only, NOT a release authorization.",
+  "rules": [
+    "Never copy these to releaseSha automatically.",
+    "Verify the exact full SHA and required checks at promotion.",
+    "Open PR head SHAs are NOT main ancestors until merged.",
+    "Preserve working server services; inspect live runtime before modifying."
+  ],
+  "applications": [
+    {
+      "key": "commerce",
+      "repository": "ksondo/ADS-Commerce-Platform",
+      "mainShaObserved": "cafabb27b84faabc62812cb05417273d07b3400d",
+      "demoCandidatePR": null,
+      "releaseApproved": false
+    },
+    {
+      "key": "education",
+      "repository": "ksondo/Education-and-intelligent-services",
+      "mainShaObserved": "b3202c70d926599793fc0c4957d49c4eb255d847",
+      "demoCandidatePR": {
+        "pr": 46,
+        "head": "9e6b30857eee",
+        "tests": "green PR CI; not verified merged"
+      },
+      "releaseApproved": false
+    },
+    {
+      "key": "fleetguard",
+      "repository": "ksondo/Fleet-guard-and-intelligent-services",
+      "mainShaObserved": "ce3a4883862104e05a4fafd3da023089c5f46052",
+      "demoCandidatePR": {
+        "pr": 20,
+        "head": "1eedc420d90d",
+        "tests": "green PR CI; not verified merged"
+      },
+      "releaseApproved": false
+    },
+    {
+      "key": "home-services",
+      "repository": "ksondo/Home-Services",
+      "mainShaObserved": "8eee741b0181b5ab7d21cd51d58918c97d0c1619",
+      "demoCandidatePR": {
+        "pr": 10,
+        "head": "90ee820c830e",
+        "tests": "green PR CI; not verified merged"
+      },
+      "releaseApproved": false
+    },
+    {
+      "key": "mamacare",
+      "repository": "ksondo/Mama-care-and-intelligent-services",
+      "mainShaObserved": "c8cb4d2aa0e11d62f6c2a24c485df6c06fbdb573",
+      "demoCandidatePR": {
+        "pr": 23,
+        "head": "f9185315f562",
+        "tests": "green PR CI; not verified merged"
+      },
+      "releaseApproved": false
+    },
+    {
+      "key": "tontine",
+      "repository": "ksondo/Digital-tontine-and-intelligent-services",
+      "mainShaObserved": "125e2b6a2c6507efd566912445254102d2d63834",
+      "demoCandidatePR": {
+        "pr": 22,
+        "head": "9c4dc59200ef",
+        "tests": "CI demo journey failed (128 pass, 4 fail); not merged"
+      },
+      "releaseApproved": false
+    },
+    {
+      "key": "ventureworks",
+      "repository": "ksondo/Africa-Digital-Synergy-VentureWorks",
+      "mainShaObserved": "2c710eebd62f6ecbfd74d031470b1632fccea37a",
+      "demoCandidatePR": {
+        "pr": 94,
+        "head": "d614c017a067",
+        "tests": "green PR CI; not verified merged; existing staging to inspect"
+      },
+      "releaseApproved": false
+    },
+    {
+      "key": "morphoo",
+      "repository": "ksondo/go-ahead-guesser",
+      "mainShaObserved": "7ef39b680c2f7175a312b75cf2360257f4d04d70",
+      "demoCandidatePR": {
+        "pr": 40,
+        "head": "183e619c156f",
+        "tests": "green PR CI; not verified merged; existing web exposed 18100"
+      },
+      "releaseApproved": false
+    },
+    {
+      "key": "landing",
+      "repository": "ksondo/ads-platform-kit",
+      "mainShaObserved": "54c38067884f9cbd6345872de187dd5eeb32b13b",
+      "demoCandidatePR": {
+        "pr": 44,
+        "head": "9dd45ebdd28c",
+        "tests": "release planning PR; not deployable portal link update"
+      },
+      "releaseApproved": false
+    }
+  ]
+}
