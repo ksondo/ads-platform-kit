@@ -184,6 +184,69 @@ describe('ADS Demo Access (Commerce pilot)', () => {
     assert.equal((await svc.pool.query('SELECT status FROM platform.demo_access_grants WHERE user_id=$1', [existing.id])).rows[0].status, 'expired');
   });
 
+  it('one effective approval per visitor and platform; revocation permits clean reapplication', async () => {
+    const email = 'one.grant@example.com';
+    const existing = await createActiveUser(svc.pool, email, PASSWORD);
+    await request({ email });
+    const first = await requestRow(email);
+    await act(adminB, first.id, 'approve');
+    const beforeAccept = NOTIFY.map(to => mails(to).length);
+    const beforeRequestCount = (await svc.pool.query(
+      'SELECT count(*)::int AS n FROM platform.demo_access_requests WHERE platform=$1 AND email=$2',
+      ['commerce', email])).rows[0].n;
+    const pendingRepeat = await request({ email });
+    assert.deepEqual(await pendingRepeat.json(), { status: 'received', notified: false },
+      'repeating while an invitation awaits acceptance must not create another approval');
+    assert.deepEqual(NOTIFY.map(to => mails(to).length), beforeAccept);
+    assert.equal((await svc.pool.query(
+      'SELECT count(*)::int AS n FROM platform.demo_access_requests WHERE platform=$1 AND email=$2',
+      ['commerce', email])).rows[0].n, beforeRequestCount);
+
+    const b = browser(svc.base);
+    await signIn(b, email);
+    const link = mails(email)[0].text.match(/https?:\\/\\/\\S+\\/invite\\?token=[A-Za-z0-9_-]+/)[0];
+    const token = new URL(link).searchParams.get('token');
+    const invitePage = await b.get(link);
+    assert.equal((await b.post('/invite/accept', { csrf: csrfFrom(invitePage.text), token })).status, 200);
+    assert.equal((await (await check(existing.id)).json()).access, 'granted');
+
+    const activeRepeat = await request({ email });
+    assert.deepEqual(await activeRepeat.json(), { status: 'received', notified: false });
+    assert.equal((await svc.pool.query(
+      "SELECT count(*)::int AS n FROM platform.demo_access_grants WHERE platform='commerce' AND email=$1 AND status IN ('active','awaiting_activation')",
+      [email])).rows[0].n, 1, 'exactly one live grant is retained');
+
+    assert.match((await act(adminB, first.id, 'revoke')).location, /done=revoked/);
+    assert.deepEqual(await (await check(existing.id)).json(), { access: 'none', reason: 'REVOKED' });
+    const reapply = await request({ email });
+    assert.deepEqual(await reapply.json(), { status: 'received', notified: true },
+      'after revocation, a new request can proceed normally');
+    const second = await requestRow(email);
+    assert.notEqual(second.id, first.id);
+    assert.equal(second.status, 'pending');
+    assert.match((await act(adminB, second.id, 'approve')).location, /done=approved/);
+    assert.equal((await svc.pool.query(
+      "SELECT count(*)::int AS n FROM platform.demo_access_grants WHERE platform='commerce' AND email=$1 AND status IN ('active','awaiting_activation')",
+      [email])).rows[0].n, 1, 'a replacement grant cannot coexist with the revoked grant');
+  });
+
+  it('an expired, unaccepted invitation allows a new request rather than blocking the visitor', async () => {
+    const email = 'expired.invitation@example.com';
+    await request({ email });
+    const first = await requestRow(email);
+    await act(adminB, first.id, 'approve');
+    const repeat = await request({ email });
+    assert.deepEqual(await repeat.json(), { status: 'received', notified: false });
+    await svc.pool.query("UPDATE platform.invitations SET expires_at=now()-interval '1 second' WHERE email=$1", [email]);
+    const renewed = await request({ email });
+    assert.deepEqual(await renewed.json(), { status: 'received', notified: true });
+    const second = await requestRow(email);
+    assert.notEqual(first.id, second.id);
+    assert.equal((await svc.pool.query(
+      'SELECT status FROM platform.demo_access_grants WHERE request_id=$1', [first.id])).rows[0].status, 'expired');
+    assert.match((await act(adminB, second.id, 'approve')).location, /done=approved/);
+  });
+
   it('duplicate, honeypot, unknown platform, bad email and foreign origin', async () => {
     const email = 'repeat.visitor@example.com';
     await request({ email });
