@@ -1,6 +1,6 @@
 # ADS Demo Access — Integration Contract (v1)
 
-How an ADS platform plugs into administrator-approved demonstration access. Commerce is the pilot; every later platform uses the same contract.
+How an ADS platform plugs into administrator-approved demonstration access. Commerce was the pilot; Fleet Guard, Tontine, Education and VentureWorks follow the same contract (registered in `config/demo-access-platforms.json`).
 
 ## Roles of each part
 
@@ -66,7 +66,17 @@ The visitor signs in once. Personas live in one of three workspaces: `personal` 
 - Choosing a persona in the **current** workspace: no sign-in at all. The browser sends `X-ADS-Demo-Persona: <key>` on API calls; the server narrows the token's roles to that persona's roles (intersection only — it can never add a role). A persona from another workspace in the header → `403 PERSONA_WORKSPACE_MISMATCH`.
 - Choosing a persona in **another** workspace: restart sign-in with `tenant_hint=<persona tenantId>`. The ADS sign-in session is still open, so no password is asked.
 
-## 6. Data and safety
+## 6. Pages every platform provides
+
+- `/demo` (or the platform's existing public start page): what the platform does today, separated from business opportunities and from items that need regulated partners or future work; **Sign in** and **Request demo access**. EN/FR.
+- `/demo/personas`: the registry's `entry_url`. Prepares the visitor's own demo data once (with a loading state), lists their personas and the access expiry, and switches persona as in §5. Denied and expired states link back to `/demo`.
+- A small persona switcher in the app header while a persona is active.
+
+## 7. Visitors and other people's inboxes
+
+Visitor demo organisations never give authority in ADS Identity (no `/admin`, no admin API, no invitations through Identity). A platform journey that invites or messages people (staff invitations, member invitations, SMS, email) must, for a demo-access visitor, record the message as a **test message** shown in the product (as the existing "Test messages"/mock outbox screens do) and never send it to a real address or phone.
+
+## 8. Data and safety
 
 - Demo workspaces hold fictional data only, seeded per visitor on first entry.
 - No real payment, bank settlement or external delivery is ever triggered.

@@ -1,16 +1,119 @@
 {
-  "$comment": "Platforms whose demonstrations are opened by administrator-approved access (ADS Demo Access, Commerce pilot). A visitor approved for one platform gets nothing on another. personas: keys from config/demo-personas.json that an approved visitor may use; ADS staff personas (reviewer, support) are never listed here. origins: the web addresses allowed to send access requests from the browser. entry_url: where the visitor lands after accepting the invitation (the platform's persona page).",
+  "$comment": "Platforms whose demonstrations are opened by administrator-approved access (ADS Demo Access). A visitor approved for one platform gets nothing on another. personas: keys from config/demo-personas.json that an approved visitor may use; ADS staff personas (reviewer, support) are never listed here. origins: the web addresses allowed to send access requests from the browser. entry_url: where the visitor lands after accepting the invitation (the platform's persona page). ADS staff and administrator personas (platform-admin, tenant-admin, support) and personas without a working home screen are not offered to visitors.",
   "version": 1,
   "platforms": [
     {
       "key": "commerce",
       "reference_prefix": "COM",
-      "name": { "en": "ADS Commerce", "fr": "ADS Commerce" },
+      "name": {
+        "en": "ADS Commerce",
+        "fr": "ADS Commerce"
+      },
       "client_id": "commerce-web",
       "product_slug": "commerce",
-      "origins": ["https://commerce.demo.africadigitalsynergy.com"],
+      "origins": [
+        "https://commerce.demo.africadigitalsynergy.com"
+      ],
       "entry_url": "https://commerce.demo.africadigitalsynergy.com/commerce/demo/personas",
-      "personas": ["shopper", "shop-owner", "shop-manager", "cashier", "accountant", "bank-agent", "bank-officer"]
+      "personas": [
+        "shopper",
+        "shop-owner",
+        "shop-manager",
+        "cashier",
+        "accountant",
+        "bank-agent",
+        "bank-officer"
+      ]
+    },
+    {
+      "key": "fleet-guard",
+      "reference_prefix": "FLT",
+      "name": {
+        "en": "ADS Fleet Guard",
+        "fr": "ADS Fleet Guard"
+      },
+      "client_id": "fleet-guard-web",
+      "product_slug": "fleetguard",
+      "origins": [
+        "https://fleetguard.demo.africadigitalsynergy.com"
+      ],
+      "entry_url": "https://fleetguard.demo.africadigitalsynergy.com/demo/personas",
+      "personas": [
+        "fleet-owner",
+        "fleet-manager",
+        "approver",
+        "driver",
+        "mechanic"
+      ]
+    },
+    {
+      "key": "tontine",
+      "reference_prefix": "TON",
+      "name": {
+        "en": "ADS Digital Tontine",
+        "fr": "ADS Tontine numérique"
+      },
+      "client_id": "tontine-web",
+      "product_slug": "tontine",
+      "origins": [
+        "https://tontine.demo.africadigitalsynergy.com"
+      ],
+      "entry_url": "https://tontine.demo.africadigitalsynergy.com/demo/personas",
+      "personas": [
+        "group-admin",
+        "treasurer",
+        "payout-approver",
+        "member",
+        "auditor",
+        "cooperative-admin",
+        "partner"
+      ]
+    },
+    {
+      "key": "education",
+      "reference_prefix": "EDU",
+      "name": {
+        "en": "ADS Education",
+        "fr": "ADS Éducation"
+      },
+      "client_id": "education-web",
+      "product_slug": "education",
+      "origins": [
+        "https://education.demo.africadigitalsynergy.com"
+      ],
+      "entry_url": "https://education.demo.africadigitalsynergy.com/demo/personas",
+      "personas": [
+        "school-admin",
+        "academic-admin",
+        "admissions",
+        "bursar",
+        "teacher",
+        "parent",
+        "student",
+        "applicant",
+        "partner"
+      ]
+    },
+    {
+      "key": "ventureworks",
+      "reference_prefix": "VEN",
+      "name": {
+        "en": "ADS VentureWorks",
+        "fr": "ADS VentureWorks"
+      },
+      "client_id": "ventureworks-web",
+      "product_slug": "ventureworks",
+      "origins": [
+        "https://ventureworks.demo.africadigitalsynergy.com"
+      ],
+      "entry_url": "https://ventureworks.demo.africadigitalsynergy.com/demo/personas",
+      "personas": [
+        "founder",
+        "venture-manager",
+        "contributor",
+        "evidence-reviewer",
+        "regulatory-reviewer"
+      ]
     }
   ]
 }
