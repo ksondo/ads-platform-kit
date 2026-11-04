@@ -51,7 +51,7 @@ const T = {
     },
     errors: {
       REQUEST_NOT_PENDING: 'This request has already been decided.', GRANT_NOT_ACTIVE: 'This demo access is no longer active.',
-      NOTHING_TO_RESEND: 'There is no pending invitation to resend.', FORM_EXPIRED: 'This form expired. Please try again.', NOT_FOUND: 'Request not found.',
+      NOTHING_TO_RESEND: 'There is no pending invitation to resend.', RESENT_RECENTLY: 'An invitation was sent less than a minute ago. Wait a moment before resending.', FORM_EXPIRED: 'This form expired. Please try again.', NOT_FOUND: 'Request not found.',
       generic: 'Something went wrong. Please try again.',
     },
     dash: '—',
@@ -98,7 +98,7 @@ const T = {
     },
     errors: {
       REQUEST_NOT_PENDING: 'Cette demande a déjà été traitée.', GRANT_NOT_ACTIVE: "Cet accès de démonstration n'est plus actif.",
-      NOTHING_TO_RESEND: "Il n'y a aucune invitation en attente à renvoyer.", FORM_EXPIRED: 'Ce formulaire a expiré. Réessayez.', NOT_FOUND: 'Demande introuvable.',
+      NOTHING_TO_RESEND: "Il n'y a aucune invitation en attente à renvoyer.", RESENT_RECENTLY: "Une invitation a été envoyée il y a moins d'une minute. Patientez avant de la renvoyer.", FORM_EXPIRED: 'Ce formulaire a expiré. Réessayez.', NOT_FOUND: 'Demande introuvable.',
       generic: "Une erreur s'est produite. Réessayez.",
     },
     dash: '—',

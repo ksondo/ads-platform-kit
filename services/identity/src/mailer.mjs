@@ -44,11 +44,11 @@ const templates = {
     ],
   }),
   // ADS Demo Access. Visitor-supplied values (the email) appear only in the body, escaped in HTML.
-  demo_request_admin: ({ platform, email, reference, when, link, prior }) => ({
+  demo_request_admin: ({ platform, email, reference, when, link }) => ({
     subject: `New demo access request ${reference} · ${platform} / Nouvelle demande de démonstration`,
     intro: [
-      `${email} asked for access to the ${platform} demonstration on ${when}. Reference: ${reference}.${prior ? ' This email was rejected for this platform in the last 30 days.' : ''} Opening the link does not approve anything: sign in as an ADS administrator, then choose Approve or Reject.`,
-      `${email} demande l'accès à la démonstration ${platform} le ${when}. Référence : ${reference}.${prior ? ' Cette adresse a été refusée pour cette plateforme au cours des 30 derniers jours.' : ''} Ouvrir le lien n'approuve rien : connectez-vous en tant qu'administrateur ADS, puis choisissez Approuver ou Refuser.`,
+      `${email} asked for access to the ${platform} demonstration on ${when}. Reference: ${reference}. Opening the link does not approve anything: sign in as an ADS administrator, then choose Approve or Reject.`,
+      `${email} demande l'accès à la démonstration ${platform} le ${when}. Référence : ${reference}. Ouvrir le lien n'approuve rien : connectez-vous en tant qu'administrateur ADS, puis choisissez Approuver ou Refuser.`,
     ],
     button: ['Review request', 'Examiner la demande'],
     link,

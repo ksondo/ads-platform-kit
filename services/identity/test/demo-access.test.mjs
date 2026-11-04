@@ -154,6 +154,8 @@ describe('ADS Demo Access (Commerce pilot)', () => {
     // Dashboard shows acceptance and activation separately from email sending.
     const detail = await adminB.get(`/demo-admin/requests/${req.id}`);
     assert.equal(detail.status, 200);
+    assert.ok((await svc.app.demoAccess.detail(req.id)).history.every(h => h.at), 'history shows times');
+    assert.ok((await svc.app.demoAccess.auditLog()).events.every(e => e.at), 'audit shows times');
 
     // Revocation: grant check refuses at once; roles and sign-ins for the platform are gone.
     assert.match((await act(adminB, req.id, 'revoke')).location, /done=revoked/);
@@ -191,6 +193,11 @@ describe('ADS Demo Access (Commerce pilot)', () => {
     assert.deepEqual(await dup.json(), { status: 'received', notified: false });
     assert.deepEqual(NOTIFY.map(to => mails(to).length), before, 'administrators not notified twice');
     assert.equal((await svc.pool.query("SELECT count(*)::int AS n FROM platform.demo_access_requests WHERE email=$1", [email])).rows[0].n, 1);
+    // Simultaneous submissions (a double-clicked form) both get the neutral answer; one request is stored.
+    const twin = 'twin.click@example.com';
+    const both = await Promise.all([request({ email: twin }), request({ email: twin })]);
+    assert.deepEqual(both.map(r => r.status), [202, 202]);
+    assert.equal((await svc.pool.query("SELECT count(*)::int AS n FROM platform.demo_access_requests WHERE email=$1", [twin])).rows[0].n, 1);
 
     assert.equal((await request({ email: 'bot@example.com', website: 'http://spam' })).status, 202);
     assert.equal(await requestRow('bot@example.com'), undefined, 'honeypot stores nothing');
@@ -236,6 +243,8 @@ describe('ADS Demo Access (Commerce pilot)', () => {
 
     await act(adminB, req.id, 'approve');
     const first = mails(email)[0].text.match(/\/invite\?token=([A-Za-z0-9_-]+)/)[1];
+    assert.match((await act(adminB, req.id, 'resend')).location, /error=RESENT_RECENTLY/, 'a double click does not cancel the fresh link');
+    await svc.pool.query("UPDATE platform.invitations SET created_at=now()-interval '2 minutes' WHERE email=$1", [email]);
     assert.match((await act(adminB, req.id, 'resend')).location, /done=resent/);
     const second = mails(email)[1].text.match(/\/invite\?token=([A-Za-z0-9_-]+)/)[1];
     assert.notEqual(first, second);

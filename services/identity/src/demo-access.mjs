@@ -137,6 +137,8 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
       return { status: 'received', notified: false };
     }
     const result = await withTransaction(pool, async c => {
+      // Serialise submissions for the same person and platform (a double-clicked form).
+      await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`demo-request:${p.key}:${normalized}`]);
       const pending = (await c.query("SELECT id FROM platform.demo_access_requests WHERE platform=$1 AND email=$2 AND status='pending' AND expires_at>now() FOR UPDATE",
         [p.key, normalized])).rows[0];
       if (pending) return { duplicate: true, id: pending.id };
@@ -153,7 +155,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
         for (const recipient of settings.notifyTo) {
           ids.push(await enqueue(c, {
             kind: 'admin_notification', requestId: id, recipient, template: 'demo_request_admin', dedupeKey: `admin:${id}:${recipient}`,
-            data: { platform: nameOf(p), email: normalized, reference: ref, when: when(row.created_at), link: reviewLink(id), prior },
+            data: { platform: nameOf(p), email: normalized, reference: ref, when: when(row.created_at), link: reviewLink(id) },
           }));
         }
       }
@@ -257,6 +259,9 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
       const req = await requestRow(c, id, true);
       const grant = await grantOf(c, req.id, true);
       if (!grant || grant.status !== 'awaiting_activation') fail(409, 'NOTHING_TO_RESEND');
+      // A double-clicked Resend must not cancel the link that was emailed a moment ago.
+      const recent = grant.invitation_id && (await c.query("SELECT 1 FROM platform.invitations WHERE id=$1 AND created_at > now() - interval '60 seconds'", [grant.invitation_id])).rowCount;
+      if (recent) fail(409, 'RESENT_RECENTLY');
       const p = platformOf(req.platform);
       if (grant.invitation_id) await c.query('UPDATE platform.invitations SET revoked_at=now(), revoked_by=$2 WHERE id=$1 AND accepted_at IS NULL AND revoked_at IS NULL', [grant.invitation_id, adminUser.id]);
       const inv = await newInvitation(c, grant, p, adminUser, req.locale);
@@ -268,6 +273,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
   }
 
   // Takes the visitor's access to the platform away: roles in their demo set, its sign-ins, the invitation.
+  // Refresh tokens are ended for the whole platform client: on the demo host a visitor holds no other access to it.
   async function closeAccess(c, grant) {
     const tenantIds = Object.values(grant.tenants ?? {});
     if (grant.invitation_id) await c.query('UPDATE platform.invitations SET revoked_at=now() WHERE id=$1 AND accepted_at IS NULL AND revoked_at IS NULL', [grant.invitation_id]);
@@ -280,6 +286,9 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
   async function revoke(adminUser, id) {
     await withTransaction(pool, async c => {
       const req = await requestRow(c, id, true);
+      // Lock in the same order as invitation acceptance (invitation, then grant) so the two never deadlock.
+      const pre = await grantOf(c, req.id);
+      if (pre?.invitation_id) await c.query('SELECT 1 FROM platform.invitations WHERE id=$1 FOR UPDATE', [pre.invitation_id]);
       const grant = await grantOf(c, req.id, true);
       if (!grant || !['awaiting_activation', 'active'].includes(grant.status)) fail(409, 'GRANT_NOT_ACTIVE');
       await c.query("UPDATE platform.demo_access_grants SET status='revoked', revoked_at=now(), revoked_by=$2 WHERE id=$1", [grant.id, adminUser.id]);
@@ -295,6 +304,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
     if (!grant) return null;
     if (grant.status !== 'awaiting_activation') fail(400, 'INVITATION_INVALID');
     const p = platformOf(grant.platform);
+    if (!p) fail(400, 'INVITATION_INVALID');
     const tenants = grant.tenants ?? {};
     // The invitation itself placed the visitor in the invitation's organisation; add the others.
     for (const org of p.orgs) {
@@ -315,7 +325,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
 
   // ---------- grant check (platform server) ----------
   function checkSecret(platformKey, presented) {
-    const expected = settings.checkSecrets[platformKey];
+    const expected = settings.checkSecrets[String(platformKey).replace(/-/g, '_')];
     if (!expected || typeof presented !== 'string' || !safeEqual(sha256(presented), sha256(expected))) fail(401, 'UNAUTHENTICATED');
   }
 
@@ -412,7 +422,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
         firstLoginAt: iso(grant.first_login_at), lastActivityAt: iso(grant.last_activity_at), revokedAt: iso(grant.revoked_at),
       },
       emails: emails.map(e => ({ kind: e.kind, recipient: e.recipient, status: e.status, attempts: e.attempts, lastError: e.last_error, sentAt: iso(e.sent_at), createdAt: iso(e.created_at) })),
-      history: history.map(h => ({ at: iso(h.created_at), event: h.event_type, actor: h.actor ?? '', detail: h.metadata?.reason ?? '' })),
+      history: history.map(h => ({ at: iso(h.ts), event: h.event_type, actor: h.actor ?? '', detail: h.metadata?.reason ?? '' })),
       actions: {
         approve: req.status === 'pending', reject: req.status === 'pending',
         resend: grant?.status === 'awaiting_activation', revoke: ['awaiting_activation', 'active'].includes(grant?.status),
@@ -423,7 +433,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
   async function auditLog() {
     const rows = (await pool.query(`SELECT a.event_type, a.ts, u.email AS actor, a.metadata, a.outcome, a.reason FROM platform.identity_audit a
       LEFT JOIN platform.users u ON u.id=a.user_id WHERE a.event_type LIKE 'demo_access_%' ORDER BY a.ts DESC LIMIT 300`)).rows;
-    return { events: rows.map(r => ({ at: iso(r.created_at), event: r.event_type, actor: r.actor ?? '', reference: r.metadata?.reference ?? '', platform: r.metadata?.platform ?? '',
+    return { events: rows.map(r => ({ at: iso(r.ts), event: r.event_type, actor: r.actor ?? '', reference: r.metadata?.reference ?? '', platform: r.metadata?.platform ?? '',
       detail: r.outcome === 'denied' ? `denied: ${r.reason ?? ''}` : (r.reason ?? '') })) };
   }
 
