@@ -28,13 +28,13 @@ test("POS and E-commerce use existing Commerce sign-in, not duplicate identity c
 });
 test("public portal does not expose passwords or claim unverified deployments",()=>{
   const allowed = new Map([
-    ["commerce", "https://commerce.demo.africadigitalsynergy.com/commerce"],
-    ["ecommerce", "https://commerce.demo.africadigitalsynergy.com/commerce"],
-    ["pos", "https://commerce.demo.africadigitalsynergy.com/commerce/merchant/pos"]
+    ["commerce", "https://commerce.demo.africadigitalsynergy.com/commerce/demo"],
+    ["ecommerce", "https://commerce.demo.africadigitalsynergy.com/commerce/demo"],
+    ["pos", "https://commerce.demo.africadigitalsynergy.com/commerce/demo"]
   ]);
   for(const record of [...catalogue.platforms,...catalogue.tools]) {
     assert.equal(record.demoUrl,allowed.get(record.id) ?? null,
-      "Only the hosted Commerce demo and its two tool journeys may be linked: "+record.id);
+      "Only the Commerce demo request page may be linked: "+record.id);
   }
   const text=readFileSync(new URL("../main.js",import.meta.url),"utf8");
   assert.ok(text.includes('function demoAccessGuide()'));
@@ -56,6 +56,7 @@ test("demo sign-in guide never creates a duplicate login form",()=>{
   vm.runInNewContext(js.replace(/start\(\);\s*$/,"globalThis.__guide = demoAccessGuide();"),fake);
   const html=String(fake.__guide);
   assert.ok(html.includes("/platforms"));
-  assert.ok(html.includes("Use demo account"));
+  assert.ok(html.includes("Request demo access"));
+  assert.ok(!html.includes("Use demo account"),"shared demo accounts are no longer offered to the public");
   assert.doesNotMatch(html, /<input\b|<form\b|type="password"/i);
 });

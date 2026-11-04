@@ -5,6 +5,8 @@ import { createLocalJWKSet, jwtVerify } from 'jose';
 import { createAccounts } from './accounts.mjs';
 import { TOKEN_EXCHANGE, createAdmin } from './admin.mjs';
 import { renderAdminPage } from './admin-page.mjs';
+import { renderDemoAdmin } from './demo-admin-page.mjs';
+import { createDemoAccess } from './demo-access.mjs';
 import { createLegacyApi } from './legacy.mjs';
 import { createOAuth } from './oauth.mjs';
 import { langOf, pickLocale, renderPage } from './pages.mjs';
@@ -23,10 +25,13 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
   const legacy = createLegacyApi({ pool, config, accounts, audit });
   const localJwks = createLocalJWKSet(keys.jwks);
   const admin = createAdmin({ pool, config, keys, jwks: localJwks, audit, mailer, log });
+  // ADS Demo Access (administrator-approved demonstrations): only when DEMO_ACCESS_ENABLED in the demo environment.
+  const demoAccess = config.demoAccess?.enabled ? createDemoAccess({ pool, config, mailer, audit, log }) : null;
+  if (demoAccess) admin.setAcceptHook(demoAccess.onInvitationAccepted);
 
   // ---------- helpers ----------
   // Where to go after signing in without a product: only our own admin and invitation pages.
-  const safeNext = v => (typeof v === 'string' && (/^\/admin(\?[A-Za-z0-9=&%._-]{0,300})?$/.test(v) || /^\/invite\?token=[A-Za-z0-9_-]{20,100}$/.test(v)) ? v : null);
+  const safeNext = v => (typeof v === 'string' && (/^\/admin(\?[A-Za-z0-9=&%._-]{0,300})?$/.test(v) || /^\/demo-admin(\/requests\/[0-9a-f-]{36}|\/audit)?(\?[A-Za-z0-9=&%._-]{0,300})?$/.test(v) || /^\/invite\?token=[A-Za-z0-9_-]{20,100}$/.test(v)) ? v : null);
   // Behind a proxy, only the address appended by our own proxy is trustworthy: the right-most
   // entry (or N-th from the right with several proxies). Left-most entries are client-controlled.
   const clientIp = req => {
@@ -366,7 +371,15 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
         limiter.enforce(`register-ip:${ip}`, config.limits.registerPerIp, 60 * MINUTE);
         if (String(form.password ?? '') !== String(form.confirm ?? '')) fail(400, 'PASSWORDS_DO_NOT_MATCH');
         limiter.enforce(`email:${emailKey(form.email)}`, config.limits.emailPerAddress, 60 * MINUTE);
-        const { user } = await accounts.register({ email: form.email, password: form.password, name: form.name, locale, product: authRequest?.client?.display_name, req: authRequest?.id, ip, clientId: authRequest?.client_id, next });
+        // ADS Demo Access: coming from a valid demo invitation sent to this address, the link already proved
+        // the mailbox, so the account is active at once and the visitor goes straight back to accept it.
+        const invited = next?.startsWith('/invite?') ? await admin.findInvitation(new URL(next, 'http://x').searchParams.get('token')) : null;
+        const mailboxProven = Boolean(invited && invited.email === normalizeEmail(form.email) && demoAccess && await demoAccess.isDemoInvitation(invited.id));
+        const { user, created } = await accounts.register({ email: form.email, password: form.password, name: form.name, locale, product: authRequest?.client?.display_name, req: authRequest?.id, ip, clientId: authRequest?.client_id, next, mailboxProven });
+        if (mailboxProven && created && user.status === 'active') {
+          await startSso(req, res, user, 'password', locale);
+          return redirect(res, next);
+        }
         if (user.status === 'active' && !config.requireEmailVerification) {
           const back = new URLSearchParams({ ...(authRequest ? { req: authRequest.id } : {}), ...(next ? { next } : {}) }).toString();
           return redirect(res, `/login${back ? `?${back}` : ''}`);
@@ -594,6 +607,70 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       }
     }
 
+    // ----- ADS Demo Access: visitor requests, grant checks, central dashboard -----
+    if (path.startsWith('/demo-access/') || path === '/demo-admin' || path.startsWith('/demo-admin/')) {
+      if (!demoAccess) fail(404, 'NOT_FOUND');
+      if (path === '/demo-access/v1/requests') {
+        const origin = demoAccess.allowedOrigin(req.headers.origin);
+        const cors = origin ? { 'access-control-allow-origin': origin, vary: 'Origin' } : {};
+        if (method === 'OPTIONS') {
+          res.writeHead(origin ? 204 : 403, { ...cors, 'access-control-allow-methods': 'POST', 'access-control-allow-headers': 'content-type', 'access-control-max-age': '600' });
+          return res.end();
+        }
+        if (method !== 'POST') fail(405, 'METHOD_NOT_ALLOWED');
+        if (req.headers.origin && !origin) fail(403, 'ORIGIN_NOT_ALLOWED');
+        for (const [k, v] of Object.entries(cors)) res.setHeader(k, v);
+        const body = await readBody(req);
+        limiter.enforce(`demo-request-ip:${ip}`, config.demoAccess.requestsPerIpHour, 60 * MINUTE);
+        limiter.enforce(`demo-request-email:${emailKey(body.email)}`, 5, 24 * 60 * MINUTE);
+        return json(res, 202, await demoAccess.submitRequest({ platform: body.platform, email: body.email, locale: body.locale, website: body.website, ip }), { 'cache-control': 'no-store' });
+      }
+      if (method === 'GET' && path === '/demo-access/v1/grants/check') {
+        const platform = String(q.platform ?? '');
+        demoAccess.checkSecret(platform, String(req.headers.authorization ?? '').replace(/^Bearer /, ''));
+        return json(res, 200, await demoAccess.checkGrant(platform, q.sub), { 'cache-control': 'no-store' });
+      }
+      // Central dashboard: ADS Identity session + DEMO_ACCESS_ADMIN_EMAILS; every action re-checked here.
+      const sso = await currentSso(req);
+      const here = `${path}${url.search.replace(/[^A-Za-z0-9=&%._?-]/g, '')}`;
+      if (!sso) return redirect(res, `/login?next=${encodeURIComponent(safeNext(here) ?? '/demo-admin')}`);
+      const locale = pickLocale(q.lang, req.headers['accept-language']);
+      const nonce = randomToken(12);
+      const view = (name, extra = {}, status = 200) => {
+        baseHeaders(res, nonce);
+        const html = renderDemoAdmin(name, { locale, nonce, csrf: csrfToken(req, res), timeZone: config.demoAccess.timeZone, langPath: here,
+          admin: { email: sso.user.email }, flash: q.done, error: q.error, ...extra });
+        res.writeHead(status, { 'content-type': 'text/html; charset=utf-8' });
+        res.end(html);
+      };
+      const adminUser = await demoAccess.adminOf(sso);
+      if (!adminUser) {
+        await audit('demo_access_admin_denied', { userId: sso.user.id, outcome: 'denied', reason: 'NOT_A_DEMO_ADMIN', ip, metadata: { path } });
+        return view('denied', {}, 403);
+      }
+      const match = path.match(/^\/demo-admin\/requests\/([0-9a-f-]{36})$/i);
+      if (method === 'GET' && path === '/demo-admin') return view('overview', { overview: await demoAccess.overview(q) });
+      if (method === 'GET' && path === '/demo-admin/audit') return view('audit', { audit: await demoAccess.auditLog() });
+      if (method === 'GET' && match) return view('request', { request: await demoAccess.detail(match[1]) });
+      if (method === 'POST' && match) {
+        const form = await readBody(req);
+        const lang = form.lang === 'fr' ? 'fr' : 'en';
+        const back = extra => redirect(res, `/demo-admin/requests/${match[1]}?${new URLSearchParams({ lang, ...extra })}`);
+        try {
+          checkCsrf(req, form);
+          limiter.enforce(`demo-admin:${adminUser.id}`, 120, 60 * MINUTE);
+          const actions = { approve: () => demoAccess.approve(adminUser, match[1]), reject: () => demoAccess.reject(adminUser, match[1], form.note),
+            resend: () => demoAccess.resend(adminUser, match[1]), revoke: () => demoAccess.revoke(adminUser, match[1]) };
+          if (!actions[form.action]) fail(400, 'ACTION_UNKNOWN');
+          return back({ done: (await actions[form.action]()).done });
+        } catch (error) {
+          if (error instanceof HttpError && error.status < 500) return back({ error: error.code });
+          throw error;
+        }
+      }
+      fail(404, 'NOT_FOUND');
+    }
+
     // ----- organisation admin: hosted page (session cookie + CSRF) -----
     if (method === 'GET' && path === '/admin') {
       const sso = await currentSso(req);
@@ -719,7 +796,8 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     await pool.query("UPDATE platform.refresh_tokens SET successor_sealed=NULL WHERE successor_sealed IS NOT NULL AND rotated_at < now() - make_interval(secs => $1)", [config.refreshReuseGrace + 60]);
     await pool.query("DELETE FROM platform.sso_sessions WHERE expires_at < now() - interval '7 days'");
     await pool.query("DELETE FROM platform.sessions WHERE expires_at < now() - interval '30 days'");
+    if (demoAccess) await demoAccess.housekeeping();
   }
 
-  return { handler, server: http.createServer(handler), accounts, oauth, admin, audit, purgeExpired };
+  return { handler, server: http.createServer(handler), accounts, oauth, admin, audit, purgeExpired, demoAccess };
 }

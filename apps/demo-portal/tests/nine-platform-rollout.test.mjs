@@ -7,7 +7,7 @@ const catalogue = read('apps/demo-portal/catalogue.json');
 const clients = read('config/clients.demo.json');
 test('preserve live portal and Commerce demo route while staging seven new destinations', () => {
   assert.equal(manifest.portal.url,'https://demo.africadigitalsynergy.com');
-  assert.equal(manifest.commerce.url,'https://commerce.demo.africadigitalsynergy.com/commerce');
+  assert.equal(manifest.commerce.url,'https://commerce.demo.africadigitalsynergy.com/commerce/demo');
   const commerce=catalogue.platforms.find(x=>x.id==='commerce');
   assert.equal(commerce?.demoUrl,manifest.commerce.url);
   assert.equal(manifest.candidates.length,7);

@@ -346,7 +346,7 @@ export async function placePersonas(c, personas, map, { set = null, personaIds =
 
 // A persona's own personal workspace (same shape as the one oauth creates at first sign-in), so seeds
 // know its tenant id before anyone signs in.
-async function ensurePersonalWorkspace(c, userId, email) {
+export async function ensurePersonalWorkspace(c, userId, email) {
   const existing = (await c.query(`SELECT m.tenant_id FROM platform.memberships m JOIN platform.tenants t ON t.id=m.tenant_id
     JOIN platform.organizations o ON o.id=t.organization_id WHERE m.user_id=$1 AND o.kind='personal' ORDER BY m.created_at LIMIT 1`, [userId])).rows[0];
   if (existing) {

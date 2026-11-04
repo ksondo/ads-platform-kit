@@ -10,7 +10,7 @@
   },
   "commerce": {
     "id": "commerce",
-    "url": "https://commerce.demo.africadigitalsynergy.com/commerce",
+    "url": "https://commerce.demo.africadigitalsynergy.com/commerce/demo",
     "status": "preserve_existing_verified_demo_link"
   },
   "activationPolicy": "Keep portal demoUrl null until TLS, browser app, database, and OIDC return journey checks pass. Publish one platform at a time in a separate tested PR.",

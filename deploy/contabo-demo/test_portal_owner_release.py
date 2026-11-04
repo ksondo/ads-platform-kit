@@ -21,9 +21,9 @@ class PortalPublisherTest(unittest.TestCase):
 
     def test_expected_ads_navigation(self):
         self.assertEqual(publisher.EXPECTED, {
-            "commerce": "https://commerce.demo.africadigitalsynergy.com/commerce",
-            "ecommerce": "https://commerce.demo.africadigitalsynergy.com/commerce",
-            "pos": "https://commerce.demo.africadigitalsynergy.com/commerce/merchant/pos",
+            "commerce": "https://commerce.demo.africadigitalsynergy.com/commerce/demo",
+            "ecommerce": "https://commerce.demo.africadigitalsynergy.com/commerce/demo",
+            "pos": "https://commerce.demo.africadigitalsynergy.com/commerce/demo",
         })
         self.assertEqual(publisher.PORT, "18089")
 

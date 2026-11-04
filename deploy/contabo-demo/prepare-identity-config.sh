@@ -78,7 +78,7 @@ inputs=[
     "ADS_DEMO_IDENTITY_PORT":"18090",
   }),
   ("identity.env.example","identity.env",{
-    "ADS_ENV":"demo","DEMO_MODE":"1","DEMO_SHOW_CREDENTIALS":"1",
+    "ADS_ENV":"demo","DEMO_MODE":"1","DEMO_SHOW_CREDENTIALS":"0",
     "IDENTITY_PUBLIC_URL":os.environ["ADS_SETUP_ISSUER"],
     "IDENTITY_COOKIE_SECRET":os.environ["ADS_SETUP_COOKIE"],
     "IDENTITY_SIGNING_KEY_PEM":pem,

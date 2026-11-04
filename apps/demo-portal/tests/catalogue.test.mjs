@@ -32,9 +32,11 @@ test("Commerce, E-commerce and POS share the integrated Commerce deployment",()=
   const commerce=data.platforms.find(x=>x.id==="commerce");
   const ecommerce=data.tools.find(x=>x.id==="ecommerce");
   const pos=data.tools.find(x=>x.id==="pos");
-  assert.equal(commerce.demoUrl,"https://commerce.demo.africadigitalsynergy.com/commerce");
+  // ADS Demo Access: every Commerce entry opens the contract-protected introduction and request page.
+  assert.equal(commerce.demoUrl,"https://commerce.demo.africadigitalsynergy.com/commerce/demo");
   assert.equal(ecommerce.demoUrl,commerce.demoUrl);
-  assert.equal(pos.demoUrl,"https://commerce.demo.africadigitalsynergy.com/commerce/merchant/pos");
+  assert.equal(pos.demoUrl,commerce.demoUrl);
+  for(const x of [commerce,ecommerce,pos]) assert.equal(x.demoAccess,"request",x.id+" must be marked as demo on request");
   assert.equal(data.tools.find(x=>x.id==="bnpl").demoUrl,null,
     "Digital financing demos remain disabled until verified");
 });

@@ -86,6 +86,35 @@ export function redirectAllowed(url, { production = true } = {}) {
   return !production && u.hostname === '127.0.0.1';
 }
 
+// ADS Demo Access (administrator-approved demonstrations). On only in the demo environment.
+// DEMO_ACCESS_ADMIN_EMAILS: ADS Identity accounts allowed into the central dashboard.
+// DEMO_ACCESS_NOTIFY_TO: who is emailed about each new request (kept on the server only).
+// DEMO_ACCESS_ADMIN_URL: public address of the dashboard host (links in emails).
+// DEMO_ACCESS_CHECK_SECRET_<PLATFORM>: secret the platform's server uses to check a visitor's grant.
+const emailList = value => [...new Set(String(value ?? '').split(/[\s,;]+/).map(s => s.trim().toLowerCase()).filter(Boolean))];
+export function demoAccessSettings(env, demo, publicUrl) {
+  const enabled = demo.enabled && bool(env.DEMO_ACCESS_ENABLED, false);
+  const adminEmails = emailList(env.DEMO_ACCESS_ADMIN_EMAILS);
+  const notifyTo = emailList(env.DEMO_ACCESS_NOTIFY_TO);
+  if (enabled && !adminEmails.length) throw new Error('DEMO_ACCESS_ADMIN_EMAILS_REQUIRED');
+  if (enabled && !notifyTo.length) throw new Error('DEMO_ACCESS_NOTIFY_TO_REQUIRED');
+  const checkSecrets = {};
+  for (const [name, value] of Object.entries(env)) {
+    const m = name.match(/^DEMO_ACCESS_CHECK_SECRET_([A-Z0-9_]+?)(_FILE)?$/);
+    if (m) checkSecrets[m[1].toLowerCase()] = readSecret(env, `DEMO_ACCESS_CHECK_SECRET_${m[1]}`);
+  }
+  return {
+    enabled, adminEmails, notifyTo, checkSecrets,
+    adminUrl: String(env.DEMO_ACCESS_ADMIN_URL ?? publicUrl).replace(/\/$/, ''),
+    platformsFile: env.DEMO_ACCESS_PLATFORMS_FILE || null,
+    timeZone: String(env.DEMO_ACCESS_TIME_ZONE ?? 'Africa/Douala'),
+    requestTtlDays: num(env.DEMO_ACCESS_REQUEST_TTL_DAYS, 30),
+    invitationTtlDays: num(env.DEMO_ACCESS_INVITATION_TTL_DAYS, 7),
+    grantDays: Math.min(30, num(env.DEMO_ACCESS_GRANT_DAYS, 30)),
+    requestsPerIpHour: num(env.DEMO_ACCESS_REQUESTS_PER_IP_HOUR, 10),
+  };
+}
+
 export function loadConfig(env = process.env) {
   const publicUrl = String(env.IDENTITY_PUBLIC_URL ?? '').replace(/\/$/, '');
   if (!publicUrl) throw new Error('IDENTITY_PUBLIC_URL_REQUIRED');
@@ -125,6 +154,7 @@ export function loadConfig(env = process.env) {
     legacyOnboard,
     strictRoleGrants,
     demo,
+    demoAccess: demoAccessSettings(env, demo, publicUrl),
     publicUrl,
     issuer: env.IDENTITY_ISSUER ? String(env.IDENTITY_ISSUER).replace(/\/$/, '') : publicUrl,
     databaseUrl: env.DATABASE_URL,
