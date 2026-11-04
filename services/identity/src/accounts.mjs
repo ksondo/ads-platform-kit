@@ -52,7 +52,9 @@ export function createAccounts({ pool, config, mailer, audit, log = console }) {
   }
 
   // Returns { user, created }. Existing accounts are never overwritten.
-  async function register({ email, password, name, locale = 'en', product, req, ip, clientId, revealExisting = false, next }) {
+  // mailboxProven: the sign-up started from a valid invitation link sent to this same address, so the
+  // mailbox is already proven and no second activation email is sent (ADS Demo Access).
+  async function register({ email, password, name, locale = 'en', product, req, ip, clientId, revealExisting = false, next, mailboxProven = false }) {
     const normalized = normalizeEmail(email);
     if (!isEmail(normalized)) fail(400, 'EMAIL_INVALID');
     // Demo addresses are created only by the operator's demo-bootstrap, never by registration.
@@ -83,10 +85,10 @@ export function createAccounts({ pool, config, mailer, audit, log = console }) {
       return { user: existing, created: false };
     }
     const id = crypto.randomUUID();
-    const requireVerify = config.requireEmailVerification;
+    const requireVerify = config.requireEmailVerification && !mailboxProven;
     try {
-      await pool.query('INSERT INTO platform.users(id,email,password_hash,status,display_name,locale) VALUES ($1,$2,$3,$4,$5,$6)',
-        [id, normalized, requireVerify ? null : passwordHash, requireVerify ? 'pending' : 'active', name ? String(name).trim().slice(0, 120) || null : null, locale]);
+      await pool.query('INSERT INTO platform.users(id,email,password_hash,status,display_name,locale,email_verified_at) VALUES ($1,$2,$3,$4,$5,$6,$7)',
+        [id, normalized, requireVerify ? null : passwordHash, requireVerify ? 'pending' : 'active', name ? String(name).trim().slice(0, 120) || null : null, locale, mailboxProven ? new Date() : null]);
     } catch (error) {
       if (error?.code === '23505') {
         if (revealExisting) fail(409, 'EMAIL_ALREADY_REGISTERED');
@@ -95,7 +97,7 @@ export function createAccounts({ pool, config, mailer, audit, log = console }) {
       throw error;
     }
     const user = { id, email: normalized, status: requireVerify ? 'pending' : 'active' };
-    await audit('register', { userId: id, outcome: 'allowed', ip, clientId });
+    await audit('register', { userId: id, outcome: 'allowed', reason: mailboxProven ? 'invitation_mailbox' : null, ip, clientId });
     if (requireVerify) await sendVerification(user, { req, product, passwordHash, next });
     return { user, created: true };
   }

@@ -30,6 +30,10 @@ const ROLE = /^[a-z][a-z0-9_.:-]{0,79}$/;
 const ORG_ADMIN_ROLES = ['owner', 'admin'];
 
 export function createAdmin({ pool, config, keys, jwks, audit, mailer, log = console }) {
+  // ADS Demo Access: a demo invitation, when accepted, also activates the visitor's grant (demo-access.mjs).
+  // Visitor demo organisations ('visit-…' demo sets) never give anyone organisation-admin authority.
+  let acceptHook = null;
+  const setAcceptHook = fn => { acceptHook = fn; };
   // Audience of admin tokens: never accepted by products (their audience is their client id).
   const adminAudience = () => `${config.issuer}/admin`;
 
@@ -46,6 +50,7 @@ export function createAdmin({ pool, config, keys, jwks, audit, mailer, log = con
       FROM platform.memberships m JOIN platform.users u ON u.id=m.user_id AND u.status='active' AND (NOT u.is_demo OR $3)
       JOIN platform.tenants t ON t.id=m.tenant_id AND t.status='active'
       JOIN platform.organizations o ON o.id=t.organization_id AND o.status='active' AND o.kind='organization'
+        AND (o.demo_key IS NULL OR o.demo_key NOT LIKE 'visit-%')
       WHERE m.user_id=$1 AND m.tenant_id=$2 AND m.status='active'`, [userId, tenantId, config.demo.enabled])).rows[0];
     if (!row) return null;
     const products = (await db.query(`SELECT p.client_id FROM platform.product_roles p JOIN platform.oauth_clients c ON c.client_id=p.client_id AND c.status='active'
@@ -377,9 +382,10 @@ export function createAdmin({ pool, config, keys, jwks, audit, mailer, log = con
         ON CONFLICT (user_id,tenant_id,client_id) DO UPDATE SET roles=EXCLUDED.roles, granted_by=EXCLUDED.granted_by, updated_at=now()`, [account.id, inv.tenant_id, inv.client_id, after, inv.invited_by]);
       await c.query('UPDATE platform.users SET email_verified_at=coalesce(email_verified_at, now()) WHERE id=$1', [account.id]);
       await c.query('UPDATE platform.invitations SET accepted_at=now(), accepted_by=$2 WHERE id=$1', [inv.id, account.id]);
+      const demo = acceptHook ? await acceptHook(c, inv, account) : null;
       await audit('invitation_accepted', { userId: account.id, tenantId: inv.tenant_id, outcome: 'allowed', ip, clientId: inv.client_id,
         metadata: { invitation_id: inv.id, invited_by: inv.invited_by, roles: inv.roles, before, after, org_role: orgRole, reactivated: existing?.status === 'disabled' } }, c);
-      return { tenantId: inv.tenant_id, product: inv.client_id, productName: inv.product_name, organizationName: inv.organization_name, roles: after, productUrl: inv.redirect_uris[0] ?? null };
+      return { tenantId: inv.tenant_id, product: inv.client_id, productName: inv.product_name, organizationName: inv.organization_name, roles: after, productUrl: demo?.productUrl ?? inv.redirect_uris[0] ?? null };
     });
     if (result.mismatch) {
       const m = result.mismatch;
@@ -391,6 +397,6 @@ export function createAdmin({ pool, config, keys, jwks, audit, mailer, log = con
 
   return {
     authority, adminWorkspaces, exchange, apiContext, listMembers, grantRoles, revokeRoles, setActive, setOrgAdmin,
-    createInvitation, listInvitations, revokeInvitation, findInvitation, acceptInvitation, getClient, entitledScopes, HttpError,
+    createInvitation, listInvitations, revokeInvitation, findInvitation, acceptInvitation, getClient, entitledScopes, HttpError, setAcceptHook,
   };
 }

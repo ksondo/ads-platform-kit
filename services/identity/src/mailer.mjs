@@ -43,6 +43,41 @@ const templates = {
       'Si vous ne connaissez pas cette organisation, ignorez cet e-mail.',
     ],
   }),
+  // ADS Demo Access. Visitor-supplied values (the email) appear only in the body, escaped in HTML.
+  demo_request_admin: ({ platform, email, reference, when, link, prior }) => ({
+    subject: `New demo access request ${reference} · ${platform} / Nouvelle demande de démonstration`,
+    intro: [
+      `${email} asked for access to the ${platform} demonstration on ${when}. Reference: ${reference}.${prior ? ' This email was rejected for this platform in the last 30 days.' : ''} Opening the link does not approve anything: sign in as an ADS administrator, then choose Approve or Reject.`,
+      `${email} demande l'accès à la démonstration ${platform} le ${when}. Référence : ${reference}.${prior ? ' Cette adresse a été refusée pour cette plateforme au cours des 30 derniers jours.' : ''} Ouvrir le lien n'approuve rien : connectez-vous en tant qu'administrateur ADS, puis choisissez Approuver ou Refuser.`,
+    ],
+    button: ['Review request', 'Examiner la demande'],
+    link,
+    outro: ['You receive this because you are an ADS demo administrator.', 'Vous recevez ce message en tant qu’administrateur des démonstrations ADS.'],
+  }),
+  demo_invitation: ({ platform, link, days, grantDays }) => ({
+    subject: `Your ${platform} demonstration access / Votre accès à la démonstration ${platform}`,
+    intro: [
+      `Your request to try the ${platform} demonstration was approved. Open the link to set your password (or sign in if you already have an ADS account) and start the demonstration. The link works once and expires in ${days} days. Your access lasts ${grantDays} days from activation.`,
+      `Votre demande d'essai de la démonstration ${platform} a été approuvée. Ouvrez le lien pour choisir votre mot de passe (ou connectez-vous si vous avez déjà un compte ADS) et commencer la démonstration. Le lien ne fonctionne qu'une fois et expire dans ${days} jours. Votre accès dure ${grantDays} jours à partir de l'activation.`,
+    ],
+    button: ['Activate my demo access', 'Activer mon accès'],
+    link,
+    outro: [
+      'All data in the demonstration is fictional. No real payments or bank transactions take place.',
+      'Toutes les données de la démonstration sont fictives. Aucun paiement ni opération bancaire réelle n’a lieu.',
+    ],
+  }),
+  demo_rejected: ({ platform }) => ({
+    subject: `Your ${platform} demonstration request / Votre demande de démonstration ${platform}`,
+    intro: [
+      `Thank you for your interest in ${platform}. We are unable to offer demonstration access at this time.`,
+      `Merci de l'intérêt que vous portez à ${platform}. Nous ne sommes pas en mesure de vous accorder un accès de démonstration pour le moment.`,
+    ],
+    outro: [
+      'For other enquiries, please contact us through africadigitalsynergy.com.',
+      'Pour toute autre demande, veuillez nous contacter via africadigitalsynergy.com.',
+    ],
+  }),
   password_changed: () => ({
     subject: 'Your password was changed / Votre mot de passe a été modifié',
     intro: [
@@ -88,6 +123,8 @@ export function createMailer(config, log = console) {
     secure: mail.smtpSecure,
     auth: mail.smtpUser ? { user: mail.smtpUser, pass: mail.smtpPassword } : undefined,
     requireTLS: !mail.smtpSecure,
+    // Fail fast so a slow mail relay never holds a request open; the demo outbox retries.
+    connectionTimeout: 15000, greetingTimeout: 15000, socketTimeout: 30000,
   });
   return {
     async send(message) {

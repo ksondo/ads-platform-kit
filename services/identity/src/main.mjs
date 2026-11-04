@@ -22,10 +22,12 @@ const mailer = createMailer(config, log);
 const google = config.google.enabled ? createGoogleClient(config) : null;
 const sdkPath = process.env.IDENTITY_SDK_PATH ?? path.resolve(here, '../../../packages/identity-client/ads-identity.js');
 
-const { server, purgeExpired } = createApp({ config, pool, keys, mailer, google, log, sdkPath });
+const { server, purgeExpired, demoAccess } = createApp({ config, pool, keys, mailer, google, log, sdkPath });
 const purge = () => purgeExpired().catch(error => log.error(`purge failed: ${error.message}`));
 setInterval(purge, 60 * 60 * 1000).unref();
 purge();
+// ADS Demo Access: retry queued demo emails every minute.
+if (demoAccess) setInterval(() => demoAccess.processOutbox().catch(error => log.error(`demo outbox failed: ${error.message}`)), 60 * 1000).unref();
 server.listen(config.port, config.host, () => log.info(`ADS identity ready on ${config.host}:${config.port} issuer=${config.issuer} google=${config.google.enabled} mail=${config.mail.transport}`));
 
 const shutdown = async () => {
