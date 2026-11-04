@@ -8,7 +8,7 @@ Independent, lightweight, public portal in `apps/demo-portal`, using the ADS nav
 - `/platforms`: platform directory; `/platforms/:id`: integrated platform detail, its tools and optional verified demo.
 - `/opportunities`: business opportunity directory with platform filters; `/opportunities/:id`: tool description, business model and related platform.
 - `/cloud`: cloud hosting, application operations and infrastructure partnership overview.
-- `/demo-access`: explains the existing hosted ADS demo login flow without duplicating passwords or authentication forms; links back to the approved platform demos.
+- `/demo-access`: explains ADS Demo Access (choose a platform, request demo access, accept the emailed invitation, explore a personal demo workspace) without showing passwords, authentication forms or administration links. Commerce, E-commerce and POS open the Commerce introduction and request page `https://commerce.demo.africadigitalsynergy.com/commerce/demo` (catalogue `demoAccess: "request"`; button "Request demo access" / "Demander un accès de démonstration").
 - **Temporary company website upgrade:** About ADS and the corporate Partners navigation remain intentionally inactive. **Partner with ADS** instead opens a `mailto:admin@africadigitalsynergy.com` enquiry, including on Commerce; the footer lists that email first, and WhatsApp remains optional. Yaoundé is named without inventing a street address.
 
 ## Product semantics and safety

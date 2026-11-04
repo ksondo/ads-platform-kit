@@ -34,9 +34,9 @@ PORT = "18089"
 COMPOSE = "deploy/contabo-demo/compose.portal.yml"
 
 EXPECTED = {
-    "commerce": COMMERCE + "/commerce",
-    "ecommerce": COMMERCE + "/commerce",
-    "pos": COMMERCE + "/commerce/merchant/pos",
+    "commerce": COMMERCE + "/commerce/demo",
+    "ecommerce": COMMERCE + "/commerce/demo",
+    "pos": COMMERCE + "/commerce/demo",
 }
 
 
