@@ -126,6 +126,10 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
 
   // ---------- requests ----------
   async function submitRequest({ platform: key, email, locale, website, ip }) {
+    // Expired active grants must lose access before a subsequent application is considered.
+    // The normal hourly expiry worker also performs this, but applications must not depend
+    // on when the worker last ran.
+    await housekeeping();
     const p = platformOf(String(key ?? ''));
     if (!p) fail(400, 'PLATFORM_UNKNOWN');
     const normalized = normalizeEmail(email);
@@ -144,6 +148,18 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
       if (pending) return { duplicate: true, id: pending.id };
       // A pending request past its 30 days frees the slot for a new one.
       await c.query("UPDATE platform.demo_access_requests SET status='expired' WHERE platform=$1 AND email=$2 AND status='pending'", [p.key, normalized]);
+      // An unaccepted, expired/revoked invitation cannot block this person indefinitely.
+      await c.query(`UPDATE platform.demo_access_grants g SET status='expired'
+        WHERE g.platform=$1 AND g.email=$2 AND g.status='awaiting_activation'
+        AND EXISTS (SELECT 1 FROM platform.invitations i WHERE i.id=g.invitation_id
+          AND (i.expires_at<=now() OR i.revoked_at IS NOT NULL))`, [p.key, normalized]);
+      // Return the same neutral acknowledgement for an already-approved visitor.
+      // Never issue parallel grants for one email and platform; a fresh request is
+      // allowed after expiry or explicit revocation.
+      const live = (await c.query(`SELECT id FROM platform.demo_access_grants
+        WHERE platform=$1 AND email=$2 AND status IN ('awaiting_activation','active')
+        LIMIT 1 FOR UPDATE`, [p.key, normalized])).rows[0];
+      if (live) return { duplicate: true };
       const prior = (await c.query(`SELECT 1 FROM platform.demo_access_requests WHERE platform=$1 AND email=$2 AND status='rejected'
         AND decided_at > now() - interval '30 days' LIMIT 1`, [p.key, normalized])).rowCount > 0;
       const id = crypto.randomUUID();
