@@ -204,7 +204,7 @@ describe('ADS Demo Access (Commerce pilot)', () => {
 
     const b = browser(svc.base);
     await signIn(b, email);
-    const link = mails(email)[0].text.match(/https?:\\/\\/\\S+\\/invite\\?token=[A-Za-z0-9_-]+/)[0];
+    const link = mails(email)[0].text.match(/https?:\/\/\S+\/invite\?token=[A-Za-z0-9_-]+/)[0];
     const token = new URL(link).searchParams.get('token');
     const invitePage = await b.get(link);
     assert.equal((await b.post('/invite/accept', { csrf: csrfFrom(invitePage.text), token })).status, 200);
