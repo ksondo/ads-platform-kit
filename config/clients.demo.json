@@ -385,17 +385,25 @@
       "admin_roles": [
         "tenant_admin"
       ],
-      "admin_scopes": [],
+      "admin_scopes": [
+        "members:read",
+        "roles:write",
+        "invitations:write"
+      ],
       "assignable_roles": [
         "founder",
         "venture_manager",
         "evidence_reviewer",
         "regulatory_reviewer",
-        "tenant_admin"
+        "contributor",
+        "adviser",
+        "investor",
+        "partner",
+        "employee"
       ],
       "ads_only_roles": [],
-      "needs_client_secret": false,
-      "client_secret_setting": null,
+      "needs_client_secret": true,
+      "client_secret_setting": "VENTUREWORKS_DEMO_CLIENT_SECRET",
       "demo_orgs": [
         {
           "key": "main",
@@ -405,7 +413,12 @@
             "founder",
             "venture_manager",
             "evidence_reviewer",
-            "regulatory_reviewer"
+            "regulatory_reviewer",
+            "contributor",
+            "adviser",
+            "investor",
+            "partner",
+            "employee"
           ]
         }
       ],

@@ -264,7 +264,7 @@ describe('ADS Demo Access (Commerce pilot)', () => {
 
     assert.equal((await request({ email: 'bot@example.com', website: 'http://spam' })).status, 202);
     assert.equal(await requestRow('bot@example.com'), undefined, 'honeypot stores nothing');
-    assert.equal((await request({ email: 'x@example.com', platform: 'education' })).status, 400);
+    assert.equal((await request({ email: 'x@example.com', platform: 'banking' })).status, 400);
     assert.equal((await request({ email: 'not-an-email' })).status, 400);
     assert.equal((await request({ email: 'x@example.com' }, 'https://evil.example')).status, 403);
     const pre = await fetch(`${svc.base}/demo-access/v1/requests`, { method: 'OPTIONS', headers: { origin: ORIGIN, 'access-control-request-method': 'POST' } });

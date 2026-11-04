@@ -59,7 +59,13 @@
         {"key": "founder", "label": {"en": "Founder", "fr": "Fondateur"}, "hint": {"en": "Builds and submits a venture", "fr": "Construit et soumet un projet"}, "org": "main", "roles": ["founder"]},
         {"key": "venture-manager", "label": {"en": "Venture manager", "fr": "Gestionnaire de projets"}, "hint": {"en": "Follows the venture portfolio", "fr": "Suit le portefeuille de projets"}, "org": "main", "roles": ["venture_manager"]},
         {"key": "evidence-reviewer", "label": {"en": "Evidence reviewer", "fr": "Vérificateur des preuves"}, "hint": {"en": "Checks evidence submitted by founders", "fr": "Vérifie les preuves des fondateurs"}, "org": "main", "roles": ["evidence_reviewer"]},
-        {"key": "regulatory-reviewer", "label": {"en": "Regulatory reviewer", "fr": "Vérificateur réglementaire"}, "hint": {"en": "Checks regulatory requirements", "fr": "Vérifie les exigences réglementaires"}, "org": "main", "roles": ["regulatory_reviewer"]}
+        {"key": "regulatory-reviewer", "label": {"en": "Regulatory reviewer", "fr": "Vérificateur réglementaire"}, "hint": {"en": "Checks regulatory requirements", "fr": "Vérifie les exigences réglementaires"}, "org": "main", "roles": ["regulatory_reviewer"]},
+        {"key": "tenant-admin", "label": {"en": "Tenant administrator", "fr": "Administrateur de l’espace"}, "hint": {"en": "Manages workspace access and audit", "fr": "Gère les accès et l’audit"}, "org": "main", "roles": ["tenant_admin"]},
+        {"key": "contributor", "label": {"en": "Contributor", "fr": "Contributeur"}, "hint": {"en": "Applies, accepts terms and delivers work", "fr": "Postule, accepte les conditions et livre son travail"}, "org": "main", "roles": ["contributor"]},
+        {"key": "adviser", "label": {"en": "Adviser", "fr": "Conseiller"}, "hint": {"en": "Uses their own account; private venture access requires explicit authorization", "fr": "Utilise son compte ; l’accès aux projets privés nécessite une autorisation"}, "org": "main", "roles": ["adviser"]},
+        {"key": "investor", "label": {"en": "Investor", "fr": "Investisseur"}, "hint": {"en": "Uses their own account; private venture access requires explicit authorization", "fr": "Utilise son compte ; l’accès aux projets privés nécessite une autorisation"}, "org": "main", "roles": ["investor"]},
+        {"key": "partner", "label": {"en": "Partner", "fr": "Partenaire"}, "hint": {"en": "Uses their own account; private venture access requires explicit authorization", "fr": "Utilise son compte ; l’accès aux projets privés nécessite une autorisation"}, "org": "main", "roles": ["partner"]},
+        {"key": "employee", "label": {"en": "Employee", "fr": "Employé"}, "hint": {"en": "Uses their own account; private venture access requires explicit authorization", "fr": "Utilise son compte ; l’accès aux projets privés nécessite une autorisation"}, "org": "main", "roles": ["employee"]}
       ]
     },
     "commerce": {
