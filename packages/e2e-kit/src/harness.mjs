@@ -44,6 +44,47 @@ export function createHarness({ url, issuer, databaseUrl, signingKeyPem, kid = '
     }
   }
 
+  // One cleanup attempt in one transaction. The advisory lock serialises cleanups from separate
+  // Playwright workers. The identity service locks a session row (auth code, refresh token) and then
+  // FK-checks its user/tenant; deleting those rows first takes the locks in that same order, so a
+  // sign-in or token rotation still in flight cannot deadlock with the parent deletes below.
+  async function deleteCreated() {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query("SELECT pg_advisory_xact_lock(hashtextextended('ads-e2e-kit:identity-cleanup',0))");
+      const users = new Set(created.users);
+      if (created.emails.size) {
+        const extra = await client.query('SELECT id FROM platform.users WHERE email = ANY($1::text[])', [[...created.emails]]);
+        for (const r of extra.rows) users.add(r.id);
+      }
+      const orgs = new Set(created.organizations);
+      if (users.size) {
+        const personal = await client.query(`SELECT DISTINCT t.organization_id FROM platform.memberships m JOIN platform.tenants t ON t.id=m.tenant_id
+          JOIN platform.organizations o ON o.id=t.organization_id WHERE o.kind='personal' AND m.user_id = ANY($1::uuid[])`, [[...users]]);
+        for (const r of personal.rows) orgs.add(r.organization_id);
+      }
+      const userIds = [...users].sort();
+      const orgIds = [...orgs].sort();
+      if (userIds.length || orgIds.length) {
+        const owned = 'user_id = ANY($1::uuid[]) OR tenant_id IN (SELECT id FROM platform.tenants WHERE organization_id = ANY($2::uuid[]))';
+        await client.query(`DELETE FROM platform.auth_codes WHERE ${owned}`, [userIds, orgIds]);
+        await client.query(`DELETE FROM platform.refresh_tokens WHERE ${owned}`, [userIds, orgIds]);
+      }
+      if (orgIds.length) {
+        await client.query('DELETE FROM platform.tenants WHERE organization_id = ANY($1::uuid[])', [orgIds]);
+        await client.query('DELETE FROM platform.organizations WHERE id = ANY($1::uuid[])', [orgIds]);
+      }
+      if (userIds.length) await client.query('DELETE FROM platform.users WHERE id = ANY($1::uuid[])', [userIds]);
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   const harness = {
     url, issuer, databaseUrl, jwksUrl: `${url}/.well-known/jwks.json`, mocks, mocksUrl, webhookSecret, outbox, pool,
 
@@ -232,39 +273,21 @@ export function createHarness({ url, issuer, databaseUrl, signingKeyPem, kid = '
 
     // Deletes users and organisations this harness created (and personal workspaces made at sign-in).
     async cleanup() {
-      // Serialise cross-worker fixture deletion. Identity membership and personal-workspace
-      // cascades can otherwise deadlock when separate Playwright workers delete in parallel.
-      const client = await pool.connect();
-      try {
-        await client.query('BEGIN');
-        await client.query("SELECT pg_advisory_xact_lock(hashtextextended('ads-e2e-kit:identity-cleanup',0))");
-        if (created.emails.size) {
-          const extra = await client.query('SELECT id FROM platform.users WHERE email = ANY($1::text[])', [[...created.emails]]);
-          for (const r of extra.rows) created.users.add(r.id);
+      for (let attempt = 1; ; attempt += 1) {
+        try {
+          await deleteCreated();
+          break;
+        } catch (error) {
+          // The identity service may still be rotating tokens for these users while a worker tears
+          // down; if PostgreSQL still picks this transaction as a deadlock victim, run it again.
+          if (error.code !== '40P01' || attempt >= 5) throw error;
+          await new Promise(r => setTimeout(r, 50 * 2 ** attempt + Math.random() * 100));
         }
-        const users = [...created.users];
-        const orgs = [...created.organizations];
-        if (users.length) {
-          const personal = await client.query(`SELECT DISTINCT t.organization_id FROM platform.memberships m JOIN platform.tenants t ON t.id=m.tenant_id
-            JOIN platform.organizations o ON o.id=t.organization_id WHERE o.kind='personal' AND m.user_id = ANY($1::uuid[])`, [users]);
-          orgs.push(...personal.rows.map(r => r.organization_id));
-        }
-        if (orgs.length) {
-          await client.query('DELETE FROM platform.tenants WHERE organization_id = ANY($1::uuid[])', [orgs]);
-          await client.query('DELETE FROM platform.organizations WHERE id = ANY($1::uuid[])', [orgs]);
-        }
-        if (users.length) await client.query('DELETE FROM platform.users WHERE id = ANY($1::uuid[])', [users]);
-        await client.query('COMMIT');
-        created.users.clear();
-        created.organizations.clear();
-        created.tenants.clear();
-        created.emails.clear();
-      } catch (error) {
-        await client.query('ROLLBACK').catch(() => {});
-        throw error;
-      } finally {
-        client.release();
       }
+      created.users.clear();
+      created.organizations.clear();
+      created.tenants.clear();
+      created.emails.clear();
     },
 
     async close() {

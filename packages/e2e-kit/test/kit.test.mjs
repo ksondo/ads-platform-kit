@@ -8,7 +8,9 @@ import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { after, before, describe, it } from 'node:test';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { connectIdentity, freePort, loadE2eEnv, startIdentity, startMocks, verifyWebhookSignature, signPayload } from '../src/index.mjs';
+import { connectIdentity, freePort, generateSigningKey, loadE2eEnv, startIdentity, startMocks, verifyWebhookSignature, signPayload } from '../src/index.mjs';
+import pg from 'pg';
+import { createHarness } from '../src/harness.mjs';
 
 const run = promisify(execFile);
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -130,6 +132,55 @@ describe('startIdentity in-process + startMocks', () => {
     await h.cleanup();
     assert.equal((await h.pool.query('SELECT 1 FROM platform.users WHERE id = ANY($1::uuid[])', [[u.id, t.user.id]])).rowCount, 0);
     assert.equal((await h.pool.query('SELECT 1 FROM platform.tenants WHERE id=$1', [t.tenantId])).rowCount, 0);
+  });
+
+  // Regression: Playwright workers tear down while the identity service is still rotating refresh
+  // tokens for the same user. Rotation locks the token row and then needs the tenant/user row
+  // (FK check on the successor), the reverse of a parent-first delete, which deadlocked (40P01).
+  it('concurrent cleanups on overlapping data survive in-flight refresh rotations without deadlock', async () => {
+    const harnesses = [0, 1, 2].map(() => createHarness({ url: h.url, issuer: h.issuer, databaseUrl: DATABASE_URL, signingKeyPem: generateSigningKey() }));
+    const db = new pg.Pool({ connectionString: DATABASE_URL, max: 6 });
+    const rotators = [];
+    try {
+      const shared = await harnesses[0].createUser();
+      const tenants = [];
+      for (const x of harnesses) {
+        x.trackEmail(shared.email); // every harness deletes the shared user too
+        const own = await x.createUser();
+        const org = await x.createOrganization({ owner: own });
+        await x.grantRole({ user: shared, org, product: 'kit-test-web', role: 'clerk' });
+        tenants.push(org.tenantId);
+      }
+      const insertToken = (db, tenantId) => db.query(`INSERT INTO platform.refresh_tokens(id,family_id,token_hash,client_id,user_id,tenant_id,expires_at)
+        VALUES ($1,$1,$2,'kit-test-web',$3,$4,now()+interval '1 hour') RETURNING id`, [crypto.randomUUID(), crypto.randomBytes(16).toString('hex'), shared.id, tenantId]);
+      // One rotation in flight per workspace: it holds its token row FOR UPDATE, as /token does.
+      for (const tenantId of tenants) {
+        const { rows: [tok] } = await insertToken(db, tenantId);
+        const c = await db.connect();
+        rotators.push({ c, tenantId });
+        await c.query('BEGIN');
+        await c.query('SELECT 1 FROM platform.refresh_tokens WHERE id=$1 FOR UPDATE', [tok.id]);
+      }
+      const results = Promise.allSettled(harnesses.map(x => x.cleanup()));
+      // Wait until a cleanup is blocked behind a rotation, then let every rotation write its successor.
+      for (let i = 0; i < 100; i += 1) {
+        const waiting = await db.query("SELECT 1 FROM pg_stat_activity WHERE wait_event_type='Lock' AND query LIKE 'DELETE FROM platform.%'");
+        if (waiting.rowCount) break;
+        await new Promise(r => setTimeout(r, 50));
+      }
+      await Promise.allSettled(rotators.map(async ({ c, tenantId }) => {
+        try { await insertToken(c, tenantId); await c.query('COMMIT'); } catch { await c.query('ROLLBACK').catch(() => {}); }
+      }));
+      const settled = await results;
+      assert.deepEqual(settled.map(r => r.status === 'rejected' ? `${r.reason.code}: ${r.reason.message}` : 'ok'), ['ok', 'ok', 'ok']);
+      assert.equal((await h.pool.query('SELECT 1 FROM platform.users WHERE id=$1', [shared.id])).rowCount, 0);
+      assert.equal((await h.pool.query('SELECT 1 FROM platform.tenants WHERE id = ANY($1::uuid[])', [tenants])).rowCount, 0);
+      assert.equal((await h.pool.query('SELECT 1 FROM platform.refresh_tokens WHERE user_id=$1', [shared.id])).rowCount, 0);
+    } finally {
+      for (const { c } of rotators) { await c.query('ROLLBACK').catch(() => {}); c.release(); }
+      await Promise.all(harnesses.map(x => x.close()));
+      await db.end();
+    }
   });
 
   it('re-exports the webhook signature check used by product adapters', () => {
