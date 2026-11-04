@@ -41,6 +41,11 @@ CREATE TABLE IF NOT EXISTS platform.demo_access_grants (
   revoked_by uuid REFERENCES platform.users(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+-- Only one live approval per email and platform. Avoid parallel grants surviving revocation.
+-- Later applications are allowed once the previous grant is expired or revoked.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_demo_grant_live_email
+  ON platform.demo_access_grants(platform, email)
+  WHERE status IN ('awaiting_activation','active');
 CREATE INDEX IF NOT EXISTS idx_demo_grant_user ON platform.demo_access_grants(user_id, client_id) WHERE user_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_demo_grant_invitation ON platform.demo_access_grants(invitation_id);
 
