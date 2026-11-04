@@ -5,232 +5,2142 @@
   "products": {
     "software-factory": {
       "personas": [
-        {"key": "entrepreneur", "label": {"en": "Entrepreneur", "fr": "Entrepreneur"}, "hint": {"en": "Describes a business idea and follows its build", "fr": "Décrit une idée d'entreprise et suit sa construction"}, "org": "main", "roles": ["entrepreneur"]},
-        {"key": "ba-reviewer", "label": {"en": "Business analyst (ADS)", "fr": "Analyste métier (ADS)"}, "hint": {"en": "Reviews requirements before the build", "fr": "Relit les exigences avant la construction"}, "org": "staff", "roles": ["ba_reviewer"]},
-        {"key": "code-reviewer", "label": {"en": "Code reviewer (ADS)", "fr": "Relecteur de code (ADS)"}, "hint": {"en": "Reviews the generated code", "fr": "Relit le code généré"}, "org": "staff", "roles": ["code_reviewer"]},
-        {"key": "knowledge-curator", "label": {"en": "Knowledge curator (ADS)", "fr": "Gestionnaire des connaissances (ADS)"}, "hint": {"en": "Curates the knowledge base", "fr": "Gère la base de connaissances"}, "org": "staff", "roles": ["knowledge_curator"]},
-        {"key": "support", "label": {"en": "Support agent (ADS)", "fr": "Agent d'assistance (ADS)"}, "hint": {"en": "Answers help requests", "fr": "Répond aux demandes d'aide"}, "org": "staff", "roles": ["support_agent"]}
+        {
+          "key": "entrepreneur",
+          "label": {
+            "en": "Entrepreneur",
+            "fr": "Entrepreneur"
+          },
+          "hint": {
+            "en": "Describes a business idea and follows its build",
+            "fr": "Décrit une idée d'entreprise et suit sa construction"
+          },
+          "org": "main",
+          "roles": [
+            "entrepreneur"
+          ]
+        },
+        {
+          "key": "ba-reviewer",
+          "label": {
+            "en": "Business analyst (ADS)",
+            "fr": "Analyste métier (ADS)"
+          },
+          "hint": {
+            "en": "Reviews requirements before the build",
+            "fr": "Relit les exigences avant la construction"
+          },
+          "org": "staff",
+          "roles": [
+            "ba_reviewer"
+          ]
+        },
+        {
+          "key": "code-reviewer",
+          "label": {
+            "en": "Code reviewer (ADS)",
+            "fr": "Relecteur de code (ADS)"
+          },
+          "hint": {
+            "en": "Reviews the generated code",
+            "fr": "Relit le code généré"
+          },
+          "org": "staff",
+          "roles": [
+            "code_reviewer"
+          ]
+        },
+        {
+          "key": "knowledge-curator",
+          "label": {
+            "en": "Knowledge curator (ADS)",
+            "fr": "Gestionnaire des connaissances (ADS)"
+          },
+          "hint": {
+            "en": "Curates the knowledge base",
+            "fr": "Gère la base de connaissances"
+          },
+          "org": "staff",
+          "roles": [
+            "knowledge_curator"
+          ]
+        },
+        {
+          "key": "support",
+          "label": {
+            "en": "Support agent (ADS)",
+            "fr": "Agent d'assistance (ADS)"
+          },
+          "hint": {
+            "en": "Answers help requests",
+            "fr": "Répond aux demandes d'aide"
+          },
+          "org": "staff",
+          "roles": [
+            "support_agent"
+          ]
+        }
       ]
     },
     "career-path": {
       "personas": [
-        {"key": "learner", "label": {"en": "Learner", "fr": "Apprenant"}, "hint": {"en": "Explores careers and follows a learning path", "fr": "Explore les métiers et suit un parcours"}, "org": "main", "roles": ["learner"]},
-        {"key": "curator", "label": {"en": "Content curator (ADS)", "fr": "Responsable des contenus (ADS)"}, "hint": {"en": "Reviews career and course content", "fr": "Relit les fiches métiers et les cours"}, "org": "staff", "roles": ["curator"]}
+        {
+          "key": "learner",
+          "label": {
+            "en": "Learner",
+            "fr": "Apprenant"
+          },
+          "hint": {
+            "en": "Explores careers and follows a learning path",
+            "fr": "Explore les métiers et suit un parcours"
+          },
+          "org": "main",
+          "roles": [
+            "learner"
+          ]
+        },
+        {
+          "key": "curator",
+          "label": {
+            "en": "Content curator (ADS)",
+            "fr": "Responsable des contenus (ADS)"
+          },
+          "hint": {
+            "en": "Reviews career and course content",
+            "fr": "Relit les fiches métiers et les cours"
+          },
+          "org": "staff",
+          "roles": [
+            "curator"
+          ]
+        }
       ]
     },
     "nutrition": {
       "personas": [
-        {"key": "user", "label": {"en": "Nutrition user", "fr": "Utilisateur nutrition"}, "hint": {"en": "Plans meals and tracks nutrition", "fr": "Planifie ses repas et suit sa nutrition"}, "org": "main", "roles": ["nutrition_user"]},
-        {"key": "food-data-admin", "label": {"en": "Food data admin (ADS)", "fr": "Gestionnaire des aliments (ADS)"}, "hint": {"en": "Maintains the food database", "fr": "Tient à jour la base des aliments"}, "org": "staff", "roles": ["food_data_admin"]}
+        {
+          "key": "user",
+          "label": {
+            "en": "Nutrition user",
+            "fr": "Utilisateur nutrition"
+          },
+          "hint": {
+            "en": "Plans meals and tracks nutrition",
+            "fr": "Planifie ses repas et suit sa nutrition"
+          },
+          "org": "main",
+          "roles": [
+            "nutrition_user"
+          ]
+        },
+        {
+          "key": "food-data-admin",
+          "label": {
+            "en": "Food data admin (ADS)",
+            "fr": "Gestionnaire des aliments (ADS)"
+          },
+          "hint": {
+            "en": "Maintains the food database",
+            "fr": "Tient à jour la base des aliments"
+          },
+          "org": "staff",
+          "roles": [
+            "food_data_admin"
+          ]
+        }
       ]
     },
     "personal-finance": {
       "personas": [
-        {"key": "owner", "label": {"en": "Account owner", "fr": "Titulaire du compte"}, "hint": {"en": "Tracks budget, savings and goals", "fr": "Suit son budget, son épargne et ses objectifs"}, "org": "main", "roles": ["owner"]},
-        {"key": "support", "label": {"en": "Support agent (ADS)", "fr": "Agent d'assistance (ADS)"}, "hint": {"en": "Answers help requests", "fr": "Répond aux demandes d'aide"}, "org": "staff", "roles": ["support_agent"]}
+        {
+          "key": "owner",
+          "label": {
+            "en": "Account owner",
+            "fr": "Titulaire du compte"
+          },
+          "hint": {
+            "en": "Tracks budget, savings and goals",
+            "fr": "Suit son budget, son épargne et ses objectifs"
+          },
+          "org": "main",
+          "roles": [
+            "owner"
+          ]
+        },
+        {
+          "key": "support",
+          "label": {
+            "en": "Support agent (ADS)",
+            "fr": "Agent d'assistance (ADS)"
+          },
+          "hint": {
+            "en": "Answers help requests",
+            "fr": "Répond aux demandes d'aide"
+          },
+          "org": "staff",
+          "roles": [
+            "support_agent"
+          ]
+        }
       ]
     },
     "education": {
       "personas": [
-        {"key": "school-admin", "label": {"en": "School administrator", "fr": "Administrateur de l'école"}, "hint": {"en": "Runs the school workspace and staff", "fr": "Gère l'espace de l'école et le personnel"}, "org": "main", "roles": ["institution_admin"]},
-        {"key": "academic-admin", "label": {"en": "Academic administrator", "fr": "Responsable pédagogique"}, "hint": {"en": "Classes, timetables and report cards", "fr": "Classes, emplois du temps et bulletins"}, "org": "main", "roles": ["academic_admin"]},
-        {"key": "admissions", "label": {"en": "Admissions officer", "fr": "Responsable des admissions"}, "hint": {"en": "Reviews applications and enrols students", "fr": "Étudie les candidatures et inscrit les élèves"}, "org": "main", "roles": ["admissions_officer"]},
-        {"key": "bursar", "label": {"en": "Bursar", "fr": "Économe"}, "hint": {"en": "School fees and payments", "fr": "Frais de scolarité et paiements"}, "org": "main", "roles": ["bursar_finance"]},
-        {"key": "teacher", "label": {"en": "Teacher", "fr": "Enseignant"}, "hint": {"en": "Takes attendance and enters marks", "fr": "Fait l'appel et saisit les notes"}, "org": "main", "roles": ["teacher_trainer"]},
-        {"key": "parent", "label": {"en": "Parent", "fr": "Parent"}, "hint": {"en": "Follows a child's school life", "fr": "Suit la scolarité de son enfant"}, "org": "main", "roles": ["parent_guardian"]},
-        {"key": "student", "label": {"en": "Student", "fr": "Élève"}, "hint": {"en": "Lessons, homework and results", "fr": "Cours, devoirs et résultats"}, "org": "main", "roles": ["learner"]},
-        {"key": "applicant", "label": {"en": "Applicant", "fr": "Candidat"}, "hint": {"en": "Applies to the school", "fr": "Dépose une candidature"}, "org": "main", "roles": ["applicant"]},
-        {"key": "partner", "label": {"en": "Partner", "fr": "Partenaire"}, "hint": {"en": "Supports its schools (counts only)", "fr": "Accompagne ses écoles (chiffres seulement)"}, "org": "partner", "roles": ["partner_admin"]},
-        {"key": "platform-admin", "label": {"en": "Platform admin (ADS)", "fr": "Administrateur plateforme (ADS)"}, "hint": {"en": "Partners, packages and support desk", "fr": "Partenaires, offres et support"}, "org": "staff", "roles": ["platform_admin"]}
+        {
+          "key": "school-admin",
+          "label": {
+            "en": "School administrator",
+            "fr": "Administrateur de l'école"
+          },
+          "hint": {
+            "en": "Runs the school workspace and staff",
+            "fr": "Gère l'espace de l'école et le personnel"
+          },
+          "org": "main",
+          "roles": [
+            "institution_admin"
+          ]
+        },
+        {
+          "key": "academic-admin",
+          "label": {
+            "en": "Academic administrator",
+            "fr": "Responsable pédagogique"
+          },
+          "hint": {
+            "en": "Classes, timetables and report cards",
+            "fr": "Classes, emplois du temps et bulletins"
+          },
+          "org": "main",
+          "roles": [
+            "academic_admin"
+          ]
+        },
+        {
+          "key": "admissions",
+          "label": {
+            "en": "Admissions officer",
+            "fr": "Responsable des admissions"
+          },
+          "hint": {
+            "en": "Reviews applications and enrols students",
+            "fr": "Étudie les candidatures et inscrit les élèves"
+          },
+          "org": "main",
+          "roles": [
+            "admissions_officer"
+          ]
+        },
+        {
+          "key": "bursar",
+          "label": {
+            "en": "Bursar",
+            "fr": "Économe"
+          },
+          "hint": {
+            "en": "School fees and payments",
+            "fr": "Frais de scolarité et paiements"
+          },
+          "org": "main",
+          "roles": [
+            "bursar_finance"
+          ]
+        },
+        {
+          "key": "teacher",
+          "label": {
+            "en": "Teacher",
+            "fr": "Enseignant"
+          },
+          "hint": {
+            "en": "Takes attendance and enters marks",
+            "fr": "Fait l'appel et saisit les notes"
+          },
+          "org": "main",
+          "roles": [
+            "teacher_trainer"
+          ]
+        },
+        {
+          "key": "parent",
+          "label": {
+            "en": "Parent",
+            "fr": "Parent"
+          },
+          "hint": {
+            "en": "Follows a child's school life",
+            "fr": "Suit la scolarité de son enfant"
+          },
+          "org": "main",
+          "roles": [
+            "parent_guardian"
+          ]
+        },
+        {
+          "key": "student",
+          "label": {
+            "en": "Student",
+            "fr": "Élève"
+          },
+          "hint": {
+            "en": "Lessons, homework and results",
+            "fr": "Cours, devoirs et résultats"
+          },
+          "org": "main",
+          "roles": [
+            "learner"
+          ]
+        },
+        {
+          "key": "applicant",
+          "label": {
+            "en": "Applicant",
+            "fr": "Candidat"
+          },
+          "hint": {
+            "en": "Applies to the school",
+            "fr": "Dépose une candidature"
+          },
+          "org": "main",
+          "roles": [
+            "applicant"
+          ]
+        },
+        {
+          "key": "partner",
+          "label": {
+            "en": "Partner",
+            "fr": "Partenaire"
+          },
+          "hint": {
+            "en": "Supports its schools (counts only)",
+            "fr": "Accompagne ses écoles (chiffres seulement)"
+          },
+          "org": "partner",
+          "roles": [
+            "partner_admin"
+          ]
+        },
+        {
+          "key": "platform-admin",
+          "label": {
+            "en": "Platform admin (ADS)",
+            "fr": "Administrateur plateforme (ADS)"
+          },
+          "hint": {
+            "en": "Partners, packages and support desk",
+            "fr": "Partenaires, offres et support"
+          },
+          "org": "staff",
+          "roles": [
+            "platform_admin"
+          ]
+        }
       ]
     },
     "morphoo": {
       "personas": [
-        {"key": "member", "label": {"en": "Member", "fr": "Membre"}, "hint": {"en": "Follows formation paths", "fr": "Suit les parcours de formation"}, "org": "main", "roles": ["member"]},
-        {"key": "mentor", "label": {"en": "Mentor", "fr": "Mentor"}, "hint": {"en": "Accompanies mentees", "fr": "Accompagne ses mentorés"}, "org": "main", "roles": ["mentor"]},
-        {"key": "ministry-lead", "label": {"en": "Ministry lead", "fr": "Responsable de ministère"}, "hint": {"en": "Leads a ministry team", "fr": "Anime une équipe de ministère"}, "org": "main", "roles": ["ministry_lead"]},
-        {"key": "pastoral-care", "label": {"en": "Pastoral care", "fr": "Accompagnement pastoral"}, "hint": {"en": "Follows pastoral care requests", "fr": "Suit les demandes d'accompagnement"}, "org": "main", "roles": ["pastoral_care"]},
-        {"key": "church-admin", "label": {"en": "Church administrator", "fr": "Administrateur de l'église"}, "hint": {"en": "Runs the church workspace", "fr": "Gère l'espace de l'église"}, "org": "main", "roles": ["church_admin"]},
-        {"key": "content-steward", "label": {"en": "Content steward (ADS)", "fr": "Responsable des contenus (ADS)"}, "hint": {"en": "Reviews formation content", "fr": "Relit les contenus de formation"}, "org": "staff", "roles": ["content_steward"]}
+        {
+          "key": "member",
+          "label": {
+            "en": "Member",
+            "fr": "Membre"
+          },
+          "hint": {
+            "en": "Follows formation paths",
+            "fr": "Suit les parcours de formation"
+          },
+          "org": "main",
+          "roles": [
+            "member"
+          ]
+        },
+        {
+          "key": "mentor",
+          "label": {
+            "en": "Mentor",
+            "fr": "Mentor"
+          },
+          "hint": {
+            "en": "Accompanies mentees",
+            "fr": "Accompagne ses mentorés"
+          },
+          "org": "main",
+          "roles": [
+            "mentor"
+          ]
+        },
+        {
+          "key": "ministry-lead",
+          "label": {
+            "en": "Ministry lead",
+            "fr": "Responsable de ministère"
+          },
+          "hint": {
+            "en": "Leads a ministry team",
+            "fr": "Anime une équipe de ministère"
+          },
+          "org": "main",
+          "roles": [
+            "ministry_lead"
+          ]
+        },
+        {
+          "key": "pastoral-care",
+          "label": {
+            "en": "Pastoral care",
+            "fr": "Accompagnement pastoral"
+          },
+          "hint": {
+            "en": "Follows pastoral care requests",
+            "fr": "Suit les demandes d'accompagnement"
+          },
+          "org": "main",
+          "roles": [
+            "pastoral_care"
+          ]
+        },
+        {
+          "key": "church-admin",
+          "label": {
+            "en": "Church administrator",
+            "fr": "Administrateur de l'église"
+          },
+          "hint": {
+            "en": "Runs the church workspace",
+            "fr": "Gère l'espace de l'église"
+          },
+          "org": "main",
+          "roles": [
+            "church_admin"
+          ]
+        },
+        {
+          "key": "content-steward",
+          "label": {
+            "en": "Content steward (ADS)",
+            "fr": "Responsable des contenus (ADS)"
+          },
+          "hint": {
+            "en": "Reviews formation content",
+            "fr": "Relit les contenus de formation"
+          },
+          "org": "staff",
+          "roles": [
+            "content_steward"
+          ]
+        }
       ]
     },
     "ventureworks": {
       "personas": [
-        {"key": "founder", "label": {"en": "Founder", "fr": "Fondateur"}, "hint": {"en": "Builds and submits a venture", "fr": "Construit et soumet un projet"}, "org": "main", "roles": ["founder"]},
-        {"key": "venture-manager", "label": {"en": "Venture manager", "fr": "Gestionnaire de projets"}, "hint": {"en": "Follows the venture portfolio", "fr": "Suit le portefeuille de projets"}, "org": "main", "roles": ["venture_manager"]},
-        {"key": "evidence-reviewer", "label": {"en": "Evidence reviewer", "fr": "Vérificateur des preuves"}, "hint": {"en": "Checks evidence submitted by founders", "fr": "Vérifie les preuves des fondateurs"}, "org": "main", "roles": ["evidence_reviewer"]},
-        {"key": "regulatory-reviewer", "label": {"en": "Regulatory reviewer", "fr": "Vérificateur réglementaire"}, "hint": {"en": "Checks regulatory requirements", "fr": "Vérifie les exigences réglementaires"}, "org": "main", "roles": ["regulatory_reviewer"]}
+        {
+          "key": "founder",
+          "label": {
+            "en": "Founder",
+            "fr": "Fondateur"
+          },
+          "hint": {
+            "en": "Builds and submits a venture",
+            "fr": "Construit et soumet un projet"
+          },
+          "org": "main",
+          "roles": [
+            "founder"
+          ]
+        },
+        {
+          "key": "venture-manager",
+          "label": {
+            "en": "Venture manager",
+            "fr": "Gestionnaire de projets"
+          },
+          "hint": {
+            "en": "Follows the venture portfolio",
+            "fr": "Suit le portefeuille de projets"
+          },
+          "org": "main",
+          "roles": [
+            "venture_manager"
+          ]
+        },
+        {
+          "key": "evidence-reviewer",
+          "label": {
+            "en": "Evidence reviewer",
+            "fr": "Vérificateur des preuves"
+          },
+          "hint": {
+            "en": "Checks evidence submitted by founders",
+            "fr": "Vérifie les preuves des fondateurs"
+          },
+          "org": "main",
+          "roles": [
+            "evidence_reviewer"
+          ]
+        },
+        {
+          "key": "regulatory-reviewer",
+          "label": {
+            "en": "Regulatory reviewer",
+            "fr": "Vérificateur réglementaire"
+          },
+          "hint": {
+            "en": "Checks regulatory requirements",
+            "fr": "Vérifie les exigences réglementaires"
+          },
+          "org": "main",
+          "roles": [
+            "regulatory_reviewer"
+          ]
+        },
+        {
+          "key": "tenant-admin",
+          "label": {
+            "en": "Tenant administrator",
+            "fr": "Administrateur de l’espace"
+          },
+          "hint": {
+            "en": "Manages workspace access and audit",
+            "fr": "Gère les accès et l’audit"
+          },
+          "org": "main",
+          "roles": [
+            "tenant_admin"
+          ]
+        },
+        {
+          "key": "contributor",
+          "label": {
+            "en": "Contributor",
+            "fr": "Contributeur"
+          },
+          "hint": {
+            "en": "Applies, accepts terms and delivers work",
+            "fr": "Postule, accepte les conditions et livre son travail"
+          },
+          "org": "main",
+          "roles": [
+            "contributor"
+          ]
+        },
+        {
+          "key": "adviser",
+          "label": {
+            "en": "Adviser",
+            "fr": "Conseiller"
+          },
+          "hint": {
+            "en": "Uses their own account; private venture access requires explicit authorization",
+            "fr": "Utilise son compte ; l’accès aux projets privés nécessite une autorisation"
+          },
+          "org": "main",
+          "roles": [
+            "adviser"
+          ]
+        },
+        {
+          "key": "investor",
+          "label": {
+            "en": "Investor",
+            "fr": "Investisseur"
+          },
+          "hint": {
+            "en": "Uses their own account; private venture access requires explicit authorization",
+            "fr": "Utilise son compte ; l’accès aux projets privés nécessite une autorisation"
+          },
+          "org": "main",
+          "roles": [
+            "investor"
+          ]
+        },
+        {
+          "key": "partner",
+          "label": {
+            "en": "Partner",
+            "fr": "Partenaire"
+          },
+          "hint": {
+            "en": "Uses their own account; private venture access requires explicit authorization",
+            "fr": "Utilise son compte ; l’accès aux projets privés nécessite une autorisation"
+          },
+          "org": "main",
+          "roles": [
+            "partner"
+          ]
+        },
+        {
+          "key": "employee",
+          "label": {
+            "en": "Employee",
+            "fr": "Employé"
+          },
+          "hint": {
+            "en": "Uses their own account; private venture access requires explicit authorization",
+            "fr": "Utilise son compte ; l’accès aux projets privés nécessite une autorisation"
+          },
+          "org": "main",
+          "roles": [
+            "employee"
+          ]
+        }
       ]
     },
     "commerce": {
       "personas": [
-        {"key": "shopper", "label": {"en": "Shopper", "fr": "Client"}, "hint": {"en": "Finds products, orders and tracks them", "fr": "Trouve des produits, commande et suit"}, "org": "personal", "roles": ["commerce_buyer"]},
-        {"key": "shop-owner", "label": {"en": "Shop owner", "fr": "Propriétaire de la boutique"}, "hint": {"en": "Products, orders, sales and cash to the bank", "fr": "Produits, commandes, ventes et dépôts"}, "org": "main", "roles": ["merchant_owner"]},
-        {"key": "shop-manager", "label": {"en": "Shop manager", "fr": "Gérant de la boutique"}, "hint": {"en": "Approves refunds and runs the shop", "fr": "Valide les remboursements et gère la boutique"}, "org": "main", "roles": ["commerce_manager"]},
-        {"key": "cashier", "label": {"en": "Cashier", "fr": "Caissier"}, "hint": {"en": "Rings up counter sales", "fr": "Enregistre les ventes au comptoir"}, "org": "main", "roles": ["commerce_cashier"]},
-        {"key": "accountant", "label": {"en": "Accountant", "fr": "Comptable"}, "hint": {"en": "Sales and cash reports", "fr": "Rapports de ventes et de caisse"}, "org": "main", "roles": ["commerce_accountant"]},
-        {"key": "bank-agent", "label": {"en": "Bank agent", "fr": "Agent de la banque"}, "hint": {"en": "Collects the shop's cash", "fr": "Collecte les espèces de la boutique"}, "org": "bank", "roles": ["bank_agent"]},
-        {"key": "bank-officer", "label": {"en": "Bank officer", "fr": "Chargé de la banque"}, "hint": {"en": "Accepts collections and credits the shop", "fr": "Accepte les collectes et crédite la boutique"}, "org": "bank", "roles": ["bank_officer"]},
-        {"key": "reviewer", "label": {"en": "Product reviewer (ADS)", "fr": "Vérificateur des produits (ADS)"}, "hint": {"en": "Publishes reviewed products", "fr": "Publie les produits vérifiés"}, "org": "staff", "roles": ["commerce_reviewer"]},
-        {"key": "support", "label": {"en": "Support agent (ADS)", "fr": "Agent d'assistance (ADS)"}, "hint": {"en": "Answers help requests", "fr": "Répond aux demandes d'aide"}, "org": "staff", "roles": ["commerce_support"]}
+        {
+          "key": "shopper",
+          "label": {
+            "en": "Shopper",
+            "fr": "Client"
+          },
+          "hint": {
+            "en": "Finds products, orders and tracks them",
+            "fr": "Trouve des produits, commande et suit"
+          },
+          "org": "personal",
+          "roles": [
+            "commerce_buyer"
+          ]
+        },
+        {
+          "key": "shop-owner",
+          "label": {
+            "en": "Shop owner",
+            "fr": "Propriétaire de la boutique"
+          },
+          "hint": {
+            "en": "Products, orders, sales and cash to the bank",
+            "fr": "Produits, commandes, ventes et dépôts"
+          },
+          "org": "main",
+          "roles": [
+            "merchant_owner"
+          ]
+        },
+        {
+          "key": "shop-manager",
+          "label": {
+            "en": "Shop manager",
+            "fr": "Gérant de la boutique"
+          },
+          "hint": {
+            "en": "Approves refunds and runs the shop",
+            "fr": "Valide les remboursements et gère la boutique"
+          },
+          "org": "main",
+          "roles": [
+            "commerce_manager"
+          ]
+        },
+        {
+          "key": "cashier",
+          "label": {
+            "en": "Cashier",
+            "fr": "Caissier"
+          },
+          "hint": {
+            "en": "Rings up counter sales",
+            "fr": "Enregistre les ventes au comptoir"
+          },
+          "org": "main",
+          "roles": [
+            "commerce_cashier"
+          ]
+        },
+        {
+          "key": "accountant",
+          "label": {
+            "en": "Accountant",
+            "fr": "Comptable"
+          },
+          "hint": {
+            "en": "Sales and cash reports",
+            "fr": "Rapports de ventes et de caisse"
+          },
+          "org": "main",
+          "roles": [
+            "commerce_accountant"
+          ]
+        },
+        {
+          "key": "bank-agent",
+          "label": {
+            "en": "Bank agent",
+            "fr": "Agent de la banque"
+          },
+          "hint": {
+            "en": "Collects the shop's cash",
+            "fr": "Collecte les espèces de la boutique"
+          },
+          "org": "bank",
+          "roles": [
+            "bank_agent"
+          ]
+        },
+        {
+          "key": "bank-officer",
+          "label": {
+            "en": "Bank officer",
+            "fr": "Chargé de la banque"
+          },
+          "hint": {
+            "en": "Accepts collections and credits the shop",
+            "fr": "Accepte les collectes et crédite la boutique"
+          },
+          "org": "bank",
+          "roles": [
+            "bank_officer"
+          ]
+        },
+        {
+          "key": "reviewer",
+          "label": {
+            "en": "Product reviewer (ADS)",
+            "fr": "Vérificateur des produits (ADS)"
+          },
+          "hint": {
+            "en": "Publishes reviewed products",
+            "fr": "Publie les produits vérifiés"
+          },
+          "org": "staff",
+          "roles": [
+            "commerce_reviewer"
+          ]
+        },
+        {
+          "key": "support",
+          "label": {
+            "en": "Support agent (ADS)",
+            "fr": "Agent d'assistance (ADS)"
+          },
+          "hint": {
+            "en": "Answers help requests",
+            "fr": "Répond aux demandes d'aide"
+          },
+          "org": "staff",
+          "roles": [
+            "commerce_support"
+          ]
+        }
       ]
     },
     "logistics": {
       "personas": [
-        {"key": "operator-admin", "label": {"en": "Operator admin", "fr": "Administrateur de l'opérateur"}, "hint": {"en": "Runs the delivery company", "fr": "Gère la société de livraison"}, "org": "main", "roles": ["operator_admin"]},
-        {"key": "dispatcher", "label": {"en": "Dispatcher", "fr": "Répartiteur"}, "hint": {"en": "Assigns deliveries to couriers", "fr": "Attribue les livraisons aux coursiers"}, "org": "main", "roles": ["dispatcher"]},
-        {"key": "courier", "label": {"en": "Courier", "fr": "Coursier"}, "hint": {"en": "Picks up and delivers parcels", "fr": "Récupère et livre les colis"}, "org": "main", "roles": ["courier"]},
-        {"key": "shipper", "label": {"en": "Shipper", "fr": "Expéditeur"}, "hint": {"en": "Books deliveries", "fr": "Réserve des livraisons"}, "org": "shipper", "roles": ["shipper"]},
-        {"key": "merchant", "label": {"en": "Merchant", "fr": "Commerçant"}, "hint": {"en": "Sends orders to customers", "fr": "Envoie les commandes aux clients"}, "org": "shipper", "roles": ["merchant"]}
+        {
+          "key": "operator-admin",
+          "label": {
+            "en": "Operator admin",
+            "fr": "Administrateur de l'opérateur"
+          },
+          "hint": {
+            "en": "Runs the delivery company",
+            "fr": "Gère la société de livraison"
+          },
+          "org": "main",
+          "roles": [
+            "operator_admin"
+          ]
+        },
+        {
+          "key": "dispatcher",
+          "label": {
+            "en": "Dispatcher",
+            "fr": "Répartiteur"
+          },
+          "hint": {
+            "en": "Assigns deliveries to couriers",
+            "fr": "Attribue les livraisons aux coursiers"
+          },
+          "org": "main",
+          "roles": [
+            "dispatcher"
+          ]
+        },
+        {
+          "key": "courier",
+          "label": {
+            "en": "Courier",
+            "fr": "Coursier"
+          },
+          "hint": {
+            "en": "Picks up and delivers parcels",
+            "fr": "Récupère et livre les colis"
+          },
+          "org": "main",
+          "roles": [
+            "courier"
+          ]
+        },
+        {
+          "key": "shipper",
+          "label": {
+            "en": "Shipper",
+            "fr": "Expéditeur"
+          },
+          "hint": {
+            "en": "Books deliveries",
+            "fr": "Réserve des livraisons"
+          },
+          "org": "shipper",
+          "roles": [
+            "shipper"
+          ]
+        },
+        {
+          "key": "merchant",
+          "label": {
+            "en": "Merchant",
+            "fr": "Commerçant"
+          },
+          "hint": {
+            "en": "Sends orders to customers",
+            "fr": "Envoie les commandes aux clients"
+          },
+          "org": "shipper",
+          "roles": [
+            "merchant"
+          ]
+        }
       ]
     },
     "mamacare": {
       "personas": [
-        {"key": "mother", "label": {"en": "Mother", "fr": "Maman"}, "hint": {"en": "Follows her pregnancy and baby", "fr": "Suit sa grossesse et son bébé"}, "org": "main", "roles": ["maternal_user"]},
-        {"key": "health-worker", "label": {"en": "Health worker", "fr": "Agent de santé"}, "hint": {"en": "Follows mothers and babies", "fr": "Suit les mamans et les bébés"}, "org": "main", "roles": ["professional"]},
-        {"key": "parent", "label": {"en": "Parent", "fr": "Parent"}, "hint": {"en": "Follows a child's health", "fr": "Suit la santé de son enfant"}, "org": "main", "roles": ["parent"]},
-        {"key": "facility-admin", "label": {"en": "Facility admin", "fr": "Administrateur du centre"}, "hint": {"en": "Runs the health facility", "fr": "Gère le centre de santé"}, "org": "main", "roles": ["facility_admin"]},
-        {"key": "content-author", "label": {"en": "Content author (ADS)", "fr": "Auteur des contenus (ADS)"}, "hint": {"en": "Writes health advice", "fr": "Rédige les conseils de santé"}, "org": "staff", "roles": ["content_author"]},
-        {"key": "content-steward", "label": {"en": "Content steward (ADS)", "fr": "Responsable des contenus (ADS)"}, "hint": {"en": "Reviews and publishes advice", "fr": "Relit et publie les conseils"}, "org": "staff", "roles": ["content_steward"]}
+        {
+          "key": "mother",
+          "label": {
+            "en": "Mother",
+            "fr": "Maman"
+          },
+          "hint": {
+            "en": "Follows her pregnancy and baby",
+            "fr": "Suit sa grossesse et son bébé"
+          },
+          "org": "main",
+          "roles": [
+            "maternal_user"
+          ]
+        },
+        {
+          "key": "health-worker",
+          "label": {
+            "en": "Health worker",
+            "fr": "Agent de santé"
+          },
+          "hint": {
+            "en": "Follows mothers and babies",
+            "fr": "Suit les mamans et les bébés"
+          },
+          "org": "main",
+          "roles": [
+            "professional"
+          ]
+        },
+        {
+          "key": "parent",
+          "label": {
+            "en": "Parent",
+            "fr": "Parent"
+          },
+          "hint": {
+            "en": "Follows a child's health",
+            "fr": "Suit la santé de son enfant"
+          },
+          "org": "main",
+          "roles": [
+            "parent"
+          ]
+        },
+        {
+          "key": "facility-admin",
+          "label": {
+            "en": "Facility admin",
+            "fr": "Administrateur du centre"
+          },
+          "hint": {
+            "en": "Runs the health facility",
+            "fr": "Gère le centre de santé"
+          },
+          "org": "main",
+          "roles": [
+            "facility_admin"
+          ]
+        },
+        {
+          "key": "content-author",
+          "label": {
+            "en": "Content author (ADS)",
+            "fr": "Auteur des contenus (ADS)"
+          },
+          "hint": {
+            "en": "Writes health advice",
+            "fr": "Rédige les conseils de santé"
+          },
+          "org": "staff",
+          "roles": [
+            "content_author"
+          ]
+        },
+        {
+          "key": "content-steward",
+          "label": {
+            "en": "Content steward (ADS)",
+            "fr": "Responsable des contenus (ADS)"
+          },
+          "hint": {
+            "en": "Reviews and publishes advice",
+            "fr": "Relit et publie les conseils"
+          },
+          "org": "staff",
+          "roles": [
+            "content_steward"
+          ]
+        }
       ]
     },
     "fleetguard": {
       "personas": [
-        {"key": "fleet-owner", "label": {"en": "Fleet owner", "fr": "Propriétaire de la flotte"}, "hint": {"en": "Sets up the fleet and the team", "fr": "Configure la flotte et l'équipe"}, "org": "main", "roles": ["owner_admin"]},
-        {"key": "fleet-manager", "label": {"en": "Fleet manager", "fr": "Gestionnaire de flotte"}, "hint": {"en": "Assets, drivers, work orders and alerts", "fr": "Engins, chauffeurs, ordres de travail, alertes"}, "org": "main", "roles": ["fleet_manager"]},
-        {"key": "approver", "label": {"en": "Workshop manager (approver)", "fr": "Chef d'atelier (approbateur)"}, "hint": {"en": "Approves the return to service", "fr": "Valide la remise en service"}, "org": "main", "roles": ["workshop_manager"]},
-        {"key": "driver", "label": {"en": "Driver", "fr": "Chauffeur"}, "hint": {"en": "My vehicle, checks, fuel and breakdowns", "fr": "Mon véhicule, contrôles, carburant, pannes"}, "org": "main", "roles": ["driver"]},
-        {"key": "mechanic", "label": {"en": "Mechanic", "fr": "Mécanicien"}, "hint": {"en": "Does the work orders", "fr": "Réalise les ordres de travail"}, "org": "main", "roles": ["technician"]},
-        {"key": "partner", "label": {"en": "Partner", "fr": "Partenaire"}, "hint": {"en": "Looks after the fleets it manages", "fr": "S'occupe des flottes qu'il gère"}, "org": "main", "roles": ["partner"]}
+        {
+          "key": "fleet-owner",
+          "label": {
+            "en": "Fleet owner",
+            "fr": "Propriétaire de la flotte"
+          },
+          "hint": {
+            "en": "Sets up the fleet and the team",
+            "fr": "Configure la flotte et l'équipe"
+          },
+          "org": "main",
+          "roles": [
+            "owner_admin"
+          ]
+        },
+        {
+          "key": "fleet-manager",
+          "label": {
+            "en": "Fleet manager",
+            "fr": "Gestionnaire de flotte"
+          },
+          "hint": {
+            "en": "Assets, drivers, work orders and alerts",
+            "fr": "Engins, chauffeurs, ordres de travail, alertes"
+          },
+          "org": "main",
+          "roles": [
+            "fleet_manager"
+          ]
+        },
+        {
+          "key": "approver",
+          "label": {
+            "en": "Workshop manager (approver)",
+            "fr": "Chef d'atelier (approbateur)"
+          },
+          "hint": {
+            "en": "Approves the return to service",
+            "fr": "Valide la remise en service"
+          },
+          "org": "main",
+          "roles": [
+            "workshop_manager"
+          ]
+        },
+        {
+          "key": "driver",
+          "label": {
+            "en": "Driver",
+            "fr": "Chauffeur"
+          },
+          "hint": {
+            "en": "My vehicle, checks, fuel and breakdowns",
+            "fr": "Mon véhicule, contrôles, carburant, pannes"
+          },
+          "org": "main",
+          "roles": [
+            "driver"
+          ]
+        },
+        {
+          "key": "mechanic",
+          "label": {
+            "en": "Mechanic",
+            "fr": "Mécanicien"
+          },
+          "hint": {
+            "en": "Does the work orders",
+            "fr": "Réalise les ordres de travail"
+          },
+          "org": "main",
+          "roles": [
+            "technician"
+          ]
+        },
+        {
+          "key": "partner",
+          "label": {
+            "en": "Partner",
+            "fr": "Partenaire"
+          },
+          "hint": {
+            "en": "Looks after the fleets it manages",
+            "fr": "S'occupe des flottes qu'il gère"
+          },
+          "org": "main",
+          "roles": [
+            "partner"
+          ]
+        }
       ]
     },
     "tontine": {
       "personas": [
-        {"key": "group-admin", "label": {"en": "Group admin", "fr": "Administrateur du groupe"}, "hint": {"en": "Runs the savings group", "fr": "Gère le groupe d'épargne"}, "org": "main", "roles": ["group_admin"]},
-        {"key": "treasurer", "label": {"en": "Treasurer", "fr": "Trésorier"}, "hint": {"en": "Records contributions and proposes payouts", "fr": "Enregistre les cotisations, propose les versements"}, "org": "main", "roles": ["treasurer"]},
-        {"key": "payout-approver", "label": {"en": "Payout approver", "fr": "Approbateur des versements"}, "hint": {"en": "Approves the treasurer's payouts", "fr": "Valide les versements du trésorier"}, "org": "main", "roles": ["payout_approver"]},
-        {"key": "member", "label": {"en": "Member", "fr": "Membre"}, "hint": {"en": "Contributes and receives the payout", "fr": "Cotise et reçoit son versement"}, "org": "main", "roles": ["member"]},
-        {"key": "auditor", "label": {"en": "Auditor", "fr": "Commissaire aux comptes"}, "hint": {"en": "Checks the books", "fr": "Contrôle les comptes"}, "org": "main", "roles": ["auditor"]},
-        {"key": "cooperative-admin", "label": {"en": "Cooperative admin", "fr": "Administrateur de la coopérative"}, "hint": {"en": "Oversees all groups of the cooperative", "fr": "Supervise tous les groupes de la coopérative"}, "org": "cooperative", "roles": ["cooperative_admin"]},
-        {"key": "partner", "label": {"en": "Partner", "fr": "Partenaire"}, "hint": {"en": "Supports its associations (counts only)", "fr": "Accompagne ses associations (chiffres seulement)"}, "org": "partner", "roles": ["partner_admin"]}
+        {
+          "key": "group-admin",
+          "label": {
+            "en": "Group admin",
+            "fr": "Administrateur du groupe"
+          },
+          "hint": {
+            "en": "Runs the savings group",
+            "fr": "Gère le groupe d'épargne"
+          },
+          "org": "main",
+          "roles": [
+            "group_admin"
+          ]
+        },
+        {
+          "key": "treasurer",
+          "label": {
+            "en": "Treasurer",
+            "fr": "Trésorier"
+          },
+          "hint": {
+            "en": "Records contributions and proposes payouts",
+            "fr": "Enregistre les cotisations, propose les versements"
+          },
+          "org": "main",
+          "roles": [
+            "treasurer"
+          ]
+        },
+        {
+          "key": "payout-approver",
+          "label": {
+            "en": "Payout approver",
+            "fr": "Approbateur des versements"
+          },
+          "hint": {
+            "en": "Approves the treasurer's payouts",
+            "fr": "Valide les versements du trésorier"
+          },
+          "org": "main",
+          "roles": [
+            "payout_approver"
+          ]
+        },
+        {
+          "key": "member",
+          "label": {
+            "en": "Member",
+            "fr": "Membre"
+          },
+          "hint": {
+            "en": "Contributes and receives the payout",
+            "fr": "Cotise et reçoit son versement"
+          },
+          "org": "main",
+          "roles": [
+            "member"
+          ]
+        },
+        {
+          "key": "auditor",
+          "label": {
+            "en": "Auditor",
+            "fr": "Commissaire aux comptes"
+          },
+          "hint": {
+            "en": "Checks the books",
+            "fr": "Contrôle les comptes"
+          },
+          "org": "main",
+          "roles": [
+            "auditor"
+          ]
+        },
+        {
+          "key": "cooperative-admin",
+          "label": {
+            "en": "Cooperative admin",
+            "fr": "Administrateur de la coopérative"
+          },
+          "hint": {
+            "en": "Oversees all groups of the cooperative",
+            "fr": "Supervise tous les groupes de la coopérative"
+          },
+          "org": "cooperative",
+          "roles": [
+            "cooperative_admin"
+          ]
+        },
+        {
+          "key": "partner",
+          "label": {
+            "en": "Partner",
+            "fr": "Partenaire"
+          },
+          "hint": {
+            "en": "Supports its associations (counts only)",
+            "fr": "Accompagne ses associations (chiffres seulement)"
+          },
+          "org": "partner",
+          "roles": [
+            "partner_admin"
+          ]
+        }
       ]
     },
     "leisure-events": {
       "personas": [
-        {"key": "participant", "label": {"en": "Participant", "fr": "Participant"}, "hint": {"en": "Finds and books events", "fr": "Trouve et réserve des événements"}, "org": "main", "roles": ["event_participant"]},
-        {"key": "organizer", "label": {"en": "Event organiser", "fr": "Organisateur"}, "hint": {"en": "Creates and runs events", "fr": "Crée et gère des événements"}, "org": "main", "roles": ["event_organizer"]},
-        {"key": "reviewer", "label": {"en": "Event reviewer", "fr": "Vérificateur des événements"}, "hint": {"en": "Approves events before publication", "fr": "Valide les événements avant publication"}, "org": "main", "roles": ["event_reviewer"]},
-        {"key": "incident-handler", "label": {"en": "Incident handler", "fr": "Gestionnaire des incidents"}, "hint": {"en": "Handles incidents at events", "fr": "Traite les incidents"}, "org": "main", "roles": ["incident_handler"]},
-        {"key": "support", "label": {"en": "Support agent", "fr": "Agent d'assistance"}, "hint": {"en": "Answers help requests", "fr": "Répond aux demandes d'aide"}, "org": "main", "roles": ["support_agent"]}
+        {
+          "key": "participant",
+          "label": {
+            "en": "Participant",
+            "fr": "Participant"
+          },
+          "hint": {
+            "en": "Finds and books events",
+            "fr": "Trouve et réserve des événements"
+          },
+          "org": "main",
+          "roles": [
+            "event_participant"
+          ]
+        },
+        {
+          "key": "organizer",
+          "label": {
+            "en": "Event organiser",
+            "fr": "Organisateur"
+          },
+          "hint": {
+            "en": "Creates and runs events",
+            "fr": "Crée et gère des événements"
+          },
+          "org": "main",
+          "roles": [
+            "event_organizer"
+          ]
+        },
+        {
+          "key": "reviewer",
+          "label": {
+            "en": "Event reviewer",
+            "fr": "Vérificateur des événements"
+          },
+          "hint": {
+            "en": "Approves events before publication",
+            "fr": "Valide les événements avant publication"
+          },
+          "org": "main",
+          "roles": [
+            "event_reviewer"
+          ]
+        },
+        {
+          "key": "incident-handler",
+          "label": {
+            "en": "Incident handler",
+            "fr": "Gestionnaire des incidents"
+          },
+          "hint": {
+            "en": "Handles incidents at events",
+            "fr": "Traite les incidents"
+          },
+          "org": "main",
+          "roles": [
+            "incident_handler"
+          ]
+        },
+        {
+          "key": "support",
+          "label": {
+            "en": "Support agent",
+            "fr": "Agent d'assistance"
+          },
+          "hint": {
+            "en": "Answers help requests",
+            "fr": "Répond aux demandes d'aide"
+          },
+          "org": "main",
+          "roles": [
+            "support_agent"
+          ]
+        }
       ]
     },
     "soulbridge": {
       "personas": [
-        {"key": "client", "label": {"en": "Client", "fr": "Bénéficiaire"}, "hint": {"en": "Books sessions and follows care", "fr": "Réserve des séances et suit son accompagnement"}, "org": "main", "roles": ["client"]},
-        {"key": "counsellor", "label": {"en": "Counsellor", "fr": "Conseiller"}, "hint": {"en": "Runs sessions and writes notes", "fr": "Mène les séances et rédige les notes"}, "org": "main", "roles": ["counsellor"]},
-        {"key": "case-coordinator", "label": {"en": "Case coordinator", "fr": "Coordinateur des dossiers"}, "hint": {"en": "Assigns and follows cases", "fr": "Attribue et suit les dossiers"}, "org": "main", "roles": ["case_coordinator"]},
-        {"key": "safeguarding", "label": {"en": "Safeguarding officer", "fr": "Responsable de la protection"}, "hint": {"en": "Handles risk alerts", "fr": "Traite les alertes de risque"}, "org": "main", "roles": ["safeguarding_officer"]},
-        {"key": "content-editor", "label": {"en": "Content editor", "fr": "Rédacteur des contenus"}, "hint": {"en": "Writes wellbeing content", "fr": "Rédige les contenus bien-être"}, "org": "main", "roles": ["content_editor"]},
-        {"key": "content-reviewer", "label": {"en": "Content reviewer", "fr": "Vérificateur des contenus"}, "hint": {"en": "Approves content", "fr": "Valide les contenus"}, "org": "main", "roles": ["content_reviewer"]},
-        {"key": "centre-admin", "label": {"en": "Centre admin", "fr": "Administrateur du centre"}, "hint": {"en": "Runs the centre", "fr": "Gère le centre"}, "org": "main", "roles": ["centre_admin"]}
+        {
+          "key": "client",
+          "label": {
+            "en": "Client",
+            "fr": "Bénéficiaire"
+          },
+          "hint": {
+            "en": "Books sessions and follows care",
+            "fr": "Réserve des séances et suit son accompagnement"
+          },
+          "org": "main",
+          "roles": [
+            "client"
+          ]
+        },
+        {
+          "key": "counsellor",
+          "label": {
+            "en": "Counsellor",
+            "fr": "Conseiller"
+          },
+          "hint": {
+            "en": "Runs sessions and writes notes",
+            "fr": "Mène les séances et rédige les notes"
+          },
+          "org": "main",
+          "roles": [
+            "counsellor"
+          ]
+        },
+        {
+          "key": "case-coordinator",
+          "label": {
+            "en": "Case coordinator",
+            "fr": "Coordinateur des dossiers"
+          },
+          "hint": {
+            "en": "Assigns and follows cases",
+            "fr": "Attribue et suit les dossiers"
+          },
+          "org": "main",
+          "roles": [
+            "case_coordinator"
+          ]
+        },
+        {
+          "key": "safeguarding",
+          "label": {
+            "en": "Safeguarding officer",
+            "fr": "Responsable de la protection"
+          },
+          "hint": {
+            "en": "Handles risk alerts",
+            "fr": "Traite les alertes de risque"
+          },
+          "org": "main",
+          "roles": [
+            "safeguarding_officer"
+          ]
+        },
+        {
+          "key": "content-editor",
+          "label": {
+            "en": "Content editor",
+            "fr": "Rédacteur des contenus"
+          },
+          "hint": {
+            "en": "Writes wellbeing content",
+            "fr": "Rédige les contenus bien-être"
+          },
+          "org": "main",
+          "roles": [
+            "content_editor"
+          ]
+        },
+        {
+          "key": "content-reviewer",
+          "label": {
+            "en": "Content reviewer",
+            "fr": "Vérificateur des contenus"
+          },
+          "hint": {
+            "en": "Approves content",
+            "fr": "Valide les contenus"
+          },
+          "org": "main",
+          "roles": [
+            "content_reviewer"
+          ]
+        },
+        {
+          "key": "centre-admin",
+          "label": {
+            "en": "Centre admin",
+            "fr": "Administrateur du centre"
+          },
+          "hint": {
+            "en": "Runs the centre",
+            "fr": "Gère le centre"
+          },
+          "org": "main",
+          "roles": [
+            "centre_admin"
+          ]
+        }
       ]
     },
     "health": {
       "personas": [
-        {"key": "patient", "label": {"en": "Patient", "fr": "Patient"}, "hint": {"en": "Books visits and sees records", "fr": "Prend rendez-vous et consulte son dossier"}, "org": "main", "roles": ["patient"]},
-        {"key": "reception", "label": {"en": "Receptionist", "fr": "Accueil"}, "hint": {"en": "Registers patients and visits", "fr": "Enregistre les patients et les visites"}, "org": "main", "roles": ["reception"]},
-        {"key": "facility-admin", "label": {"en": "Facility admin", "fr": "Administrateur de l'établissement"}, "hint": {"en": "Runs the health facility", "fr": "Gère l'établissement de santé"}, "org": "main", "roles": ["facility_admin"]},
-        {"key": "reviewer", "label": {"en": "Reviewer (ADS)", "fr": "Vérificateur (ADS)"}, "hint": {"en": "Reviews facilities and content", "fr": "Vérifie les établissements et les contenus"}, "org": "staff", "roles": ["ads_reviewer"]}
+        {
+          "key": "patient",
+          "label": {
+            "en": "Patient",
+            "fr": "Patient"
+          },
+          "hint": {
+            "en": "Books visits and sees records",
+            "fr": "Prend rendez-vous et consulte son dossier"
+          },
+          "org": "main",
+          "roles": [
+            "patient"
+          ]
+        },
+        {
+          "key": "reception",
+          "label": {
+            "en": "Receptionist",
+            "fr": "Accueil"
+          },
+          "hint": {
+            "en": "Registers patients and visits",
+            "fr": "Enregistre les patients et les visites"
+          },
+          "org": "main",
+          "roles": [
+            "reception"
+          ]
+        },
+        {
+          "key": "facility-admin",
+          "label": {
+            "en": "Facility admin",
+            "fr": "Administrateur de l'établissement"
+          },
+          "hint": {
+            "en": "Runs the health facility",
+            "fr": "Gère l'établissement de santé"
+          },
+          "org": "main",
+          "roles": [
+            "facility_admin"
+          ]
+        },
+        {
+          "key": "reviewer",
+          "label": {
+            "en": "Reviewer (ADS)",
+            "fr": "Vérificateur (ADS)"
+          },
+          "hint": {
+            "en": "Reviews facilities and content",
+            "fr": "Vérifie les établissements et les contenus"
+          },
+          "org": "staff",
+          "roles": [
+            "ads_reviewer"
+          ]
+        }
       ]
     },
     "home-services": {
       "personas": [
-        {"key": "customer", "label": {"en": "Customer", "fr": "Client"}, "hint": {"en": "Books a home service", "fr": "Réserve un service à domicile"}, "org": "main", "roles": ["service_customer"]},
-        {"key": "provider", "label": {"en": "Service provider", "fr": "Prestataire"}, "hint": {"en": "Receives and runs jobs", "fr": "Reçoit et réalise les missions"}, "org": "main", "roles": ["service_provider"]},
-        {"key": "technician", "label": {"en": "Technician", "fr": "Technicien"}, "hint": {"en": "Does the job on site", "fr": "Intervient sur place"}, "org": "main", "roles": ["technician"]},
-        {"key": "verifier", "label": {"en": "Verifier", "fr": "Vérificateur"}, "hint": {"en": "Verifies providers", "fr": "Vérifie les prestataires"}, "org": "main", "roles": ["verifier"]},
-        {"key": "reviewer", "label": {"en": "Reviewer", "fr": "Modérateur"}, "hint": {"en": "Reviews ratings and disputes", "fr": "Modère les avis et les litiges"}, "org": "main", "roles": ["reviewer"]},
-        {"key": "support", "label": {"en": "Support agent", "fr": "Agent d'assistance"}, "hint": {"en": "Answers help requests", "fr": "Répond aux demandes d'aide"}, "org": "main", "roles": ["support_agent"]}
+        {
+          "key": "customer",
+          "label": {
+            "en": "Customer",
+            "fr": "Client"
+          },
+          "hint": {
+            "en": "Books a home service",
+            "fr": "Réserve un service à domicile"
+          },
+          "org": "main",
+          "roles": [
+            "service_customer"
+          ]
+        },
+        {
+          "key": "provider",
+          "label": {
+            "en": "Service provider",
+            "fr": "Prestataire"
+          },
+          "hint": {
+            "en": "Receives and runs jobs",
+            "fr": "Reçoit et réalise les missions"
+          },
+          "org": "main",
+          "roles": [
+            "service_provider"
+          ]
+        },
+        {
+          "key": "technician",
+          "label": {
+            "en": "Technician",
+            "fr": "Technicien"
+          },
+          "hint": {
+            "en": "Does the job on site",
+            "fr": "Intervient sur place"
+          },
+          "org": "main",
+          "roles": [
+            "technician"
+          ]
+        },
+        {
+          "key": "verifier",
+          "label": {
+            "en": "Verifier",
+            "fr": "Vérificateur"
+          },
+          "hint": {
+            "en": "Verifies providers",
+            "fr": "Vérifie les prestataires"
+          },
+          "org": "main",
+          "roles": [
+            "verifier"
+          ]
+        },
+        {
+          "key": "reviewer",
+          "label": {
+            "en": "Reviewer",
+            "fr": "Modérateur"
+          },
+          "hint": {
+            "en": "Reviews ratings and disputes",
+            "fr": "Modère les avis et les litiges"
+          },
+          "org": "main",
+          "roles": [
+            "reviewer"
+          ]
+        },
+        {
+          "key": "support",
+          "label": {
+            "en": "Support agent",
+            "fr": "Agent d'assistance"
+          },
+          "hint": {
+            "en": "Answers help requests",
+            "fr": "Répond aux demandes d'aide"
+          },
+          "org": "main",
+          "roles": [
+            "support_agent"
+          ]
+        }
       ]
     },
     "project-management": {
       "personas": [
-        {"key": "employee", "label": {"en": "Employee", "fr": "Employé"}, "hint": {"en": "Tasks, time and leave", "fr": "Tâches, temps et congés"}, "org": "main", "roles": ["employee"]},
-        {"key": "manager", "label": {"en": "Manager", "fr": "Responsable"}, "hint": {"en": "Plans work and approves", "fr": "Planifie le travail et valide"}, "org": "main", "roles": ["manager"]},
-        {"key": "hr", "label": {"en": "HR officer", "fr": "Ressources humaines"}, "hint": {"en": "People, leave and contracts", "fr": "Personnel, congés et contrats"}, "org": "main", "roles": ["hr"]},
-        {"key": "verifier", "label": {"en": "Verifier", "fr": "Vérificateur"}, "hint": {"en": "Verifies deliverables", "fr": "Vérifie les livrables"}, "org": "main", "roles": ["verifier"]},
-        {"key": "developer", "label": {"en": "Developer", "fr": "Développeur"}, "hint": {"en": "Works on assigned tasks", "fr": "Travaille sur ses tâches"}, "org": "main", "roles": ["developer"]},
-        {"key": "tester", "label": {"en": "Tester", "fr": "Testeur"}, "hint": {"en": "Tests and reports defects", "fr": "Teste et signale les anomalies"}, "org": "main", "roles": ["tester"]},
-        {"key": "ceo", "label": {"en": "CEO", "fr": "Directeur général"}, "hint": {"en": "Company overview", "fr": "Vue d'ensemble de l'entreprise"}, "org": "main", "roles": ["ceo"]}
+        {
+          "key": "employee",
+          "label": {
+            "en": "Employee",
+            "fr": "Employé"
+          },
+          "hint": {
+            "en": "Tasks, time and leave",
+            "fr": "Tâches, temps et congés"
+          },
+          "org": "main",
+          "roles": [
+            "employee"
+          ]
+        },
+        {
+          "key": "manager",
+          "label": {
+            "en": "Manager",
+            "fr": "Responsable"
+          },
+          "hint": {
+            "en": "Plans work and approves",
+            "fr": "Planifie le travail et valide"
+          },
+          "org": "main",
+          "roles": [
+            "manager"
+          ]
+        },
+        {
+          "key": "hr",
+          "label": {
+            "en": "HR officer",
+            "fr": "Ressources humaines"
+          },
+          "hint": {
+            "en": "People, leave and contracts",
+            "fr": "Personnel, congés et contrats"
+          },
+          "org": "main",
+          "roles": [
+            "hr"
+          ]
+        },
+        {
+          "key": "verifier",
+          "label": {
+            "en": "Verifier",
+            "fr": "Vérificateur"
+          },
+          "hint": {
+            "en": "Verifies deliverables",
+            "fr": "Vérifie les livrables"
+          },
+          "org": "main",
+          "roles": [
+            "verifier"
+          ]
+        },
+        {
+          "key": "developer",
+          "label": {
+            "en": "Developer",
+            "fr": "Développeur"
+          },
+          "hint": {
+            "en": "Works on assigned tasks",
+            "fr": "Travaille sur ses tâches"
+          },
+          "org": "main",
+          "roles": [
+            "developer"
+          ]
+        },
+        {
+          "key": "tester",
+          "label": {
+            "en": "Tester",
+            "fr": "Testeur"
+          },
+          "hint": {
+            "en": "Tests and reports defects",
+            "fr": "Teste et signale les anomalies"
+          },
+          "org": "main",
+          "roles": [
+            "tester"
+          ]
+        },
+        {
+          "key": "ceo",
+          "label": {
+            "en": "CEO",
+            "fr": "Directeur général"
+          },
+          "hint": {
+            "en": "Company overview",
+            "fr": "Vue d'ensemble de l'entreprise"
+          },
+          "org": "main",
+          "roles": [
+            "ceo"
+          ]
+        }
       ]
     },
     "africover": {
       "personas": [
-        {"key": "customer", "label": {"en": "Policyholder", "fr": "Assuré"}, "hint": {"en": "Buys cover and makes claims", "fr": "Souscrit et déclare des sinistres"}, "org": "main", "roles": ["insurance_customer"]},
-        {"key": "product-manager", "label": {"en": "Product manager", "fr": "Responsable produit"}, "hint": {"en": "Designs insurance products", "fr": "Conçoit les produits d'assurance"}, "org": "main", "roles": ["product_manager"]},
-        {"key": "underwriter", "label": {"en": "Underwriter", "fr": "Souscripteur"}, "hint": {"en": "Assesses applications", "fr": "Étudie les demandes"}, "org": "main", "roles": ["underwriter"]},
-        {"key": "underwriting-approver", "label": {"en": "Underwriting approver", "fr": "Approbateur de souscription"}, "hint": {"en": "Approves the underwriter's decisions", "fr": "Valide les décisions du souscripteur"}, "org": "main", "roles": ["underwriting_approver"]},
-        {"key": "trigger-officer", "label": {"en": "Trigger officer", "fr": "Responsable des déclencheurs"}, "hint": {"en": "Confirms weather or index triggers", "fr": "Confirme les déclencheurs (météo, indice)"}, "org": "main", "roles": ["trigger_officer"]},
-        {"key": "claims-approver", "label": {"en": "Claims approver", "fr": "Approbateur des sinistres"}, "hint": {"en": "Approves claim payments", "fr": "Valide les paiements de sinistres"}, "org": "main", "roles": ["claims_approver"]},
-        {"key": "complaint-officer", "label": {"en": "Complaints officer", "fr": "Responsable des réclamations"}, "hint": {"en": "Handles complaints", "fr": "Traite les réclamations"}, "org": "main", "roles": ["complaint_officer"]},
-        {"key": "auditor", "label": {"en": "Auditor", "fr": "Auditeur"}, "hint": {"en": "Reads the audit trail", "fr": "Consulte la piste d'audit"}, "org": "main", "roles": ["auditor"]}
+        {
+          "key": "customer",
+          "label": {
+            "en": "Policyholder",
+            "fr": "Assuré"
+          },
+          "hint": {
+            "en": "Buys cover and makes claims",
+            "fr": "Souscrit et déclare des sinistres"
+          },
+          "org": "main",
+          "roles": [
+            "insurance_customer"
+          ]
+        },
+        {
+          "key": "product-manager",
+          "label": {
+            "en": "Product manager",
+            "fr": "Responsable produit"
+          },
+          "hint": {
+            "en": "Designs insurance products",
+            "fr": "Conçoit les produits d'assurance"
+          },
+          "org": "main",
+          "roles": [
+            "product_manager"
+          ]
+        },
+        {
+          "key": "underwriter",
+          "label": {
+            "en": "Underwriter",
+            "fr": "Souscripteur"
+          },
+          "hint": {
+            "en": "Assesses applications",
+            "fr": "Étudie les demandes"
+          },
+          "org": "main",
+          "roles": [
+            "underwriter"
+          ]
+        },
+        {
+          "key": "underwriting-approver",
+          "label": {
+            "en": "Underwriting approver",
+            "fr": "Approbateur de souscription"
+          },
+          "hint": {
+            "en": "Approves the underwriter's decisions",
+            "fr": "Valide les décisions du souscripteur"
+          },
+          "org": "main",
+          "roles": [
+            "underwriting_approver"
+          ]
+        },
+        {
+          "key": "trigger-officer",
+          "label": {
+            "en": "Trigger officer",
+            "fr": "Responsable des déclencheurs"
+          },
+          "hint": {
+            "en": "Confirms weather or index triggers",
+            "fr": "Confirme les déclencheurs (météo, indice)"
+          },
+          "org": "main",
+          "roles": [
+            "trigger_officer"
+          ]
+        },
+        {
+          "key": "claims-approver",
+          "label": {
+            "en": "Claims approver",
+            "fr": "Approbateur des sinistres"
+          },
+          "hint": {
+            "en": "Approves claim payments",
+            "fr": "Valide les paiements de sinistres"
+          },
+          "org": "main",
+          "roles": [
+            "claims_approver"
+          ]
+        },
+        {
+          "key": "complaint-officer",
+          "label": {
+            "en": "Complaints officer",
+            "fr": "Responsable des réclamations"
+          },
+          "hint": {
+            "en": "Handles complaints",
+            "fr": "Traite les réclamations"
+          },
+          "org": "main",
+          "roles": [
+            "complaint_officer"
+          ]
+        },
+        {
+          "key": "auditor",
+          "label": {
+            "en": "Auditor",
+            "fr": "Auditeur"
+          },
+          "hint": {
+            "en": "Reads the audit trail",
+            "fr": "Consulte la piste d'audit"
+          },
+          "org": "main",
+          "roles": [
+            "auditor"
+          ]
+        }
       ]
     },
     "agriculture": {
       "personas": [
-        {"key": "farmer", "label": {"en": "Farmer", "fr": "Agriculteur"}, "hint": {"en": "Lists harvests and follows sales", "fr": "Publie ses récoltes et suit ses ventes"}, "org": "main", "roles": ["farmer"]},
-        {"key": "buyer", "label": {"en": "Buyer", "fr": "Acheteur"}, "hint": {"en": "Buys produce", "fr": "Achète des produits agricoles"}, "org": "main", "roles": ["buyer"]},
-        {"key": "reviewer", "label": {"en": "Reviewer (ADS)", "fr": "Vérificateur (ADS)"}, "hint": {"en": "Reviews listings", "fr": "Vérifie les annonces"}, "org": "staff", "roles": ["reviewer"]},
-        {"key": "support", "label": {"en": "Support agent (ADS)", "fr": "Agent d'assistance (ADS)"}, "hint": {"en": "Answers help requests", "fr": "Répond aux demandes d'aide"}, "org": "staff", "roles": ["support"]}
+        {
+          "key": "farmer",
+          "label": {
+            "en": "Farmer",
+            "fr": "Agriculteur"
+          },
+          "hint": {
+            "en": "Lists harvests and follows sales",
+            "fr": "Publie ses récoltes et suit ses ventes"
+          },
+          "org": "main",
+          "roles": [
+            "farmer"
+          ]
+        },
+        {
+          "key": "buyer",
+          "label": {
+            "en": "Buyer",
+            "fr": "Acheteur"
+          },
+          "hint": {
+            "en": "Buys produce",
+            "fr": "Achète des produits agricoles"
+          },
+          "org": "main",
+          "roles": [
+            "buyer"
+          ]
+        },
+        {
+          "key": "reviewer",
+          "label": {
+            "en": "Reviewer (ADS)",
+            "fr": "Vérificateur (ADS)"
+          },
+          "hint": {
+            "en": "Reviews listings",
+            "fr": "Vérifie les annonces"
+          },
+          "org": "staff",
+          "roles": [
+            "reviewer"
+          ]
+        },
+        {
+          "key": "support",
+          "label": {
+            "en": "Support agent (ADS)",
+            "fr": "Agent d'assistance (ADS)"
+          },
+          "hint": {
+            "en": "Answers help requests",
+            "fr": "Répond aux demandes d'aide"
+          },
+          "org": "staff",
+          "roles": [
+            "support"
+          ]
+        }
       ]
     },
     "investment": {
       "personas": [
-        {"key": "investor", "label": {"en": "Investor", "fr": "Investisseur"}, "hint": {"en": "Explores and follows investments", "fr": "Découvre et suit des investissements"}, "org": "main", "roles": ["investor"]},
-        {"key": "reviewer", "label": {"en": "Investment reviewer (ADS)", "fr": "Analyste des investissements (ADS)"}, "hint": {"en": "Reviews opportunities", "fr": "Étudie les opportunités"}, "org": "staff", "roles": ["investment_reviewer"]},
-        {"key": "support", "label": {"en": "Support agent (ADS)", "fr": "Agent d'assistance (ADS)"}, "hint": {"en": "Answers help requests", "fr": "Répond aux demandes d'aide"}, "org": "staff", "roles": ["support_agent"]}
+        {
+          "key": "investor",
+          "label": {
+            "en": "Investor",
+            "fr": "Investisseur"
+          },
+          "hint": {
+            "en": "Explores and follows investments",
+            "fr": "Découvre et suit des investissements"
+          },
+          "org": "main",
+          "roles": [
+            "investor"
+          ]
+        },
+        {
+          "key": "reviewer",
+          "label": {
+            "en": "Investment reviewer (ADS)",
+            "fr": "Analyste des investissements (ADS)"
+          },
+          "hint": {
+            "en": "Reviews opportunities",
+            "fr": "Étudie les opportunités"
+          },
+          "org": "staff",
+          "roles": [
+            "investment_reviewer"
+          ]
+        },
+        {
+          "key": "support",
+          "label": {
+            "en": "Support agent (ADS)",
+            "fr": "Agent d'assistance (ADS)"
+          },
+          "hint": {
+            "en": "Answers help requests",
+            "fr": "Répond aux demandes d'aide"
+          },
+          "org": "staff",
+          "roles": [
+            "support_agent"
+          ]
+        }
       ]
     },
     "hub": {
       "personas": [
-        {"key": "member", "label": {"en": "Member", "fr": "Membre"}, "hint": {"en": "Opens the ADS apps and services", "fr": "Accède aux applications et services ADS"}, "org": "main", "roles": ["member"]},
-        {"key": "staff", "label": {"en": "Hub operator (ADS)", "fr": "Opérateur du Hub (ADS)"}, "hint": {"en": "Runs the hub switchboard", "fr": "Gère le standard du Hub"}, "org": "staff", "roles": ["staff"]}
+        {
+          "key": "member",
+          "label": {
+            "en": "Member",
+            "fr": "Membre"
+          },
+          "hint": {
+            "en": "Opens the ADS apps and services",
+            "fr": "Accède aux applications et services ADS"
+          },
+          "org": "main",
+          "roles": [
+            "member"
+          ]
+        },
+        {
+          "key": "staff",
+          "label": {
+            "en": "Hub operator (ADS)",
+            "fr": "Opérateur du Hub (ADS)"
+          },
+          "hint": {
+            "en": "Runs the hub switchboard",
+            "fr": "Gère le standard du Hub"
+          },
+          "org": "staff",
+          "roles": [
+            "staff"
+          ]
+        }
       ]
     },
     "hopebridge": {
       "personas": [
-        {"key": "community-member", "label": {"en": "Community member", "fr": "Membre de la communauté"}, "hint": {"en": "Asks for help and follows requests", "fr": "Demande de l'aide et suit ses demandes"}, "org": "main", "roles": ["community_user"]},
-        {"key": "case-worker", "label": {"en": "Case worker", "fr": "Travailleur social"}, "hint": {"en": "Follows cases", "fr": "Suit les dossiers"}, "org": "main", "roles": ["case_worker"]},
-        {"key": "programme-officer", "label": {"en": "Programme officer", "fr": "Chargé de programme"}, "hint": {"en": "Runs programmes", "fr": "Gère les programmes"}, "org": "main", "roles": ["programme_officer"]},
-        {"key": "eligibility-officer", "label": {"en": "Eligibility officer", "fr": "Chargé de l'éligibilité"}, "hint": {"en": "Checks eligibility", "fr": "Vérifie l'éligibilité"}, "org": "main", "roles": ["eligibility_officer"]},
-        {"key": "approver", "label": {"en": "Approver", "fr": "Approbateur"}, "hint": {"en": "Approves support decisions", "fr": "Valide les décisions d'aide"}, "org": "main", "roles": ["approver"]},
-        {"key": "safeguarding", "label": {"en": "Safeguarding officer", "fr": "Responsable de la protection"}, "hint": {"en": "Handles safeguarding alerts", "fr": "Traite les alertes de protection"}, "org": "main", "roles": ["safeguarding_officer"]},
-        {"key": "partner", "label": {"en": "Partner", "fr": "Partenaire"}, "hint": {"en": "Receives referrals", "fr": "Reçoit les orientations"}, "org": "main", "roles": ["partner"]},
-        {"key": "donor", "label": {"en": "Donor", "fr": "Donateur"}, "hint": {"en": "Follows the impact of gifts", "fr": "Suit l'impact de ses dons"}, "org": "main", "roles": ["donor"]},
-        {"key": "ngo-admin", "label": {"en": "NGO admin", "fr": "Administrateur de l'ONG"}, "hint": {"en": "Runs the NGO workspace", "fr": "Gère l'espace de l'ONG"}, "org": "main", "roles": ["ngo_admin"]}
+        {
+          "key": "community-member",
+          "label": {
+            "en": "Community member",
+            "fr": "Membre de la communauté"
+          },
+          "hint": {
+            "en": "Asks for help and follows requests",
+            "fr": "Demande de l'aide et suit ses demandes"
+          },
+          "org": "main",
+          "roles": [
+            "community_user"
+          ]
+        },
+        {
+          "key": "case-worker",
+          "label": {
+            "en": "Case worker",
+            "fr": "Travailleur social"
+          },
+          "hint": {
+            "en": "Follows cases",
+            "fr": "Suit les dossiers"
+          },
+          "org": "main",
+          "roles": [
+            "case_worker"
+          ]
+        },
+        {
+          "key": "programme-officer",
+          "label": {
+            "en": "Programme officer",
+            "fr": "Chargé de programme"
+          },
+          "hint": {
+            "en": "Runs programmes",
+            "fr": "Gère les programmes"
+          },
+          "org": "main",
+          "roles": [
+            "programme_officer"
+          ]
+        },
+        {
+          "key": "eligibility-officer",
+          "label": {
+            "en": "Eligibility officer",
+            "fr": "Chargé de l'éligibilité"
+          },
+          "hint": {
+            "en": "Checks eligibility",
+            "fr": "Vérifie l'éligibilité"
+          },
+          "org": "main",
+          "roles": [
+            "eligibility_officer"
+          ]
+        },
+        {
+          "key": "approver",
+          "label": {
+            "en": "Approver",
+            "fr": "Approbateur"
+          },
+          "hint": {
+            "en": "Approves support decisions",
+            "fr": "Valide les décisions d'aide"
+          },
+          "org": "main",
+          "roles": [
+            "approver"
+          ]
+        },
+        {
+          "key": "safeguarding",
+          "label": {
+            "en": "Safeguarding officer",
+            "fr": "Responsable de la protection"
+          },
+          "hint": {
+            "en": "Handles safeguarding alerts",
+            "fr": "Traite les alertes de protection"
+          },
+          "org": "main",
+          "roles": [
+            "safeguarding_officer"
+          ]
+        },
+        {
+          "key": "partner",
+          "label": {
+            "en": "Partner",
+            "fr": "Partenaire"
+          },
+          "hint": {
+            "en": "Receives referrals",
+            "fr": "Reçoit les orientations"
+          },
+          "org": "main",
+          "roles": [
+            "partner"
+          ]
+        },
+        {
+          "key": "donor",
+          "label": {
+            "en": "Donor",
+            "fr": "Donateur"
+          },
+          "hint": {
+            "en": "Follows the impact of gifts",
+            "fr": "Suit l'impact de ses dons"
+          },
+          "org": "main",
+          "roles": [
+            "donor"
+          ]
+        },
+        {
+          "key": "ngo-admin",
+          "label": {
+            "en": "NGO admin",
+            "fr": "Administrateur de l'ONG"
+          },
+          "hint": {
+            "en": "Runs the NGO workspace",
+            "fr": "Gère l'espace de l'ONG"
+          },
+          "org": "main",
+          "roles": [
+            "ngo_admin"
+          ]
+        }
       ]
     },
     "tourism": {
       "personas": [
-        {"key": "visitor", "label": {"en": "Visitor", "fr": "Visiteur"}, "hint": {"en": "Finds and books visits", "fr": "Trouve et réserve des visites"}, "org": "main", "roles": ["visitor"]},
-        {"key": "gate-agent", "label": {"en": "Gate agent", "fr": "Agent d'accueil"}, "hint": {"en": "Checks tickets at the gate", "fr": "Contrôle les billets à l'entrée"}, "org": "main", "roles": ["gate_agent"]},
-        {"key": "operator-admin", "label": {"en": "Site operator", "fr": "Exploitant du site"}, "hint": {"en": "Runs the site and its offers", "fr": "Gère le site et ses offres"}, "org": "main", "roles": ["operator_admin"]},
-        {"key": "tour-admin", "label": {"en": "Tourism admin (ADS)", "fr": "Administrateur tourisme (ADS)"}, "hint": {"en": "Reviews sites and operators", "fr": "Vérifie les sites et les exploitants"}, "org": "staff", "roles": ["tour_admin"]}
+        {
+          "key": "visitor",
+          "label": {
+            "en": "Visitor",
+            "fr": "Visiteur"
+          },
+          "hint": {
+            "en": "Finds and books visits",
+            "fr": "Trouve et réserve des visites"
+          },
+          "org": "main",
+          "roles": [
+            "visitor"
+          ]
+        },
+        {
+          "key": "gate-agent",
+          "label": {
+            "en": "Gate agent",
+            "fr": "Agent d'accueil"
+          },
+          "hint": {
+            "en": "Checks tickets at the gate",
+            "fr": "Contrôle les billets à l'entrée"
+          },
+          "org": "main",
+          "roles": [
+            "gate_agent"
+          ]
+        },
+        {
+          "key": "operator-admin",
+          "label": {
+            "en": "Site operator",
+            "fr": "Exploitant du site"
+          },
+          "hint": {
+            "en": "Runs the site and its offers",
+            "fr": "Gère le site et ses offres"
+          },
+          "org": "main",
+          "roles": [
+            "operator_admin"
+          ]
+        },
+        {
+          "key": "tour-admin",
+          "label": {
+            "en": "Tourism admin (ADS)",
+            "fr": "Administrateur tourisme (ADS)"
+          },
+          "hint": {
+            "en": "Reviews sites and operators",
+            "fr": "Vérifie les sites et les exploitants"
+          },
+          "org": "staff",
+          "roles": [
+            "tour_admin"
+          ]
+        }
       ]
     },
     "banking": {
       "personas": [
-        {"key": "customer", "label": {"en": "Bank customer", "fr": "Client de la banque"}, "hint": {"en": "Accounts, transfers and requests", "fr": "Comptes, virements et demandes"}, "org": "main", "roles": ["banking_customer"]},
-        {"key": "bank-officer", "label": {"en": "Bank officer", "fr": "Chargé de clientèle"}, "hint": {"en": "Handles customer requests", "fr": "Traite les demandes des clients"}, "org": "main", "roles": ["bank_officer"]},
-        {"key": "banking-admin", "label": {"en": "Bank admin", "fr": "Administrateur de la banque"}, "hint": {"en": "Runs the bank workspace", "fr": "Gère l'espace de la banque"}, "org": "main", "roles": ["banking_admin"]}
+        {
+          "key": "customer",
+          "label": {
+            "en": "Bank customer",
+            "fr": "Client de la banque"
+          },
+          "hint": {
+            "en": "Accounts, transfers and requests",
+            "fr": "Comptes, virements et demandes"
+          },
+          "org": "main",
+          "roles": [
+            "banking_customer"
+          ]
+        },
+        {
+          "key": "bank-officer",
+          "label": {
+            "en": "Bank officer",
+            "fr": "Chargé de clientèle"
+          },
+          "hint": {
+            "en": "Handles customer requests",
+            "fr": "Traite les demandes des clients"
+          },
+          "org": "main",
+          "roles": [
+            "bank_officer"
+          ]
+        },
+        {
+          "key": "banking-admin",
+          "label": {
+            "en": "Bank admin",
+            "fr": "Administrateur de la banque"
+          },
+          "hint": {
+            "en": "Runs the bank workspace",
+            "fr": "Gère l'espace de la banque"
+          },
+          "org": "main",
+          "roles": [
+            "banking_admin"
+          ]
+        }
       ]
     },
     "transport": {
       "personas": [
-        {"key": "passenger", "label": {"en": "Passenger", "fr": "Passager"}, "hint": {"en": "Finds trips and books tickets", "fr": "Trouve des trajets et réserve"}, "org": "main", "roles": ["passenger"]},
-        {"key": "station-agent", "label": {"en": "Station agent", "fr": "Agent de gare"}, "hint": {"en": "Sells and checks tickets", "fr": "Vend et contrôle les billets"}, "org": "main", "roles": ["station_agent"]},
-        {"key": "operator-admin", "label": {"en": "Transport operator", "fr": "Transporteur"}, "hint": {"en": "Runs routes and fleet", "fr": "Gère les lignes et la flotte"}, "org": "main", "roles": ["operator_admin"]},
-        {"key": "union-officer", "label": {"en": "Union officer", "fr": "Responsable syndical"}, "hint": {"en": "Follows the union's drivers", "fr": "Suit les chauffeurs du syndicat"}, "org": "union", "roles": ["union_officer"]}
+        {
+          "key": "passenger",
+          "label": {
+            "en": "Passenger",
+            "fr": "Passager"
+          },
+          "hint": {
+            "en": "Finds trips and books tickets",
+            "fr": "Trouve des trajets et réserve"
+          },
+          "org": "main",
+          "roles": [
+            "passenger"
+          ]
+        },
+        {
+          "key": "station-agent",
+          "label": {
+            "en": "Station agent",
+            "fr": "Agent de gare"
+          },
+          "hint": {
+            "en": "Sells and checks tickets",
+            "fr": "Vend et contrôle les billets"
+          },
+          "org": "main",
+          "roles": [
+            "station_agent"
+          ]
+        },
+        {
+          "key": "operator-admin",
+          "label": {
+            "en": "Transport operator",
+            "fr": "Transporteur"
+          },
+          "hint": {
+            "en": "Runs routes and fleet",
+            "fr": "Gère les lignes et la flotte"
+          },
+          "org": "main",
+          "roles": [
+            "operator_admin"
+          ]
+        },
+        {
+          "key": "union-officer",
+          "label": {
+            "en": "Union officer",
+            "fr": "Responsable syndical"
+          },
+          "hint": {
+            "en": "Follows the union's drivers",
+            "fr": "Suit les chauffeurs du syndicat"
+          },
+          "org": "union",
+          "roles": [
+            "union_officer"
+          ]
+        }
       ]
     }
   }
