@@ -451,6 +451,7 @@
         "commerce_manager",
         "commerce_cashier",
         "commerce_accountant",
+        "commerce_auditor",
         "bank_officer",
         "bank_agent"
       ],
@@ -470,7 +471,8 @@
             "merchant_owner",
             "commerce_manager",
             "commerce_cashier",
-            "commerce_accountant"
+            "commerce_accountant",
+            "commerce_auditor"
           ]
         },
         {
