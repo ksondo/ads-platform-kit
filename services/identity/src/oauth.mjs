@@ -120,6 +120,10 @@ export function createOAuth({ pool, config, keys, audit, demoAccess = null }) {
     const user = (await db.query('SELECT id,email,display_name,status,email_verified_at,is_demo FROM platform.users WHERE id=$1', [userId])).rows[0];
     if (!user || user.status !== 'active') fail(400, 'invalid_grant');
     if (user.is_demo && !config.demo.enabled) fail(400, 'invalid_grant');
+    // An approved visitor's token carries only the roles of the personas of their grant in that workspace,
+    // whatever product_roles holds (a grant from an older persona list, a manual change): code exchange and
+    // every refresh go through here, so no route yields a role outside the visitor's persona list.
+    let visitorRoles = null;
     if (demoAccess && client.client_id === demoAccess.platformOf('commerce')?.clientId) {
       // Re-check clock expiry on every code exchange and refresh, without relying
       // on hourly membership cleanup. Read in this transaction and never update
@@ -128,12 +132,13 @@ export function createOAuth({ pool, config, keys, audit, demoAccess = null }) {
       const grant = await demoAccess.checkGrant('commerce', userId, { db, recordActivity: false });
       if ((grant.access === 'none' && ['EXPIRED', 'REVOKED'].includes(grant.reason)) ||
         (grant.access === 'granted' && !grant.personas.some(p => p.tenantId === tenantId))) fail(400, 'invalid_grant');
+      if (grant.access === 'granted') visitorRoles = new Set(grant.personas.filter(p => p.tenantId === tenantId).flatMap(p => p.roles));
     }
     const member = (await db.query(`SELECT o.is_demo, o.is_staff FROM platform.memberships m JOIN platform.tenants t ON t.id=m.tenant_id AND t.status='active'
       JOIN platform.organizations o ON o.id=t.organization_id
       WHERE m.user_id=$1 AND m.tenant_id=$2 AND m.status='active'`, [userId, tenantId])).rows[0];
     if (!member) fail(400, 'invalid_grant');
-    const roles = await rolesFor(userId, tenantId, client, db);
+    const roles = (await rolesFor(userId, tenantId, client, db)).filter(r => !visitorRoles || visitorRoles.has(r));
     if (!roles.length) fail(400, 'invalid_grant');
     // `locale`: the language of this sign-in (the product's ui_locales or the choice made on the sign-in
     // page), never a language saved on the account: shared demo accounts carry no tester's language.
