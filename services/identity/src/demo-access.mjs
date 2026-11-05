@@ -227,7 +227,8 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
   async function newInvitation(c, grant, p, adminUser, locale) {
     const token = randomToken(32);
     const id = crypto.randomUUID();
-    const roles = [...new Set(p.personas.filter(x => x.org === p.inviteOrg).flatMap(x => x.roles))];
+    const allowed = new Set(grant.personas ?? []);
+    const roles = [...new Set(p.personas.filter(x => allowed.has(x.key) && x.org === p.inviteOrg).flatMap(x => x.roles))];
     await c.query(`INSERT INTO platform.invitations(id,tenant_id,client_id,email,roles,org_admin,locale,token_hash,invited_by,expires_at)
       VALUES ($1,$2,$3,$4,$5,false,$6,$7,$8,now()+make_interval(days => $9))`,
     [id, grant.tenants[p.inviteOrg], p.clientId, grant.email, roles, locale, sha256(token), adminUser.id, settings.invitationTtlDays]);
@@ -325,14 +326,16 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
   async function activateGrant(c, grant, p, account, { grantedBy = null, days = settings.grantDays } = {}) {
     if (grant.status !== 'awaiting_activation') fail(400, 'INVITATION_INVALID');
     const tenants = grant.tenants ?? {};
+    const allowed = new Set(grant.personas ?? []);
     for (const org of p.orgs) {
-      const roles = [...new Set(p.personas.filter(x => x.org === org.key).flatMap(x => x.roles))];
+      const roles = [...new Set(p.personas.filter(x => allowed.has(x.key) && x.org === org.key).flatMap(x => x.roles))];
+      if (!roles.length) continue;
       await c.query(`INSERT INTO platform.memberships(user_id,tenant_id,role,scopes) VALUES ($1,$2,'member','{}')
         ON CONFLICT (user_id,tenant_id) DO UPDATE SET status='active'`, [account.id, tenants[org.key]]);
       await c.query(`INSERT INTO platform.product_roles(user_id,tenant_id,client_id,roles,granted_by) VALUES ($1,$2,$3,$4,$5)
         ON CONFLICT (user_id,tenant_id,client_id) DO UPDATE SET roles=EXCLUDED.roles, updated_at=now()`, [account.id, tenants[org.key], p.clientId, roles, grantedBy]);
     }
-    if (p.personas.some(x => x.org === 'personal')) await ensurePersonalWorkspace(c, account.id, account.email);
+    if (p.personas.some(x => allowed.has(x.key) && x.org === 'personal')) await ensurePersonalWorkspace(c, account.id, account.email);
     await c.query(`UPDATE platform.demo_access_grants SET user_id=$2, status='active', activated_at=now(), expires_at=now()+make_interval(days => $3) WHERE id=$1`,
       [grant.id, account.id, days]);
     await audit('demo_access_activated', { userId: account.id, outcome: 'allowed', clientId: p.clientId,
@@ -359,7 +362,9 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
     if (!/^scrypt\$[a-f0-9]{32}\$[a-f0-9]{128}$/.test(String(passwordHash))) fail(400, 'PASSWORD_HASH_REQUIRED');
     const p = platformOf('commerce');
     const required = ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'bank-agent', 'bank-officer'];
-    if (!p || p.personas.length !== required.length || required.some(key => !p.personas.some(x => x.key === key))) fail(409, 'PRIVATE_VISITOR_PERSONA_REGISTRY_INVALID');
+    // The shared registry can offer additional personas (for other demos); this
+    // operator flow grants only the seven explicitly approved private personas.
+    if (!p || required.some(key => !p.personas.some(x => x.key === key))) fail(409, 'PRIVATE_VISITOR_PERSONA_REGISTRY_INVALID');
     return withTransaction(pool, async c => {
       await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`demo-request:${p.key}:${normalized}`]);
       if ((await c.query('SELECT 1 FROM platform.users WHERE email=$1', [normalized])).rowCount) fail(409, 'PRIVATE_VISITOR_ACCOUNT_EXISTS');
