@@ -110,6 +110,29 @@ describe('private visitor uses canonical ADS identity and grant activation', () 
     assert.equal(svc.mailer.outbox.length, 0);
   });
 
+  it('does not silently grant additional registry personas to the seven-persona private visitor', async () => {
+    const registry = svc.app.demoAccess.platformOf('commerce');
+    const original = registry.personas;
+    const extras = [
+      { key: 'investor', org: 'main', roles: ['commerce_investor'] },
+      { key: 'auditor', org: 'main', roles: ['commerce_auditor'] },
+    ];
+    registry.personas = [...original.filter(x => !extras.some(extra => extra.key === x.key)), ...extras];
+    try {
+      const visitor = await provision('private.extended@example.test');
+      const approved = (await check(visitor.userId)).body.personas.map(p => p.key).sort();
+      assert.deepEqual(approved, ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'bank-agent', 'bank-officer'].sort());
+      const assigned = (await svc.pool.query(
+        'SELECT roles FROM platform.product_roles WHERE user_id=$1 AND client_id=$2', [visitor.userId, clientId],
+      )).rows.flatMap(row => row.roles);
+      assert.ok(!assigned.includes('commerce_investor') && !assigned.includes('commerce_auditor'),
+        'registry-only personas must never be assigned when missing from the visitor grant');
+      assert.ok(assigned.includes('merchant_owner') && assigned.includes('bank_officer'));
+    } finally {
+      registry.personas = original;
+    }
+  });
+
   it('uses normal failed-password handling and SSO across personal/shop/bank without admin authority', async () => {
     const b = browser(svc.base);
     assert.equal((await login(b, first.email, 'incorrect')).status, 400);
