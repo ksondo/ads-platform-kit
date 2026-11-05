@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withTransaction } from './db.mjs';
+import { isDemoDomain } from './config.mjs';
 import { ensurePersonalWorkspace } from './demo.mjs';
 import { renderEmail } from './mailer.mjs';
 import { fail, isEmail, normalizeEmail, randomToken, safeEqual, sha256 } from './security.mjs';
@@ -115,6 +116,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
   }
 
   async function processOutbox() {
+    if (!settings.publicEnabled) return 0;
     let sent = 0;
     for (let round = 0; round < 4; round += 1) {
       const rows = await claim();
@@ -126,6 +128,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
 
   // ---------- requests ----------
   async function submitRequest({ platform: key, email, locale, website, ip }) {
+    if (!settings.publicEnabled) fail(404, 'NOT_FOUND');
     // Expired active grants must lose access before a subsequent application is considered.
     // The normal hourly expiry worker also performs this, but applications must not depend
     // on when the worker last ran.
@@ -187,7 +190,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
   // ---------- administrators ----------
   // Only the accounts named in DEMO_ACCESS_ADMIN_EMAILS, active, real (not demo) and email-confirmed.
   async function adminOf(sso) {
-    if (!settings.enabled || !sso?.user?.id) return null;
+    if (!settings.publicEnabled || !sso?.user?.id) return null;
     const u = (await pool.query("SELECT id, email FROM platform.users WHERE id=$1 AND status='active' AND NOT is_demo AND email_verified_at IS NOT NULL",
       [sso.user.id])).rows[0];
     return u && settings.adminEmails.includes(normalizeEmail(u.email)) ? { id: u.id, email: u.email } : null;
@@ -237,6 +240,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
   }
 
   async function approve(adminUser, id) {
+    if (!settings.publicEnabled) fail(404, 'NOT_FOUND');
     const result = await withTransaction(pool, async c => {
       const req = await requestRow(c, id, true);
       if (req.status !== 'pending' || new Date(req.expires_at) <= new Date()) fail(409, 'REQUEST_NOT_PENDING');
@@ -257,6 +261,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
   }
 
   async function reject(adminUser, id, note) {
+    if (!settings.publicEnabled) fail(404, 'NOT_FOUND');
     const outboxId = await withTransaction(pool, async c => {
       const req = await requestRow(c, id, true);
       if (req.status !== 'pending') fail(409, 'REQUEST_NOT_PENDING');
@@ -271,6 +276,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
   }
 
   async function resend(adminUser, id) {
+    if (!settings.publicEnabled) fail(404, 'NOT_FOUND');
     const outboxId = await withTransaction(pool, async c => {
       const req = await requestRow(c, id, true);
       const grant = await grantOf(c, req.id, true);
@@ -314,29 +320,89 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
     return { done: 'revoked' };
   }
 
-  // Called by acceptInvitation inside its transaction. Returns null for ordinary (non-demo) invitations.
-  async function onInvitationAccepted(c, inv, account) {
-    const grant = (await c.query('SELECT * FROM platform.demo_access_grants WHERE invitation_id=$1 FOR UPDATE', [inv.id])).rows[0];
-    if (!grant) return null;
+  // Canonical activation used by invitation acceptance and the private operator command.
+  // Identity authentication remains in accounts/OAuth; this only assigns the approved grant.
+  async function activateGrant(c, grant, p, account, { grantedBy = null, days = settings.grantDays } = {}) {
     if (grant.status !== 'awaiting_activation') fail(400, 'INVITATION_INVALID');
-    const p = platformOf(grant.platform);
-    if (!p) fail(400, 'INVITATION_INVALID');
     const tenants = grant.tenants ?? {};
-    // The invitation itself placed the visitor in the invitation's organisation; add the others.
     for (const org of p.orgs) {
-      if (org.key === p.inviteOrg) continue;
       const roles = [...new Set(p.personas.filter(x => x.org === org.key).flatMap(x => x.roles))];
       await c.query(`INSERT INTO platform.memberships(user_id,tenant_id,role,scopes) VALUES ($1,$2,'member','{}')
         ON CONFLICT (user_id,tenant_id) DO UPDATE SET status='active'`, [account.id, tenants[org.key]]);
       await c.query(`INSERT INTO platform.product_roles(user_id,tenant_id,client_id,roles,granted_by) VALUES ($1,$2,$3,$4,$5)
-        ON CONFLICT (user_id,tenant_id,client_id) DO UPDATE SET roles=EXCLUDED.roles, updated_at=now()`, [account.id, tenants[org.key], p.clientId, roles, inv.invited_by]);
+        ON CONFLICT (user_id,tenant_id,client_id) DO UPDATE SET roles=EXCLUDED.roles, updated_at=now()`, [account.id, tenants[org.key], p.clientId, roles, grantedBy]);
     }
     if (p.personas.some(x => x.org === 'personal')) await ensurePersonalWorkspace(c, account.id, account.email);
     await c.query(`UPDATE platform.demo_access_grants SET user_id=$2, status='active', activated_at=now(), expires_at=now()+make_interval(days => $3) WHERE id=$1`,
-      [grant.id, account.id, settings.grantDays]);
+      [grant.id, account.id, days]);
     await audit('demo_access_activated', { userId: account.id, outcome: 'allowed', clientId: p.clientId,
       metadata: { grant_id: grant.id, request_id: grant.request_id, platform: p.key } }, c);
     return { productUrl: p.entryUrl };
+  }
+
+  // Called by acceptInvitation inside its transaction. Ordinary invitations are unchanged.
+  async function onInvitationAccepted(c, inv, account) {
+    const grant = (await c.query('SELECT * FROM platform.demo_access_grants WHERE invitation_id=$1 FOR UPDATE', [inv.id])).rows[0];
+    if (!grant) return null;
+    const p = platformOf(grant.platform);
+    if (!p) fail(400, 'INVITATION_INVALID');
+    return activateGrant(c, grant, p, account, { grantedBy: inv.invited_by });
+  }
+
+  // Operator-only service method, deliberately absent from every HTTP router.
+  // Existing users are NEVER reset, merged or granted additional access by this command.
+  async function provisionPrivate({ email, passwordHash, operatorRef, locale = 'en', beforeCommit }) {
+    if (!config.demo.enabled || !settings.privateEnabled || settings.publicEnabled) fail(403, 'PRIVATE_VISITOR_MODE_REQUIRED');
+    const normalized = normalizeEmail(email);
+    if (!isEmail(normalized) || isDemoDomain(normalized, config.demo.domain)) fail(400, 'EMAIL_INVALID');
+    if (typeof operatorRef !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9 ._:@/-]{2,119}$/.test(operatorRef)) fail(400, 'OPERATOR_REFERENCE_REQUIRED');
+    if (!/^scrypt\$[a-f0-9]{32}\$[a-f0-9]{128}$/.test(String(passwordHash))) fail(400, 'PASSWORD_HASH_REQUIRED');
+    const p = platformOf('commerce');
+    const required = ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'bank-agent', 'bank-officer'];
+    if (!p || p.personas.length !== required.length || required.some(key => !p.personas.some(x => x.key === key))) fail(409, 'PRIVATE_VISITOR_PERSONA_REGISTRY_INVALID');
+    return withTransaction(pool, async c => {
+      await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`demo-request:${p.key}:${normalized}`]);
+      if ((await c.query('SELECT 1 FROM platform.users WHERE email=$1', [normalized])).rowCount) fail(409, 'PRIVATE_VISITOR_ACCOUNT_EXISTS');
+      if ((await c.query("SELECT 1 FROM platform.demo_access_grants WHERE platform=$1 AND email=$2 AND status IN ('active','awaiting_activation')", [p.key, normalized])).rowCount) fail(409, 'PRIVATE_VISITOR_GRANT_EXISTS');
+      const client = (await c.query("SELECT * FROM platform.oauth_clients WHERE client_id=$1 AND status='active'", [p.clientId])).rows[0];
+      if (!client || !client.allow_personal_workspace || !client.self_service_roles.includes('commerce_buyer')) fail(409, 'PRIVATE_VISITOR_CLIENT_NOT_READY');
+      const userId = crypto.randomUUID(), requestId = crypto.randomUUID(), grantId = crypto.randomUUID();
+      // The operator confirms the private test contact, NOT ownership of its mailbox.
+      await c.query("INSERT INTO platform.users(id,email,password_hash,status,locale,is_demo) VALUES ($1,$2,$3,'active',$4,false)", [userId, normalized, passwordHash, locale === 'fr' ? 'fr' : 'en']);
+      const ref = reference(p), set = `${VISITOR_SET_PREFIX}${grantId.replace(/-/g, '').slice(0, 12)}`;
+      await c.query(`INSERT INTO platform.demo_access_requests(id,reference,platform,email,locale,status,expires_at,decided_at,internal_note)
+        VALUES ($1,$2,$3,$4,$5,'approved',now()+interval '30 days',now(),$6)`,
+      [requestId, ref, p.key, normalized, locale === 'fr' ? 'fr' : 'en', `Private operator provisioning: ${operatorRef}; mailbox not verified`]);
+      const tenants = await createVisitorOrgs(c, p, set);
+      const grant = (await c.query(`INSERT INTO platform.demo_access_grants(id,request_id,platform,email,client_id,demo_set,personas,tenants)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb) RETURNING *`, [grantId, requestId, p.key, normalized, p.clientId, set, required, JSON.stringify(tenants)])).rows[0];
+      await activateGrant(c, grant, p, { id: userId, email: normalized }, { days: 30 });
+      await audit('demo_access_private_provisioned', { userId, outcome: 'allowed', reason: 'operator_cli', clientId: p.clientId,
+        metadata: { request_id: requestId, grant_id: grantId, reference: ref, platform: p.key, operator_ref: operatorRef, contact_confirmation: 'operator_private_contact', mailbox_verified: false } }, c);
+      const active = (await c.query('SELECT expires_at FROM platform.demo_access_grants WHERE id=$1', [grantId])).rows[0];
+      const result = { userId, grantId, reference: ref, email: normalized, expiresAt: new Date(active.expires_at).toISOString(), personas: required };
+      // The operator persists the generated credential before COMMIT. Failure rolls back provisioning.
+      if (beforeCommit) await beforeCommit(result);
+      return result;
+    });
+  }
+
+  async function revokePrivate({ grantId, operatorRef }) {
+    if (!config.demo.enabled || !settings.privateEnabled || settings.publicEnabled) fail(403, 'PRIVATE_VISITOR_MODE_REQUIRED');
+    if (!UUID.test(String(grantId)) || !/^[A-Za-z0-9][A-Za-z0-9 ._:@/-]{2,119}$/.test(String(operatorRef))) fail(400, 'PRIVATE_VISITOR_INPUT_INVALID');
+    return withTransaction(pool, async c => {
+      const grant = (await c.query('SELECT * FROM platform.demo_access_grants WHERE id=$1 FOR UPDATE', [grantId])).rows[0];
+      if (!grant || grant.platform !== 'commerce' || grant.invitation_id) fail(404, 'PRIVATE_VISITOR_GRANT_NOT_FOUND');
+      const provenance = (await c.query("SELECT 1 FROM platform.identity_audit WHERE event_type='demo_access_private_provisioned' AND metadata->>'grant_id'=$1", [grantId])).rowCount;
+      if (!provenance) fail(404, 'PRIVATE_VISITOR_GRANT_NOT_FOUND');
+      if (!['active','revoked'].includes(grant.status)) fail(409, 'GRANT_NOT_ACTIVE');
+      if (grant.status === 'revoked') return { grantId, status: 'revoked', duplicate: true };
+      await c.query("UPDATE platform.demo_access_grants SET status='revoked',revoked_at=now() WHERE id=$1", [grantId]);
+      await closeAccess(c, grant);
+      await audit('demo_access_private_revoked', { userId: grant.user_id, outcome: 'allowed', reason: 'operator_cli', clientId: grant.client_id,
+        metadata: { grant_id: grantId, request_id: grant.request_id, operator_ref: operatorRef, platform: grant.platform } }, c);
+      return { grantId, status: 'revoked', duplicate: false };
+    });
   }
 
   // ---------- grant check (platform server) ----------
@@ -345,21 +411,21 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
     if (!expected || typeof presented !== 'string' || !safeEqual(sha256(presented), sha256(expected))) fail(401, 'UNAUTHENTICATED');
   }
 
-  async function checkGrant(platformKey, sub) {
+  async function checkGrant(platformKey, sub, { db = pool, recordActivity = true } = {}) {
     const p = platformOf(String(platformKey ?? ''));
     if (!p) fail(404, 'PLATFORM_UNKNOWN');
     if (!UUID.test(String(sub ?? ''))) fail(400, 'SUB_INVALID');
-    const user = (await pool.query("SELECT id, is_demo, status FROM platform.users WHERE id=$1", [sub])).rows[0];
+    const user = (await db.query("SELECT id, is_demo, status FROM platform.users WHERE id=$1", [sub])).rows[0];
     if (!user || user.status !== 'active') return { access: 'none', reason: 'NO_GRANT' };
     if (user.is_demo) return { access: 'internal' };
-    const grant = (await pool.query(`SELECT * FROM platform.demo_access_grants WHERE user_id=$1 AND client_id=$2
+    const grant = (await db.query(`SELECT * FROM platform.demo_access_grants WHERE user_id=$1 AND client_id=$2
       ORDER BY (status='active') DESC, activated_at DESC NULLS LAST LIMIT 1`, [sub, p.clientId])).rows[0];
     if (!grant) return { access: 'none', reason: 'NO_GRANT' };
     if (grant.status === 'revoked') return { access: 'none', reason: 'REVOKED' };
     if (grant.status !== 'active' || !grant.expires_at || new Date(grant.expires_at) <= new Date()) return { access: 'none', reason: 'EXPIRED' };
-    await pool.query(`UPDATE platform.demo_access_grants SET first_login_at=coalesce(first_login_at, now()), last_activity_at=now()
+    if (recordActivity) await db.query(`UPDATE platform.demo_access_grants SET first_login_at=coalesce(first_login_at, now()), last_activity_at=now()
       WHERE id=$1 AND (last_activity_at IS NULL OR last_activity_at < now() - interval '5 minutes')`, [grant.id]);
-    const personal = (await pool.query(`SELECT m.tenant_id FROM platform.memberships m JOIN platform.tenants t ON t.id=m.tenant_id
+    const personal = (await db.query(`SELECT m.tenant_id FROM platform.memberships m JOIN platform.tenants t ON t.id=m.tenant_id
       JOIN platform.organizations o ON o.id=t.organization_id WHERE m.user_id=$1 AND o.kind='personal' AND m.status='active' ORDER BY m.created_at LIMIT 1`, [sub])).rows[0];
     const tenants = { ...(grant.tenants ?? {}), personal: personal?.tenant_id ?? null };
     return {
@@ -462,7 +528,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
 
   return {
     enabled: settings.enabled, isDemoInvitation, registry, platformOf, submitRequest, adminOf, approve, reject, resend, revoke, onInvitationAccepted,
-    checkSecret, checkGrant, housekeeping, processOutbox, overview, detail, auditLog, allowedOrigin,
+    checkSecret, checkGrant, housekeeping, processOutbox, overview, detail, auditLog, allowedOrigin, provisionPrivate, revokePrivate,
   };
 }
 

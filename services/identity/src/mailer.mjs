@@ -104,6 +104,9 @@ export function renderEmail(kind, data) {
 }
 
 export function createMailer(config, log = console) {
+  // Private operator mode has no email infrastructure. Even privileged legacy
+  // flows must never turn invitation/reset tokens into log output or real mail.
+  if (config.demoAccess?.privateEnabled) return { outbox: [], async send() { throw new Error('PRIVATE_MODE_EMAIL_DISABLED'); } };
   const { mail } = config;
   if (mail.transport === 'memory') {
     const outbox = [];

@@ -93,18 +93,25 @@ export function redirectAllowed(url, { production = true } = {}) {
 // DEMO_ACCESS_CHECK_SECRET_<PLATFORM>: secret the platform's server uses to check a visitor's grant.
 const emailList = value => [...new Set(String(value ?? '').split(/[\s,;]+/).map(s => s.trim().toLowerCase()).filter(Boolean))];
 export function demoAccessSettings(env, demo, publicUrl) {
-  const enabled = demo.enabled && bool(env.DEMO_ACCESS_ENABLED, false);
+  const publicEnabled = demo.enabled && bool(env.DEMO_ACCESS_ENABLED, false);
+  const privateAsked = bool(env.DEMO_ACCESS_PRIVATE_ENABLED, false);
+  if (privateAsked && !demo.enabled) throw new Error('DEMO_ACCESS_PRIVATE_REQUIRES_DEMO_MODE');
+  const privateEnabled = demo.enabled && privateAsked;
+  if (privateEnabled && publicEnabled) throw new Error('DEMO_ACCESS_MODES_CONFLICT');
+  if (privateEnabled && demo.showCredentials) throw new Error('DEMO_ACCESS_PRIVATE_CREDENTIALS_MUST_BE_HIDDEN');
+  const enabled = publicEnabled || privateEnabled;
   const adminEmails = emailList(env.DEMO_ACCESS_ADMIN_EMAILS);
   const notifyTo = emailList(env.DEMO_ACCESS_NOTIFY_TO);
-  if (enabled && !adminEmails.length) throw new Error('DEMO_ACCESS_ADMIN_EMAILS_REQUIRED');
-  if (enabled && !notifyTo.length) throw new Error('DEMO_ACCESS_NOTIFY_TO_REQUIRED');
+  if (publicEnabled && !adminEmails.length) throw new Error('DEMO_ACCESS_ADMIN_EMAILS_REQUIRED');
+  if (publicEnabled && !notifyTo.length) throw new Error('DEMO_ACCESS_NOTIFY_TO_REQUIRED');
   const checkSecrets = {};
   for (const [name, value] of Object.entries(env)) {
     const m = name.match(/^DEMO_ACCESS_CHECK_SECRET_([A-Z0-9_]+?)(_FILE)?$/);
     if (m) checkSecrets[m[1].toLowerCase()] = readSecret(env, `DEMO_ACCESS_CHECK_SECRET_${m[1]}`);
   }
+  if (privateEnabled && String(checkSecrets.commerce ?? '').length < 32) throw new Error('DEMO_ACCESS_PRIVATE_CHECK_SECRET_REQUIRED');
   return {
-    enabled, adminEmails, notifyTo, checkSecrets,
+    enabled, publicEnabled, privateEnabled, adminEmails, notifyTo, checkSecrets,
     adminUrl: String(env.DEMO_ACCESS_ADMIN_URL ?? publicUrl).replace(/\/$/, ''),
     platformsFile: env.DEMO_ACCESS_PLATFORMS_FILE || null,
     timeZone: String(env.DEMO_ACCESS_TIME_ZONE ?? 'Africa/Douala'),

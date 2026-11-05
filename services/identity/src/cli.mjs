@@ -6,7 +6,8 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
-import { DEMO_ACCOUNTS, demoSettings, isProductionEnv, readSecret, redirectAllowed } from './config.mjs';
+import { DEMO_ACCOUNTS, demoSettings, isProductionEnv, readSecret, redirectAllowed, loadConfig } from './config.mjs';
+import { privateVisitorService, provisionPrivateVisitor } from './private-demo-visitor.mjs';
 import { migrate } from './db.mjs';
 import { bootstrapDemoAccounts, demoAccountSubs, ensureDemoOrgs, personaAccounts, resetDemo, tenantsDocument } from './demo.mjs';
 
@@ -29,6 +30,10 @@ const usage = `Commands:
   mark-staff-org --tenant <tenant uuid> [--staff true|false]   ADS staff organisation flag (ACC-04, token claim ads_staff)
 
 Demo environment only (ADS_ENV=demo AND DEMO_MODE=1; refused everywhere else):
+  demo-visitor-provision --email visitor@example.test --operator-ref ADS-operator --credentials-out /run/private/visitor.json --apply yes
+                                       private mode only: one new individual account, seven Commerce personas, 30 days; no mail; password only in an exclusive 0600 file
+  demo-visitor-revoke --grant <grant uuid> --operator-ref ADS-operator --apply yes
+                                       private mode only: revoke a privately provisioned grant without enabling public approvals
   demo-bootstrap [--clients ...] [--personas config/demo-personas.json]
                                        create or refresh the demo user, second demo user and demo admin, and the demo personas
                                        passwords from DEMO_USER_PASSWORD, DEMO_USER2_PASSWORD, DEMO_ADMIN_PASSWORD, DEMO_PERSONA_PASSWORD (or *_FILE); never printed
@@ -105,6 +110,20 @@ const userId = async email => {
 
 try {
   switch (command) {
+    case 'demo-visitor-provision': {
+      if (Object.keys(args).some(k => !['email', 'operator-ref', 'credentials-out', 'apply', 'locale'].includes(k))) throw new Error('PRIVATE_VISITOR_UNKNOWN_ARGUMENT');
+      need('email', 'operator-ref', 'credentials-out', 'apply');
+      const config = loadConfig();
+      console.log(JSON.stringify(await provisionPrivateVisitor({ pool, config, email: args.email, operatorRef: args['operator-ref'], credentialsOut: args['credentials-out'], apply: args.apply, locale: args.locale })));
+      break;
+    }
+    case 'demo-visitor-revoke': {
+      if (Object.keys(args).some(k => !['grant', 'operator-ref', 'apply'].includes(k))) throw new Error('PRIVATE_VISITOR_UNKNOWN_ARGUMENT');
+      need('grant', 'operator-ref', 'apply');
+      if (args.apply !== 'yes') throw new Error('PRIVATE_VISITOR_EXPLICIT_APPLY_REQUIRED');
+      console.log(JSON.stringify(await privateVisitorService(pool, loadConfig()).revokePrivate({ grantId: args.grant, operatorRef: args['operator-ref'] })));
+      break;
+    }
     case 'migrate':
       console.log((await migrate(pool, { info: () => {} })).join('\n') || 'up to date');
       break;
