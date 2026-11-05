@@ -1,3 +1,4 @@
+import { pathToFileURL } from 'node:url';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { SignJWT, importPKCS8 } from 'jose';
@@ -9,7 +10,7 @@ import { createMocksClient } from './mocks-client.mjs';
 // services/identity/src/cli.mjs), plus token minting with the running service's signing key.
 // They exist for TEST SETUP ONLY. Product code must never call them or accept anything they make
 // except through its normal token verification (issuer, audience, JWKS).
-const { hashPassword } = await import(path.join(KIT_ROOT, 'services/identity/src/security.mjs'));
+const { hashPassword } = await import(pathToFileURL(path.join(KIT_ROOT, 'services/identity/src/security.mjs')).href);
 
 const rand = (n = 6) => crypto.randomBytes(n).toString('hex');
 export const uniqueEmail = (prefix = 'e2e') => `${prefix}-${Date.now().toString(36)}-${rand(4)}@example.test`;
