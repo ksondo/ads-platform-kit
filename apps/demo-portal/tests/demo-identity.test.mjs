@@ -56,7 +56,9 @@ test("demo sign-in guide never creates a duplicate login form",()=>{
   vm.runInNewContext(js.replace(/start\(\);\s*$/,"globalThis.__guide = demoAccessGuide();"),fake);
   const html=String(fake.__guide);
   assert.ok(html.includes("/platforms"));
-  assert.ok(html.includes("Request demo access"));
+  assert.ok(html.includes("Already approved? Sign in"));
+  assert.ok(html.includes("Public demo requests are temporarily unavailable."));
+  assert.ok(!html.includes("you receive an email invitation"));
   assert.ok(!html.includes("Use demo account"),"shared demo accounts are no longer offered to the public");
   assert.doesNotMatch(html, /<input\b|<form\b|type="password"/i);
 });

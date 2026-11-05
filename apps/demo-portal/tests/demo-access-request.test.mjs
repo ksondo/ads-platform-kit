@@ -16,7 +16,7 @@ const ADMIN_LINK = /admin\.demo\.|\/demo-admin|href="[^"]*\/admin(?:[/?"#]|$)/i;
 const PASSWORD_TEXT = /demo password|password:|mot de passe (de )?démo|mot de passe :|DEMO_[A-Z0-9_]*PASSWORD|Use demo account|Utiliser le compte démo|demo\.(user|admin|checker)@/i;
 
 // Renders portal pages in a sandbox, in the given language, without a browser.
-function renderer(lang) {
+function renderer(lang,publicRequestsEnabled=false) {
   const source = script.replace(/^import[^\n]*\n/gm, "").replace(/start\(\);\s*$/,
     "globalThis.__render = { setCatalogue: c => { catalogue = c; }, platformDetail, toolDetail, platformCard, toolCard, demoAccessGuide, landing };");
   const sandbox = {
@@ -29,7 +29,7 @@ function renderer(lang) {
     window: { location: { pathname: "/", search: "" }, addEventListener: () => {} },
   };
   vm.runInNewContext(source, sandbox);
-  sandbox.__render.setCatalogue({ ...catalogue, publicSite: catalogue.publicSite ?? "https://africadigitalsynergy.com" });
+  sandbox.__render.setCatalogue({ ...catalogue, publicDemoRequestsEnabled:publicRequestsEnabled, publicSite: catalogue.publicSite ?? "https://africadigitalsynergy.com" });
   return sandbox.__render;
 }
 
@@ -63,7 +63,7 @@ test("availability labels stay accurate: only Commerce is a verified demo, every
 
 for (const [lang, button, pill] of [["en", "Request demo access", "Demo on request"], ["fr", "Demander un accès de démonstration", "Démo sur demande"]]) {
   test(`${lang.toUpperCase()}: Commerce buttons read "${button}" and open the request page in a new tab`, () => {
-    const r = renderer(lang);
+    const r = renderer(lang,true);
     const commerce = catalogue.platforms.find(p => p.id === "commerce");
     const detail = r.platformDetail(commerce);
     assert.ok(detail.includes(button), "platform detail button");
@@ -81,7 +81,7 @@ for (const [lang, button, pill] of [["en", "Request demo access", "Demo on reque
   });
 
   test(`${lang.toUpperCase()}: no rendered page shows demo passwords or links to administration pages`, () => {
-    const r = renderer(lang);
+    const r = renderer(lang,true);
     const pages = [r.demoAccessGuide(), r.landing(),
       ...catalogue.platforms.map(r.platformDetail), ...catalogue.tools.map(r.toolDetail)];
     for (const html of pages) {
@@ -91,6 +91,26 @@ for (const [lang, button, pill] of [["en", "Request demo access", "Demo on reque
     }
     assert.ok(r.demoAccessGuide().includes(button), "guide explains the request step");
   });
+}
+
+for(const [lang,button,pill,notice] of [
+ ["en","Open private demo","By prior approval","Public demo requests are temporarily unavailable."],
+ ["fr","Ouvrir la démo privée","Sur autorisation","Les demandes publiques de démonstration sont temporairement indisponibles."]
+]){
+ test(`${lang}: private-first mode retains introduction links without an invitation promise`,()=>{
+  assert.equal(catalogue.publicDemoRequestsEnabled,false);
+  const r=renderer(lang),commerce=catalogue.platforms.find(p=>p.id==='commerce');
+  for(const html of [r.platformDetail(commerce),...commerceEntries().filter(x=>x.id!=='commerce').map(r.toolDetail)]){
+   assert.ok(html.includes(button));assert.ok(html.includes(notice));
+   assert.ok(html.includes('href="'+REQUEST_PAGE+'"'));
+   assert.match(html,/target="_blank" rel="noopener noreferrer"/);
+   assert.doesNotMatch(html,/<form|<input/i);
+  }
+  for(const tool of commerceEntries().filter(x=>x.id!=='commerce'))assert.ok(r.toolCard(tool).includes(pill));
+  const guide=r.demoAccessGuide();assert.ok(guide.includes(notice));
+  assert.doesNotMatch(guide,/you receive an email invitation|vous recevez une invitation|enter your email address|saisissez votre adresse e-mail/i);
+  assert.doesNotMatch(guide,PASSWORD_TEXT);assert.doesNotMatch(guide,ADMIN_LINK);
+ });
 }
 
 test("portal source files contain no administration links and no demo password references", () => {
