@@ -235,6 +235,7 @@ export function createAccounts({ pool, config, mailer, audit, log = console }) {
         }
         await audit('google_link', { userId, outcome: 'allowed', reason: existing.status === 'pending' ? 'pending_registrations_discarded' : 'existing_account', ip }, c);
       } else {
+        if (config.demoAccess?.privateEnabled) fail(403, 'PRIVATE_REGISTRATION_DISABLED');
         userId = crypto.randomUUID();
         await c.query("INSERT INTO platform.users(id,email,password_hash,status,display_name,locale,email_verified_at) VALUES ($1,$2,NULL,'active',$3,$4,now())", [userId, normalized, name, locale]);
         await audit('register', { userId, outcome: 'allowed', reason: 'google', ip }, c);

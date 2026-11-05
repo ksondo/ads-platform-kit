@@ -27,7 +27,7 @@ const purge = () => purgeExpired().catch(error => log.error(`purge failed: ${err
 setInterval(purge, 60 * 60 * 1000).unref();
 purge();
 // ADS Demo Access: retry queued demo emails every minute.
-if (demoAccess) setInterval(() => demoAccess.processOutbox().catch(error => log.error(`demo outbox failed: ${error.message}`)), 60 * 1000).unref();
+if (demoAccess && config.demoAccess.publicEnabled) setInterval(() => demoAccess.processOutbox().catch(error => log.error(`demo outbox failed: ${error.message}`)), 60 * 1000).unref();
 server.listen(config.port, config.host, () => log.info(`ADS identity ready on ${config.host}:${config.port} issuer=${config.issuer} google=${config.google.enabled} mail=${config.mail.transport}`));
 
 const shutdown = async () => {

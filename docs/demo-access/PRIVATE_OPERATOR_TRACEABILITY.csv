@@ -1,0 +1,8 @@
+requirement,criterion,source,test,status
+PLAT-DEMO-PRIVATE-01,private runtime separate from public requests and administration,services/identity/src/config.mjs;services/identity/src/server.mjs,services/identity/test/private-demo-visitor.test.mjs,in_progress
+PLAT-DEMO-PRIVATE-01,no emails or sensitive log tokens in private mode,services/identity/src/mailer.mjs;services/identity/src/main.mjs,services/identity/test/private-demo-visitor.test.mjs,in_progress
+PLAT-DEMO-PRIVATE-01,regular individual account and canonical thirty-day seven-persona grant,services/identity/src/demo-access.mjs,services/identity/test/private-demo-visitor.test.mjs,in_progress
+PLAT-DEMO-PRIVATE-01,protected exclusive operator credential file and explicit apply,services/identity/src/private-demo-visitor.mjs;services/identity/src/cli.mjs,services/identity/test/private-demo-visitor.test.mjs,in_progress
+PLAT-DEMO-PRIVATE-01,initial personal handoff and authorized SSO workspace switching,services/identity/src/oauth.mjs,services/identity/test/private-demo-visitor.test.mjs;packages/e2e-kit/test-browser/private-visitor.spec.mjs,in_progress
+PLAT-DEMO-PRIVATE-01,revocation expiry collisions and independent workspaces,services/identity/src/demo-access.mjs,services/identity/test/private-demo-visitor.test.mjs,in_progress
+PLAT-DEMO-PRIVATE-01,EN FR phone tablet desktop hosted login,services/identity/src/pages.mjs,packages/e2e-kit/test-browser/private-visitor.spec.mjs,in_progress

@@ -21,12 +21,13 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9)`, [eventType, userId, tenantId, projectId, outcome, reason, JSON.stringify(metadata), ip, clientId]);
   }
   const accounts = createAccounts({ pool, config, mailer, audit, log });
-  const oauth = createOAuth({ pool, config, keys, audit });
+  // Both public and private visitor modes use the same canonical grant check.
+  const demoAccess = config.demoAccess?.enabled ? createDemoAccess({ pool, config, mailer, audit, log }) : null;
+  const oauth = createOAuth({ pool, config, keys, audit, demoAccess });
   const legacy = createLegacyApi({ pool, config, accounts, audit });
   const localJwks = createLocalJWKSet(keys.jwks);
   const admin = createAdmin({ pool, config, keys, jwks: localJwks, audit, mailer, log });
-  // ADS Demo Access (administrator-approved demonstrations): only when DEMO_ACCESS_ENABLED in the demo environment.
-  const demoAccess = config.demoAccess?.enabled ? createDemoAccess({ pool, config, mailer, audit, log }) : null;
+  // Runtime is demo-only; public approval and private operator modes are exclusive.
   if (demoAccess) admin.setAcceptHook(demoAccess.onInvitationAccepted);
 
   // ---------- helpers ----------
@@ -173,7 +174,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     const body = renderPage(view, {
       locale, nonce, client: ctx.authRequest?.client ?? ctx.client ?? null, req: ctx.authRequest?.id ?? ctx.req ?? null,
       csrf: csrfToken(req, res), error: ctx.error, values: ctx.values, googleEnabled: config.google.enabled,
-      minPassword: config.passwordMinLength, path: ctx.path ?? safePath(new URL(req.url, 'http://x').pathname), next: safeNext(ctx.next), demo, personas,
+      minPassword: config.passwordMinLength, path: ctx.path ?? safePath(new URL(req.url, 'http://x').pathname), next: safeNext(ctx.next), demo, personas, privateDemo: config.demoAccess?.privateEnabled === true,
     });
     res.writeHead(status, { 'content-type': 'text/html; charset=utf-8' });
     res.end(body);
@@ -257,6 +258,9 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     const q = Object.fromEntries(url.searchParams);
     const ip = clientIp(req);
     const method = req.method;
+    // Private operator mode does not open self-registration or generate mail/reset tokens.
+    // Existing sign-in/OIDC sessions and already issued tokens are not invalidated here.
+    if (config.demoAccess?.privateEnabled && ['/register', '/forgot-password', '/v1/identity/register'].includes(path)) fail(404, 'NOT_FOUND');
 
     if (method === 'GET' && path === '/health') {
       await pool.query('SELECT 1');
@@ -332,7 +336,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
           user = await accounts.authenticate({ email, password: form.password, ip, clientId: authRequest?.client_id });
         } catch (error) {
           // Right password but email not yet confirmed: send a fresh activation link for that registration.
-          if (error instanceof HttpError && error.code === 'EMAIL_NOT_VERIFIED' && error.details?.user
+          if (!config.demoAccess?.privateEnabled && error instanceof HttpError && error.code === 'EMAIL_NOT_VERIFIED' && error.details?.user
             && limiter.hit(`email:${emailKey(email)}`, config.limits.emailPerAddress, 60 * MINUTE).allowed) {
             await accounts.sendVerification(error.details.user, { passwordHash: error.details.passwordHash, req: authRequest?.id, product: authRequest?.client?.display_name, next });
           }
@@ -611,6 +615,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     if (path.startsWith('/demo-access/') || path === '/demo-admin' || path.startsWith('/demo-admin/')) {
       if (!demoAccess) fail(404, 'NOT_FOUND');
       if (path === '/demo-access/v1/requests') {
+        if (!config.demoAccess.publicEnabled) fail(404, 'NOT_FOUND');
         const origin = demoAccess.allowedOrigin(req.headers.origin);
         const cors = origin ? { 'access-control-allow-origin': origin, vary: 'Origin' } : {};
         if (method === 'OPTIONS') {
@@ -630,6 +635,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
         demoAccess.checkSecret(platform, String(req.headers.authorization ?? '').replace(/^Bearer /, ''));
         return json(res, 200, await demoAccess.checkGrant(platform, q.sub), { 'cache-control': 'no-store' });
       }
+      if (!config.demoAccess.publicEnabled) fail(404, 'NOT_FOUND');
       // Central dashboard: ADS Identity session + DEMO_ACCESS_ADMIN_EMAILS; every action re-checked here.
       const sso = await currentSso(req);
       const here = `${path}${url.search.replace(/[^A-Za-z0-9=&%._?-]/g, '')}`;

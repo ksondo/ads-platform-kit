@@ -5,7 +5,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { createHarness, uniqueEmail, uniquePassword } from './harness.mjs';
 import { KIT_ROOT, generateSigningKey, runIdentityInProcess } from './identity-runtime.mjs';
 import { createMocksClient } from './mocks-client.mjs';
@@ -57,7 +57,7 @@ async function dropIdentitySchema(databaseUrl) {
 
 // Starts the mock providers in this process.
 export async function startMocks({ port, host = '127.0.0.1', webhookSecret = crypto.randomBytes(24).toString('hex'), defaultDelayMs } = {}) {
-  const { createMocks } = await import(path.join(KIT_ROOT, 'services/mocks/src/server.mjs'));
+  const { createMocks } = await import(pathToFileURL(path.join(KIT_ROOT, 'services/mocks/src/server.mjs')).href);
   const mocks = createMocks({ webhookSecret, defaultDelayMs, log: { info() {}, warn() {}, error: m => console.error(m) } });
   const listenPort = port ?? (process.env.ADS_TEST_PORT_RANGE ? await freePort(host) : 0);
   await new Promise((resolve, reject) => { mocks.server.once('error', reject); mocks.server.listen(listenPort, host, resolve); });

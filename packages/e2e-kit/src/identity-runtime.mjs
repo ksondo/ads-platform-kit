@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import pg from 'pg';
 
 // Runs the REAL ADS identity service (services/identity) in this Node process: same migrations,
@@ -29,8 +29,8 @@ export async function runIdentityInProcess({ databaseUrl, host = '127.0.0.1', po
   if (!databaseUrl) throw new Error('startIdentity: databaseUrl is required');
   if (!port) throw new Error('runIdentityInProcess: port is required');
   const [{ loadConfig }, { migrate }, { loadSigningKey }, { createApp }] = await Promise.all([
-    import(path.join(identitySrc, 'config.mjs')), import(path.join(identitySrc, 'db.mjs')),
-    import(path.join(identitySrc, 'keys.mjs')), import(path.join(identitySrc, 'server.mjs')),
+    import(pathToFileURL(path.join(identitySrc, 'config.mjs')).href), import(pathToFileURL(path.join(identitySrc, 'db.mjs')).href),
+    import(pathToFileURL(path.join(identitySrc, 'keys.mjs')).href), import(pathToFileURL(path.join(identitySrc, 'server.mjs')).href),
   ]);
   const publicUrl = (issuer ?? `http://${host}:${port}`).replace(/\/$/, '');
   const config = loadConfig({

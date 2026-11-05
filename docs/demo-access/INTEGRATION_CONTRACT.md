@@ -12,6 +12,8 @@ How an ADS platform plugs into administrator-approved demonstration access. Comm
 
 A grant is for **one platform only**. Approval for Commerce gives nothing on any other platform.
 
+For a pre-approved private Commerce test while public requests/SMTP are disabled, see [Private operator visitor](PRIVATE_OPERATOR_VISITOR.md). It uses the same grant check, activation and role/tenant model; it does not expose a public provisioning endpoint. In this explicit mode, public requests, dashboard approvals and mail generation are disabled. Active approved Commerce visitors default to their personal workspace on initial sign-in and then use the product persona picker; explicit authorized workspace hints still switch through SSO.
+
 ## 1. Platform registry
 
 `config/demo-access-platforms.json` lists each platform: `key`, `client_id`, allowed browser `origins`, `entry_url` (the platform's persona page) and the `personas` an approved visitor may use (keys from `config/demo-personas.json`). ADS staff personas are never listed.

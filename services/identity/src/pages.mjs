@@ -241,7 +241,7 @@ export function renderPage(view, ctx) {
 <label for="password">${esc(t.password)}</label><input id="password" name="password" type="password" autocomplete="current-password" required>
 <button type="submit" id="signin-submit">${esc(t.continue)}</button></form>
 ${googleEnabled ? `<div class="or">${esc(t.or)}</div><a class="button secondary" href="/google/start${q}">${esc(t.google)}</a>` : ''}
-<div class="links"><a href="/forgot-password${q}">${esc(t.forgot)}</a><br>${esc(t.noAccount)} <a href="/register${q}">${esc(t.createAccount)}</a></div>` });
+${ctx.privateDemo ? '' : `<div class="links"><a href="/forgot-password${q}">${esc(t.forgot)}</a><br>${esc(t.noAccount)} <a href="/register${q}">${esc(t.createAccount)}</a></div>`}` });
     case 'register':
       return layout({ ...base, title: t.register, body: `<h1>${esc(t.register)}</h1>${errorBox(locale, error)}
 <form method="post" action="/register" novalidate>${csrfField}

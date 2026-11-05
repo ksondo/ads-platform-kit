@@ -6,7 +6,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 
 // Products sign users in with the OAuth 2.0 authorization code flow + PKCE (RFC 6749, RFC 7636).
 // Tokens are JWTs with the claims every ADS product already checks: sub, tenant_id, roles.
-export function createOAuth({ pool, config, keys, audit }) {
+export function createOAuth({ pool, config, keys, audit, demoAccess = null }) {
   async function getClient(clientId) {
     if (typeof clientId !== 'string' || !/^[a-z0-9][a-z0-9-]{1,62}$/.test(clientId)) return null;
     return (await pool.query("SELECT * FROM platform.oauth_clients WHERE client_id=$1 AND status='active'", [clientId])).rows[0] ?? null;
@@ -73,16 +73,25 @@ export function createOAuth({ pool, config, keys, audit }) {
   // Decides which workspace the token is for. Returns { tenantId } | { choose: [...] } | { noAccess: true }.
   async function resolveWorkspace(user, authRequest, chosenTenant) {
     const client = authRequest.client;
+    const demoGrant = demoAccess && client.client_id === demoAccess.platformOf('commerce')?.clientId ? await demoAccess.checkGrant('commerce', user.id) : null;
+    if (demoGrant?.access === 'none' && ['EXPIRED', 'REVOKED'].includes(demoGrant.reason)) return { noAccess: true };
+    const grantedTenants = demoGrant?.access === 'granted' ? new Set(demoGrant.personas.map(p => p.tenantId)) : null;
     const all = await workspacesFor(user.id);
     const usable = [];
     for (const w of all) {
-      if ((await rolesFor(user.id, w.tenantId, client)).length) usable.push(w);
+      if ((!grantedTenants || grantedTenants.has(w.tenantId)) && (await rolesFor(user.id, w.tenantId, client)).length) usable.push(w);
     }
     const pick = chosenTenant ?? authRequest.tenant_hint;
     if (pick) {
       const match = usable.find(w => w.tenantId === pick);
       if (match) return { tenantId: match.tenantId };
       if (chosenTenant) fail(403, 'TENANT_NOT_AUTHORIZED');
+    }
+    if (demoGrant?.access === 'granted') {
+      // An approved individual visitor enters Commerce's persona picker via their
+      // own personal workspace. Explicit authorized hints above still switch SSO.
+      const personal = demoGrant.personas.find(p => p.org === 'personal');
+      return personal && usable.some(w => w.tenantId === personal.tenantId) ? { tenantId: personal.tenantId } : { noAccess: true };
     }
     if (usable.length === 1) return { tenantId: usable[0].tenantId };
     if (usable.length > 1) return { choose: usable };
@@ -111,6 +120,15 @@ export function createOAuth({ pool, config, keys, audit }) {
     const user = (await db.query('SELECT id,email,display_name,status,email_verified_at,is_demo FROM platform.users WHERE id=$1', [userId])).rows[0];
     if (!user || user.status !== 'active') fail(400, 'invalid_grant');
     if (user.is_demo && !config.demo.enabled) fail(400, 'invalid_grant');
+    if (demoAccess && client.client_id === demoAccess.platformOf('commerce')?.clientId) {
+      // Re-check clock expiry on every code exchange and refresh, without relying
+      // on hourly membership cleanup. Read in this transaction and never update
+      // grant activity here: refresh already holds a token lock, while revocation
+      // locks the grant before its tokens, so an activity write would invert locks.
+      const grant = await demoAccess.checkGrant('commerce', userId, { db, recordActivity: false });
+      if ((grant.access === 'none' && ['EXPIRED', 'REVOKED'].includes(grant.reason)) ||
+        (grant.access === 'granted' && !grant.personas.some(p => p.tenantId === tenantId))) fail(400, 'invalid_grant');
+    }
     const member = (await db.query(`SELECT o.is_demo, o.is_staff FROM platform.memberships m JOIN platform.tenants t ON t.id=m.tenant_id AND t.status='active'
       JOIN platform.organizations o ON o.id=t.organization_id
       WHERE m.user_id=$1 AND m.tenant_id=$2 AND m.status='active'`, [userId, tenantId])).rows[0];
