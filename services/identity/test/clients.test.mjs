@@ -30,7 +30,7 @@ describe('client registration list (config/clients.demo.json)', () => {
 
   it('uses reviewed HTTPS callback origins, including the approved public Commerce demo hostname', () => {
     const newDemoOrigins = {
-      education: 'education', fleetguard: 'fleetguard', 'home-services': 'home-services',
+      agriculture: 'agriculture', education: 'education', fleetguard: 'fleetguard', 'home-services': 'home-services',
       mamacare: 'mamacare', morphoo: 'morphoo', tontine: 'tontine', ventureworks: 'ventureworks'
     };
     for (const p of doc.products) {
