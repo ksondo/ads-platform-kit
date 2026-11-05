@@ -98,7 +98,6 @@ for(const [lang,button,pill,notice] of [
  ["fr","Ouvrir la démo privée","Sur autorisation","Les demandes publiques de démonstration sont temporairement indisponibles."]
 ]){
  test(`${lang}: private-first mode retains introduction links without an invitation promise`,()=>{
-  assert.equal(catalogue.publicDemoRequestsEnabled,false);
   const r=renderer(lang),commerce=catalogue.platforms.find(p=>p.id==='commerce');
   for(const html of [r.platformDetail(commerce),...commerceEntries().filter(x=>x.id!=='commerce').map(r.toolDetail)]){
    assert.ok(html.includes(button));assert.ok(html.includes(notice));
@@ -119,4 +118,8 @@ test("portal source files contain no administration links and no demo password r
     assert.doesNotMatch(text, ADMIN_LINK, file);
     assert.doesNotMatch(text, /DEMO_[A-Z0-9_]*PASSWORD|demo\.(user|admin|checker)@/i, file);
   }
+});
+
+test("the shipped catalogue opens public demo requests (ADS Demo Access public mode, owner decision 5 Nov 2026)",()=>{
+ assert.equal(catalogue.publicDemoRequestsEnabled,true);
 });
