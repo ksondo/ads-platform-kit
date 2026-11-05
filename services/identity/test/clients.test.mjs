@@ -28,10 +28,11 @@ describe('client registration list (config/clients.demo.json)', () => {
     assert.equal(new Set(doc.products.map(p => p.client_id)).size, 25);
   });
 
-  it('uses reviewed HTTPS callback origins, including the approved public Commerce demo hostname', () => {
+  it('uses reviewed HTTPS callback origins including three proposed demo hostnames', () => {
     const newDemoOrigins = {
       agriculture: 'agriculture', education: 'education', fleetguard: 'fleetguard', 'home-services': 'home-services',
-      mamacare: 'mamacare', morphoo: 'morphoo', tontine: 'tontine', ventureworks: 'ventureworks'
+      mamacare: 'mamacare', morphoo: 'morphoo', tontine: 'tontine', ventureworks: 'ventureworks',
+      health: 'health', tourism: 'tourism', transport: 'transport'
     };
     for (const p of doc.products) {
       const original = p.slug === 'commerce' ? 'https://commerce.demo.africadigitalsynergy.com' : `https://${p.slug}.test.africadigitalsynergy.com`;
