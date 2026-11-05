@@ -21,6 +21,8 @@
         "shop-manager",
         "cashier",
         "accountant",
+        "investor",
+        "auditor",
         "bank-agent",
         "bank-officer"
       ]

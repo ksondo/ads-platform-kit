@@ -211,7 +211,7 @@ After Commerce HTTPS and application callback endpoint exist, and before testing
       --logout https://commerce.demo.africadigitalsynergy.com/ \
       --self-roles commerce_buyer --personal true \
       --admin-roles merchant_owner \
-      --assignable-roles merchant_owner,commerce_manager,commerce_cashier,commerce_accountant,commerce_auditor,bank_officer,bank_agent
+      --assignable-roles merchant_owner,commerce_manager,commerce_cashier,commerce_accountant,commerce_investor,commerce_auditor,bank_officer,bank_agent
 
 The CLI update keeps the existing demo identities, memberships, product-role grants, signing key, database volume and client secret state unchanged. It updates only the approved registration and records an identity audit event. It does replace the former test callback URI, so do this only when Commerce is actually deployed and ready for the new hostname.
 
