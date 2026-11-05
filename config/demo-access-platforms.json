@@ -114,6 +114,24 @@
         "evidence-reviewer",
         "regulatory-reviewer"
       ]
+    },
+    {
+      "key": "agriculture",
+      "reference_prefix": "AGR",
+      "name": {
+        "en": "ADS Agriculture",
+        "fr": "ADS Agriculture"
+      },
+      "client_id": "agriculture-web",
+      "product_slug": "agriculture",
+      "origins": [
+        "https://agriculture.demo.africadigitalsynergy.com"
+      ],
+      "entry_url": "https://agriculture.demo.africadigitalsynergy.com/demo/personas",
+      "personas": [
+        "farmer",
+        "buyer"
+      ]
     }
   ]
 }
