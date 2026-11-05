@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "publicDemoRequestsEnabled": false,
+  "publicDemoRequestsEnabled": true,
   "publicSite": "https://africadigitalsynergy.com",
   "platforms": [
     {
