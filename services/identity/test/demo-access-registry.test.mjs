@@ -10,8 +10,8 @@ const NEVER_FOR_VISITORS = ['platform-admin', 'tenant-admin', 'support', 'review
 
 describe('demo access platform registry', () => {
   const registry = loadPlatforms({});
-  it('registers Commerce, Agriculture and the existing demo-access platforms', () => {
-    assert.deepEqual([...registry.keys()].sort(), ['agriculture', 'commerce', 'education', 'fleet-guard', 'tontine', 'ventureworks']);
+  it('registers Logistics and the existing demo-access platforms', () => {
+    assert.deepEqual([...registry.keys()].sort(), ['agriculture', 'commerce', 'education', 'fleet-guard', 'logistics', 'tontine', 'ventureworks']);
   });
   it('offers no staff or administrator persona, and no ADS-only role', () => {
     for (const p of registry.values()) {
