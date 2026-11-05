@@ -58,7 +58,7 @@ describe('demo personas file (config/demo-personas.json)', () => {
     const roles = slug => Object.fromEntries(personasOf(slug).map(p => [p.key, `${p.org}:${p.roles.join('+')}`]));
     assert.deepEqual(roles('commerce'), {
       shopper: 'personal:commerce_buyer', 'shop-owner': 'main:merchant_owner', 'shop-manager': 'main:commerce_manager', cashier: 'main:commerce_cashier',
-      accountant: 'main:commerce_accountant', 'bank-agent': 'bank:bank_agent', 'bank-officer': 'bank:bank_officer', reviewer: 'staff:commerce_reviewer', support: 'staff:commerce_support',
+      accountant: 'main:commerce_accountant', investor: 'main:commerce_investor', 'bank-agent': 'bank:bank_agent', 'bank-officer': 'bank:bank_officer', reviewer: 'staff:commerce_reviewer', support: 'staff:commerce_support',
     });
     assert.deepEqual(roles('fleetguard'), {
       'fleet-owner': 'main:owner_admin', 'fleet-manager': 'main:fleet_manager', approver: 'main:workshop_manager', driver: 'main:driver', mechanic: 'main:technician', partner: 'main:partner',
