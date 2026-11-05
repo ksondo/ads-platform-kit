@@ -42,10 +42,13 @@ export function loadPlatforms({ platformsFile, personasDoc, clientsDoc }) {
     const list = (p.personas ?? []).map(key => {
       const def = defs.find(d => d.key === key);
       if (!def) throw new Error(`DEMO_ACCESS_PERSONA_UNKNOWN:${p.key}:${key}`);
+      // Internal demo personas (ADS staff and the shared demo set only) are never offered to a visitor.
+      if (def.internal_only === true) throw new Error(`DEMO_ACCESS_PERSONA_INTERNAL_ONLY:${p.key}:${key}`);
       if (def.org !== 'personal' && (!orgs.has(def.org) || orgs.get(def.org).staff)) throw new Error(`DEMO_ACCESS_PERSONA_NOT_ALLOWED:${p.key}:${key}`);
       if ((client.ads_only_roles ?? []).some(r => def.roles.includes(r))) throw new Error(`DEMO_ACCESS_PERSONA_NOT_ALLOWED:${p.key}:${key}`);
       return { key: def.key, label: def.label, hint: def.hint ?? {}, org: def.org, roles: def.roles };
     });
+    if (new Set(list.map(x => x.key)).size !== list.length) throw new Error(`DEMO_ACCESS_PERSONA_DUPLICATE:${p.key}`);
     if (!list.length) throw new Error(`DEMO_ACCESS_NO_PERSONAS:${p.key}`);
     const orgKeys = [...new Set(list.map(x => x.org).filter(o => o !== 'personal'))];
     if (!orgKeys.length) throw new Error(`DEMO_ACCESS_NO_ORGANISATION:${p.key}`);
@@ -57,6 +60,10 @@ export function loadPlatforms({ platformsFile, personasDoc, clientsDoc }) {
   }
   return out;
 }
+
+// The personas every visitor of a platform receives, in registry order. The ONE list shared by public
+// (administrator-approved) and private (operator-provisioned) visitors, so the two cannot drift apart.
+export const visitorPersonaKeys = p => p.personas.map(x => x.key);
 
 export function createDemoAccess({ pool, config, mailer, audit, log = console, platforms }) {
   const settings = config.demoAccess;
@@ -251,7 +258,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
       const set = `${VISITOR_SET_PREFIX}${grantId.replace(/-/g, '').slice(0, 12)}`;
       const tenants = await createVisitorOrgs(c, p, set);
       const grant = (await c.query(`INSERT INTO platform.demo_access_grants(id,request_id,platform,email,client_id,demo_set,personas,tenants)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb) RETURNING *`, [grantId, req.id, p.key, req.email, p.clientId, set, p.personas.map(x => x.key), JSON.stringify(tenants)])).rows[0];
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb) RETURNING *`, [grantId, req.id, p.key, req.email, p.clientId, set, visitorPersonaKeys(p), JSON.stringify(tenants)])).rows[0];
       await c.query("UPDATE platform.demo_access_requests SET status='approved', decided_at=now(), decided_by=$2 WHERE id=$1", [req.id, adminUser.id]);
       const inv = await newInvitation(c, grant, p, adminUser, req.locale);
       await adminAudit('demo_access_approved', adminUser, req, { grant_id: grantId, demo_set: set, invitation_id: inv.invitationId }, c);
@@ -361,10 +368,9 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
     if (typeof operatorRef !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9 ._:@/-]{2,119}$/.test(operatorRef)) fail(400, 'OPERATOR_REFERENCE_REQUIRED');
     if (!/^scrypt\$[a-f0-9]{32}\$[a-f0-9]{128}$/.test(String(passwordHash))) fail(400, 'PASSWORD_HASH_REQUIRED');
     const p = platformOf('commerce');
-    const required = ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'bank-agent', 'bank-officer'];
-    // The shared registry can offer additional personas (for other demos); this
-    // operator flow grants only the seven explicitly approved private personas.
-    if (!p || required.some(key => !p.personas.some(x => x.key === key))) fail(409, 'PRIVATE_VISITOR_PERSONA_REGISTRY_INVALID');
+    if (!p) fail(409, 'PRIVATE_VISITOR_PERSONA_REGISTRY_INVALID');
+    // Same visitor persona list as an administrator-approved (public) visitor: config/demo-access-platforms.json.
+    const required = visitorPersonaKeys(p);
     return withTransaction(pool, async c => {
       await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`demo-request:${p.key}:${normalized}`]);
       if ((await c.query('SELECT 1 FROM platform.users WHERE email=$1', [normalized])).rowCount) fail(409, 'PRIVATE_VISITOR_ACCOUNT_EXISTS');

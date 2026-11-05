@@ -154,6 +154,7 @@ export function validatePersonas(personasDoc, clientsDoc) {
       const where = `personas: ${slug}/${p.key}`;
       if (!text(p.label?.en) || !text(p.label?.fr)) refuse(`${where}: label needs en and fr`);
       if (p.hint !== undefined && (!text(p.hint?.en) || !text(p.hint?.fr))) refuse(`${where}: hint needs en and fr`);
+      if (p.internal_only !== undefined && typeof p.internal_only !== 'boolean') refuse(`${where}: internal_only must be true or false`);
       if (!Array.isArray(p.roles) || !p.roles.length || p.roles.some(r => typeof r !== 'string' || !r) || new Set(p.roles).size !== p.roles.length) refuse(`${where}: roles must be a list of distinct roles`);
       if (p.org === 'personal') {
         const self = [...(product.self_service_roles ?? [])].sort();

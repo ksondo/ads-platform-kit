@@ -128,7 +128,8 @@ describe('ADS Demo Access (Commerce pilot)', () => {
     assert.equal((await check(active.user_id, 'wrong')).status, 401);
     const granted = await (await check(active.user_id)).json();
     assert.equal(granted.access, 'granted');
-    assert.deepEqual(granted.personas.map(p => p.key), ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'investor', 'auditor', 'bank-agent', 'bank-officer']);
+    assert.deepEqual(granted.personas.map(p => p.key), ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'bank-agent', 'bank-officer']);
+    assert.ok(!granted.personas.some(p => ['investor', 'auditor', 'bank-loan-officer'].includes(p.key)), 'internal demo personas are never offered to visitors');
     assert.ok(!granted.personas.some(p => ['reviewer', 'support'].includes(p.key)));
     const main = granted.personas.find(p => p.key === 'shop-owner');
     const bank = granted.personas.find(p => p.key === 'bank-officer');
@@ -141,7 +142,7 @@ describe('ADS Demo Access (Commerce pilot)', () => {
     // Signed in once: each persona workspace opens without typing a password again.
     const shop = await commerceToken(vb, main.tenantId);
     assert.equal(shop.tenant_id, main.tenantId);
-    for (const r of ['merchant_owner', 'commerce_manager', 'commerce_cashier', 'commerce_accountant', 'commerce_investor', 'commerce_auditor']) assert.ok(shop.roles.includes(r));
+    assert.deepEqual([...shop.roles].sort(), ['commerce_accountant', 'commerce_cashier', 'commerce_manager', 'merchant_owner']);
     const bankToken = await commerceToken(vb, bank.tenantId);
     assert.deepEqual(bankToken.roles.sort(), ['bank_agent', 'bank_officer']);
     const buyer = await commerceToken(vb, personal.tenantId);
