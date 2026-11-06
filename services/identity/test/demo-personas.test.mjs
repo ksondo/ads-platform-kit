@@ -62,6 +62,7 @@ describe('demo personas file (config/demo-personas.json)', () => {
     });
     assert.deepEqual(roles('fleetguard'), {
       'fleet-owner': 'main:owner_admin', 'fleet-manager': 'main:fleet_manager', approver: 'main:workshop_manager', driver: 'main:driver', mechanic: 'main:technician', partner: 'main:partner',
+      'approver-colleague': 'main:workshop_manager',
     });
     for (const k of ['school-admin', 'teacher', 'parent', 'student', 'partner']) assert.ok(roles('education')[k], `education ${k}`);
     assert.equal(roles('education').partner, 'partner:partner_admin');

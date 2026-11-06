@@ -43,7 +43,8 @@
         "fleet-manager",
         "approver",
         "driver",
-        "mechanic"
+        "mechanic",
+        "approver-colleague"
       ]
     },
     {

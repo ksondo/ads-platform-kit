@@ -110,7 +110,8 @@
         {"key": "approver", "label": {"en": "Workshop manager (approver)", "fr": "Chef d'atelier (approbateur)"}, "hint": {"en": "Approves the return to service", "fr": "Valide la remise en service"}, "org": "main", "roles": ["workshop_manager"]},
         {"key": "driver", "label": {"en": "Driver", "fr": "Chauffeur"}, "hint": {"en": "My vehicle, checks, fuel and breakdowns", "fr": "Mon véhicule, contrôles, carburant, pannes"}, "org": "main", "roles": ["driver"]},
         {"key": "mechanic", "label": {"en": "Mechanic", "fr": "Mécanicien"}, "hint": {"en": "Does the work orders", "fr": "Réalise les ordres de travail"}, "org": "main", "roles": ["technician"]},
-        {"key": "partner", "label": {"en": "Partner", "fr": "Partenaire"}, "hint": {"en": "Looks after the fleets it manages", "fr": "S'occupe des flottes qu'il gère"}, "org": "main", "roles": ["partner"]}
+        {"key": "partner", "label": {"en": "Partner", "fr": "Partenaire"}, "hint": {"en": "Looks after the fleets it manages", "fr": "S'occupe des flottes qu'il gère"}, "org": "main", "roles": ["partner"]},
+        {"key": "approver-colleague", "label": {"en": "Workshop manager (demo colleague)", "fr": "Chef d'atelier (collègue de démo)"}, "hint": {"en": "Another person: approves the work you did as the mechanic", "fr": "Une autre personne : approuve le travail que vous avez fait comme mécanicien"}, "org": "main", "roles": ["workshop_manager"]}
       ]
     },
     "tontine": {
