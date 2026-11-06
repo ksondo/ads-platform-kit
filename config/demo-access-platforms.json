@@ -133,6 +133,24 @@
         "farmer",
         "buyer"
       ]
+    },
+    {
+      "key": "morphoo",
+      "reference_prefix": "MOR",
+      "name": {
+        "en": "Morphoo Formation",
+        "fr": "Morphoo Formation"
+      },
+      "client_id": "morphoo-web",
+      "product_slug": "morphoo",
+      "private_only": true,
+      "origins": [
+        "https://morphoo.demo.africadigitalsynergy.com"
+      ],
+      "entry_url": "https://morphoo.demo.africadigitalsynergy.com/demo/personas",
+      "personas": [
+        "member"
+      ]
     }
   ]
 }

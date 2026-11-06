@@ -4,17 +4,18 @@ import { readFileSync } from 'node:fs';
 import { browser, csrfFrom, pkce, startService } from './helpers.mjs';
 import { hashPassword } from '../src/security.mjs';
 
-const secrets = { education: 'education-private-fixture-' + 'e'.repeat(40), agriculture: 'agriculture-private-fixture-' + 'a'.repeat(40) };
+const secrets = { education: 'education-private-fixture-' + 'e'.repeat(40), agriculture: 'agriculture-private-fixture-' + 'a'.repeat(40), morphoo: 'morphoo-private-fixture-' + 'm'.repeat(40) };
 const password = 'Private-platform-fixture-2026';
 const clients = JSON.parse(readFileSync(new URL('../../../config/clients.demo.json', import.meta.url))).products;
 
-describe('operator private visitors for Education and Agriculture', () => {
+describe('operator private visitors for Education, Agriculture and Morphoo', () => {
   let svc;
   before(async () => {
     svc = await startService({ env: { ADS_ENV:'demo', DEMO_MODE:'1', DEMO_ACCESS_ENABLED:'0', DEMO_ACCESS_PRIVATE_ENABLED:'1',
       DEMO_ACCESS_CHECK_SECRET_COMMERCE:'commerce-fixture-' + 'c'.repeat(40),
-      DEMO_ACCESS_CHECK_SECRET_EDUCATION:secrets.education, DEMO_ACCESS_CHECK_SECRET_AGRICULTURE:secrets.agriculture } });
-    for (const key of ['education','agriculture']) {
+      DEMO_ACCESS_CHECK_SECRET_EDUCATION:secrets.education, DEMO_ACCESS_CHECK_SECRET_AGRICULTURE:secrets.agriculture,
+      DEMO_ACCESS_CHECK_SECRET_MORPHOO:secrets.morphoo } });
+    for (const key of ['education','agriculture','morphoo']) {
       const c = clients.find(c => c.client_id === `${key}-web`);
       await svc.pool.query(`INSERT INTO platform.oauth_clients(client_id,display_name,redirect_uris,post_logout_redirect_uris,self_service_roles,allow_personal_workspace,admin_roles,assignable_roles)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`, [c.client_id,c.display_name,c.redirect_uris,c.post_logout_redirect_uris,c.self_service_roles,c.allow_personal_workspace,c.admin_roles ?? [],c.assignable_roles ?? []]);
@@ -34,7 +35,7 @@ describe('operator private visitors for Education and Agriculture', () => {
     return fetch(`${svc.base}/token`,{method:'POST',body:new URLSearchParams({grant_type:'authorization_code',client_id:`${platform}-web`,redirect_uri:pending.redirect,code:new URL(pending.r.location).searchParams.get('code'),code_verifier:pending.proof.verifier})});
   }
 
-  for (const platform of ['education','agriculture']) {
+  for (const platform of ['education','agriculture','morphoo']) {
     it(`${platform}: isolated ordinary account, registry-only personas, real SSO, expiry and revocation`, async () => {
       const first=await provision(platform,`${platform}.one@example.test`), second=await provision(platform,`${platform}.two@example.test`);
       assert.equal(first.platform,platform);
