@@ -65,6 +65,10 @@ export function loadPlatforms({ platformsFile, personasDoc, clientsDoc }) {
 // (administrator-approved) and private (operator-provisioned) visitors, so the two cannot drift apart.
 export const visitorPersonaKeys = p => p.personas.map(x => x.key);
 
+// Explicit release scope. Registry presence alone does not certify a product for
+// private operator provisioning. Other products need their own integration review.
+export const PRIVATE_VISITOR_PLATFORMS = new Set(['commerce', 'education', 'agriculture']);
+
 export function createDemoAccess({ pool, config, mailer, audit, log = console, platforms }) {
   const settings = config.demoAccess;
   const registry = platforms ?? loadPlatforms({ platformsFile: settings.platformsFile });
@@ -361,14 +365,16 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
 
   // Operator-only service method, deliberately absent from every HTTP router.
   // Existing users are NEVER reset, merged or granted additional access by this command.
-  async function provisionPrivate({ email, passwordHash, operatorRef, locale = 'en', beforeCommit }) {
+  async function provisionPrivate({ email, passwordHash, operatorRef, locale = 'en', beforeCommit, platform = 'commerce' }) {
     if (!config.demo.enabled || !settings.privateEnabled || settings.publicEnabled) fail(403, 'PRIVATE_VISITOR_MODE_REQUIRED');
     const normalized = normalizeEmail(email);
     if (!isEmail(normalized) || isDemoDomain(normalized, config.demo.domain)) fail(400, 'EMAIL_INVALID');
     if (typeof operatorRef !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9 ._:@/-]{2,119}$/.test(operatorRef)) fail(400, 'OPERATOR_REFERENCE_REQUIRED');
     if (!/^scrypt\$[a-f0-9]{32}\$[a-f0-9]{128}$/.test(String(passwordHash))) fail(400, 'PASSWORD_HASH_REQUIRED');
-    const p = platformOf('commerce');
+    if (!PRIVATE_VISITOR_PLATFORMS.has(platform)) fail(400, 'PRIVATE_VISITOR_PLATFORM_NOT_SUPPORTED');
+    const p = platformOf(platform);
     if (!p) fail(409, 'PRIVATE_VISITOR_PERSONA_REGISTRY_INVALID');
+    if (String(settings.checkSecrets[p.key.replace(/-/g, '_')] ?? '').length < 32) fail(409, 'PRIVATE_VISITOR_PLATFORM_SECRET_REQUIRED');
     // Same visitor persona list as an administrator-approved (public) visitor: config/demo-access-platforms.json.
     const required = visitorPersonaKeys(p);
     return withTransaction(pool, async c => {
@@ -376,7 +382,12 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
       if ((await c.query('SELECT 1 FROM platform.users WHERE email=$1', [normalized])).rowCount) fail(409, 'PRIVATE_VISITOR_ACCOUNT_EXISTS');
       if ((await c.query("SELECT 1 FROM platform.demo_access_grants WHERE platform=$1 AND email=$2 AND status IN ('active','awaiting_activation')", [p.key, normalized])).rowCount) fail(409, 'PRIVATE_VISITOR_GRANT_EXISTS');
       const client = (await c.query("SELECT * FROM platform.oauth_clients WHERE client_id=$1 AND status='active'", [p.clientId])).rows[0];
-      if (!client || !client.allow_personal_workspace || !client.self_service_roles.includes('commerce_buyer')) fail(409, 'PRIVATE_VISITOR_CLIENT_NOT_READY');
+      const personalRoles = p.personas.filter(x => x.org === 'personal').flatMap(x => x.roles);
+      // Organisation roles are the validated non-staff registry roles, exactly
+      // as in ordinary invitation activation. They need not be self-service or
+      // delegated staff-invitation roles (Education's partner_admin, for example).
+      if (!client || (personalRoles.length && (!client.allow_personal_workspace ||
+        personalRoles.some(role => !client.self_service_roles.includes(role))))) fail(409, 'PRIVATE_VISITOR_CLIENT_NOT_READY');
       const userId = crypto.randomUUID(), requestId = crypto.randomUUID(), grantId = crypto.randomUUID();
       // The operator confirms the private test contact, NOT ownership of its mailbox.
       await c.query("INSERT INTO platform.users(id,email,password_hash,status,locale,is_demo) VALUES ($1,$2,$3,'active',$4,false)", [userId, normalized, passwordHash, locale === 'fr' ? 'fr' : 'en']);
@@ -391,7 +402,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
       await audit('demo_access_private_provisioned', { userId, outcome: 'allowed', reason: 'operator_cli', clientId: p.clientId,
         metadata: { request_id: requestId, grant_id: grantId, reference: ref, platform: p.key, operator_ref: operatorRef, contact_confirmation: 'operator_private_contact', mailbox_verified: false } }, c);
       const active = (await c.query('SELECT expires_at FROM platform.demo_access_grants WHERE id=$1', [grantId])).rows[0];
-      const result = { userId, grantId, reference: ref, email: normalized, expiresAt: new Date(active.expires_at).toISOString(), personas: required };
+      const result = { userId, grantId, reference: ref, email: normalized, expiresAt: new Date(active.expires_at).toISOString(), personas: required, platform: p.key };
       // The operator persists the generated credential before COMMIT. Failure rolls back provisioning.
       if (beforeCommit) await beforeCommit(result);
       return result;
@@ -403,7 +414,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
     if (!UUID.test(String(grantId)) || !/^[A-Za-z0-9][A-Za-z0-9 ._:@/-]{2,119}$/.test(String(operatorRef))) fail(400, 'PRIVATE_VISITOR_INPUT_INVALID');
     return withTransaction(pool, async c => {
       const grant = (await c.query('SELECT * FROM platform.demo_access_grants WHERE id=$1 FOR UPDATE', [grantId])).rows[0];
-      if (!grant || grant.platform !== 'commerce' || grant.invitation_id) fail(404, 'PRIVATE_VISITOR_GRANT_NOT_FOUND');
+      if (!grant || !PRIVATE_VISITOR_PLATFORMS.has(grant.platform) || !platformOf(grant.platform) || grant.invitation_id) fail(404, 'PRIVATE_VISITOR_GRANT_NOT_FOUND');
       const provenance = (await c.query("SELECT 1 FROM platform.identity_audit WHERE event_type='demo_access_private_provisioned' AND metadata->>'grant_id'=$1", [grantId])).rowCount;
       if (!provenance) fail(404, 'PRIVATE_VISITOR_GRANT_NOT_FOUND');
       if (!['active','revoked'].includes(grant.status)) fail(409, 'GRANT_NOT_ACTIVE');
