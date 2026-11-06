@@ -1,4 +1,4 @@
-# Private Commerce visitor: operator provisioning
+# Private visitor: operator provisioning
 
 Story `PLAT-DEMO-PRIVATE-01` (technical enabler, owner assignment 4 November 2026). Completes the existing Demo Access service; no new authentication engine or HTTP provisioning endpoint.
 
@@ -25,6 +25,16 @@ Existing account/grant collisions are refused. No password is overwritten or sil
 An active approved Commerce visitor initially receives their personal workspace, then returns to Commerce's persona page. Explicit authorized `tenant_hint`/workspace selection still switches shop/bank via SSO; only grant-listed, currently authorized workspaces are eligible. Expired/revoked visitors cannot obtain a fresh Commerce code through a personal-workspace fallback. Ordinary users and legacy internal accounts keep their existing chooser behavior.
 
 The same canonical grant policy is rechecked during code exchange and token refresh, so clock expiry blocks a correctly proved previously issued code or refresh token before hourly housekeeping. The token-path check reads in the current transaction without updating activity, avoiding grant/token lock-order inversion. Other clients and ordinary/internal accounts retain their existing issuance rules.
+
+### Education and Agriculture operator extension (5 November 2026)
+
+`demo-visitor-provision --platform education` or `--platform agriculture` selects that product's validated visitor registry. Omitting the flag retains Commerce behavior. Only these three reviewed product keys are supported by this operator command; adding another entry to the registry does not activate private provisioning for it. Every selected product requires its own matching server check secret of at least 32 characters and an active registered client. Existing accounts remain refused, including an existing Commerce visitor; this command never silently adds a second product grant or resets a password.
+
+Education and Agriculture use organisation-scoped visitor personas, so initial OAuth entry selects their granted main organisation. Commerce retains personal-workspace entry. All three limit tokens to the roles/workspaces in the current grant and recheck expiry/revocation during authorization, code exchange and refresh. Private revocation accepts only supported product grants with private-provisioning audit provenance and no public invitation. There is no new HTTP route, public request activation, SMTP activation or migration.
+
+Products still enforce persona narrowing, visitor-data isolation, test-only messages and a maximum 60-second grant cache. A passed Identity test does not certify those product responsibilities. Do not run these commands live until the concrete shared-identity change has independent human review and release approval.
+
+The full 192-test Identity regression and new Education/Agriculture negative cases passed in an isolated Node22/PostgreSQL16 fixture on 6 November 2026. See [extension test status](PRIVATE_PLATFORM_EXTENSION_TEST_STATUS.md) for exact source/archive evidence and the distinction from hosted product acceptance.
 
 ## Operator commands: reviewed runbook template, not deployment authorization
 

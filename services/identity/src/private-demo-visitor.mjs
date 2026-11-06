@@ -31,7 +31,7 @@ export async function protectedCredentialsPath(output) {
   return path.join(parent, path.basename(output));
 }
 
-export async function provisionPrivateVisitor({ pool, config, email, operatorRef, credentialsOut, apply, locale = 'en' }) {
+export async function provisionPrivateVisitor({ pool, config, email, operatorRef, credentialsOut, apply, locale = 'en', platform = 'commerce' }) {
   if (apply !== 'yes') throw new Error('PRIVATE_VISITOR_EXPLICIT_APPLY_REQUIRED');
   if (!config.demo.enabled || !config.demoAccess.privateEnabled || config.demoAccess.publicEnabled) throw new Error('PRIVATE_VISITOR_MODE_REQUIRED');
   const output = await protectedCredentialsPath(credentialsOut);
@@ -41,7 +41,7 @@ export async function provisionPrivateVisitor({ pool, config, email, operatorRef
     const st = await file.stat();
     if (!st.isFile() || st.uid !== process.getuid() || (st.mode & 0o777) !== 0o600) throw new Error('PRIVATE_VISITOR_SECRET_FILE_PERMISSIONS_INVALID');
     const password = crypto.randomBytes(32).toString('base64url');
-    const result = await privateVisitorService(pool, config).provisionPrivate({ email, operatorRef, locale, passwordHash: await hashPassword(password),
+    const result = await privateVisitorService(pool, config).provisionPrivate({ email, operatorRef, locale, platform, passwordHash: await hashPassword(password),
       beforeCommit: async result => {
         await file.writeFile(JSON.stringify({ ...result, email: normalizeEmail(email), password }, null, 2) + '\n');
         await file.sync();
