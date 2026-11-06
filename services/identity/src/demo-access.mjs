@@ -55,6 +55,7 @@ export function loadPlatforms({ platformsFile, personasDoc, clientsDoc }) {
     out.set(p.key, {
       key: p.key, prefix: String(p.reference_prefix ?? p.key.slice(0, 3)).toUpperCase(), name: p.name, clientId: p.client_id,
       slug: p.product_slug, origins: p.origins ?? [], entryUrl: p.entry_url, personas: list,
+       privateOnly: p.private_only === true,
       orgs: orgKeys.map(k => ({ key: k, name: orgs.get(k).name })), inviteOrg: orgKeys.includes('main') ? 'main' : orgKeys[0],
     });
   }
@@ -67,7 +68,7 @@ export const visitorPersonaKeys = p => p.personas.map(x => x.key);
 
 // Explicit release scope. Registry presence alone does not certify a product for
 // private operator provisioning. Other products need their own integration review.
-export const PRIVATE_VISITOR_PLATFORMS = new Set(['commerce', 'education', 'agriculture']);
+export const PRIVATE_VISITOR_PLATFORMS = new Set(['commerce', 'education', 'agriculture', 'morphoo']);
 
 export function createDemoAccess({ pool, config, mailer, audit, log = console, platforms }) {
   const settings = config.demoAccess;
@@ -140,6 +141,10 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
   // ---------- requests ----------
   async function submitRequest({ platform: key, email, locale, website, ip }) {
     if (!settings.publicEnabled) fail(404, 'NOT_FOUND');
+    // Morphoo has passed no public-visitor approval gate. Never create public
+    // requests, outbox messages, admin approval records or onboarding links for it.
+    const earlyPlatform = platformOf(String(key ?? ''));
+    if (earlyPlatform?.privateOnly) fail(404, 'NOT_FOUND');
     // Expired active grants must lose access before a subsequent application is considered.
     // The normal hourly expiry worker also performs this, but applications must not depend
     // on when the worker last ran.
