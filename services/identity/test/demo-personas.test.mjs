@@ -64,6 +64,13 @@ describe('demo personas file (config/demo-personas.json)', () => {
       'fleet-owner': 'main:owner_admin', 'fleet-manager': 'main:fleet_manager', approver: 'main:workshop_manager', driver: 'main:driver', mechanic: 'main:technician', partner: 'main:partner',
       'approver-colleague': 'main:workshop_manager',
     });
+    // Agriculture release 2 (7 Nov 2026): 9 visitor personas plus the demo colleague, one role each, all in the main
+    // organisation; the ADS staff reviewer/support personas stay in the staff organisation for the internal demo set.
+    assert.deepEqual(roles('agriculture'), {
+      farmer: 'main:farmer', buyer: 'main:buyer', reviewer: 'staff:reviewer', support: 'staff:support',
+      'coop-manager': 'main:coop_manager', 'extension-officer': 'main:extension_officer', 'lender-officer': 'main:lender_officer', 'input-supplier': 'main:input_supplier',
+      'farm-reviewer': 'main:reviewer', 'help-desk': 'main:support', 'org-admin': 'main:tenant_admin', 'demo-colleague': 'main:reviewer',
+    });
     for (const k of ['school-admin', 'teacher', 'parent', 'student', 'partner']) assert.ok(roles('education')[k], `education ${k}`);
     assert.equal(roles('education').partner, 'partner:partner_admin');
     for (const k of ['group-admin', 'treasurer', 'payout-approver', 'member', 'auditor', 'cooperative-admin', 'partner']) assert.ok(roles('tontine')[k], `tontine ${k}`);

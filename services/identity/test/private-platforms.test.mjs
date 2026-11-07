@@ -62,6 +62,36 @@ describe('operator private visitors for Education, Agriculture and Tontine', () 
         assert.deepEqual([...new Set(check.personas.filter(p=>p.org==='main').flatMap(p=>p.roles))].sort(),['auditor','group_admin','member','payout_approver','treasurer']);
         assert.ok(check.personas.every(p=>!p.roles.some(r=>['platform_admin','tenant_admin','support','reviewer'].includes(r))));
       }
+      if(platform==='agriculture') {
+        // Release 2: 9 personas plus the demo colleague, each with only its own role, all in the visitor's own organisation.
+        const expected=[
+          {key:'farmer',org:'main',roles:['farmer']},
+          {key:'buyer',org:'main',roles:['buyer']},
+          {key:'coop-manager',org:'main',roles:['coop_manager']},
+          {key:'extension-officer',org:'main',roles:['extension_officer']},
+          {key:'lender-officer',org:'main',roles:['lender_officer']},
+          {key:'input-supplier',org:'main',roles:['input_supplier']},
+          {key:'farm-reviewer',org:'main',roles:['reviewer']},
+          {key:'help-desk',org:'main',roles:['support']},
+          {key:'org-admin',org:'main',roles:['tenant_admin']},
+          {key:'demo-colleague',org:'main',roles:['reviewer']},
+        ];
+        assert.deepEqual(check.personas.map(({key,org,roles})=>({key,org,roles})),expected);
+        assert.equal(new Set(check.personas.map(p=>p.tenantId)).size,1,'one visitor organisation');
+        // Narrowing a token to one persona (intersection, as the product server does) leaves exactly that persona's role.
+        const held=(await svc.pool.query('SELECT roles FROM platform.product_roles WHERE user_id=$1 AND tenant_id=$2 AND client_id=$3',[first.userId,check.personas[0].tenantId,'agriculture-web'])).rows[0].roles;
+        for(const persona of check.personas) assert.deepEqual(held.filter(r=>persona.roles.includes(r)),persona.roles,persona.key);
+        assert.deepEqual([...held].sort(),['buyer','coop_manager','extension_officer','farmer','input_supplier','lender_officer','reviewer','support','tenant_admin']);
+        // Never ADS staff: the visitor belongs to no staff organisation, and its own organisation is a non-staff visit-* copy.
+        const orgs=(await svc.pool.query(`SELECT o.is_staff,o.demo_key,m.role FROM platform.memberships m JOIN platform.tenants t ON t.id=m.tenant_id
+          JOIN platform.organizations o ON o.id=t.organization_id WHERE m.user_id=$1`,[first.userId])).rows;
+        assert.equal(orgs.length,1);
+        assert.equal(orgs[0].is_staff,false); assert.match(orgs[0].demo_key,/^visit-[0-9a-f]{12}\/agriculture:main$/); assert.equal(orgs[0].role,'member');
+        // Never Identity admin: org-admin (tenant_admin) gives no organisation or product admin authority in a visit-* organisation.
+        const authority=await svc.app.admin.authority(first.userId,check.personas[0].tenantId);
+        assert.equal(authority,null);
+        assert.deepEqual(svc.app.admin.entitledScopes(authority,'agriculture-web'),[]);
+      }
       await assert.rejects(provision(platform,first.email),/PRIVATE_VISITOR_ACCOUNT_EXISTS/);
       const row=(await svc.pool.query('SELECT is_demo,status,email_verified_at FROM platform.users WHERE id=$1',[first.userId])).rows[0];
       assert.equal(row.is_demo,false); assert.equal(row.status,'active'); assert.equal(row.email_verified_at,null);
@@ -91,6 +121,14 @@ describe('operator private visitors for Education, Agriculture and Tontine', () 
         const response=await exchange(platform,await code(b,platform,foreign));assert.equal(response.status,200);
         const body=await response.json(), token=JSON.parse(Buffer.from(body.access_token.split('.')[1],'base64url'));
         assert.equal(token.tenant_id,entry.tenantId);assert.notEqual(token.tenant_id,foreign);
+      }
+      if(platform==='agriculture') {
+        // Another visitor's organisation is refused: its tenant hint is ignored and the token stays in the visitor's own organisation.
+        const foreign=other.personas[0].tenantId, own=check.personas[0].tenantId;
+        const response=await exchange(platform,await code(b,platform,foreign));assert.equal(response.status,200);
+        const token=JSON.parse(Buffer.from((await response.json()).access_token.split('.')[1],'base64url'));
+        assert.equal(token.tenant_id,own);assert.notEqual(token.tenant_id,foreign);
+        assert.ok(!token.roles.includes('platform_admin'));
       }
       const main=check.personas.find(p=>p.org==='main');
       await svc.pool.query("UPDATE platform.product_roles SET roles=array_append(roles,'not_in_visitor_grant') WHERE user_id=$1 AND tenant_id=$2 AND client_id=$3",[first.userId,main.tenantId,`${platform}-web`]);
