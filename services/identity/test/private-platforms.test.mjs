@@ -4,17 +4,19 @@ import { readFileSync } from 'node:fs';
 import { browser, csrfFrom, pkce, startService } from './helpers.mjs';
 import { hashPassword } from '../src/security.mjs';
 
-const secrets = { education: 'education-private-fixture-' + 'e'.repeat(40), agriculture: 'agriculture-private-fixture-' + 'a'.repeat(40) };
+const secrets = { education: 'education-private-fixture-' + 'e'.repeat(40), agriculture: 'agriculture-private-fixture-' + 'a'.repeat(40), tontine: 'tontine-private-fixture-' + 't'.repeat(40) };
+const platforms = ['education','agriculture','tontine'];
 const password = 'Private-platform-fixture-2026';
 const clients = JSON.parse(readFileSync(new URL('../../../config/clients.demo.json', import.meta.url))).products;
 
-describe('operator private visitors for Education and Agriculture', () => {
+describe('operator private visitors for Education, Agriculture and Tontine', () => {
   let svc;
   before(async () => {
     svc = await startService({ env: { ADS_ENV:'demo', DEMO_MODE:'1', DEMO_ACCESS_ENABLED:'0', DEMO_ACCESS_PRIVATE_ENABLED:'1',
       DEMO_ACCESS_CHECK_SECRET_COMMERCE:'commerce-fixture-' + 'c'.repeat(40),
-      DEMO_ACCESS_CHECK_SECRET_EDUCATION:secrets.education, DEMO_ACCESS_CHECK_SECRET_AGRICULTURE:secrets.agriculture } });
-    for (const key of ['education','agriculture']) {
+      DEMO_ACCESS_CHECK_SECRET_EDUCATION:secrets.education, DEMO_ACCESS_CHECK_SECRET_AGRICULTURE:secrets.agriculture,
+      DEMO_ACCESS_CHECK_SECRET_TONTINE:secrets.tontine } });
+    for (const key of platforms) {
       const c = clients.find(c => c.client_id === `${key}-web`);
       await svc.pool.query(`INSERT INTO platform.oauth_clients(client_id,display_name,redirect_uris,post_logout_redirect_uris,self_service_roles,allow_personal_workspace,admin_roles,assignable_roles)
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`, [c.client_id,c.display_name,c.redirect_uris,c.post_logout_redirect_uris,c.self_service_roles,c.allow_personal_workspace,c.admin_roles ?? [],c.assignable_roles ?? []]);
@@ -34,7 +36,7 @@ describe('operator private visitors for Education and Agriculture', () => {
     return fetch(`${svc.base}/token`,{method:'POST',body:new URLSearchParams({grant_type:'authorization_code',client_id:`${platform}-web`,redirect_uri:pending.redirect,code:new URL(pending.r.location).searchParams.get('code'),code_verifier:pending.proof.verifier})});
   }
 
-  for (const platform of ['education','agriculture']) {
+  for (const platform of platforms) {
     it(`${platform}: isolated ordinary account, registry-only personas, real SSO, expiry and revocation`, async () => {
       const first=await provision(platform,`${platform}.one@example.test`), second=await provision(platform,`${platform}.two@example.test`);
       assert.equal(first.platform,platform);
@@ -43,7 +45,23 @@ describe('operator private visitors for Education and Agriculture', () => {
       assert.deepEqual(first.personas,svc.app.demoAccess.platformOf(platform).personas.map(p=>p.key));
       const other=await svc.app.demoAccess.checkGrant(platform,second.userId);
       assert.ok(check.personas.every(p=>!other.personas.some(q=>p.tenantId===q.tenantId)));
-      assert.equal((await svc.app.demoAccess.checkGrant(platform==='education'?'agriculture':'education',first.userId)).access,'none');
+      for (const otherPlatform of platforms.filter(p=>p!==platform))
+        assert.equal((await svc.app.demoAccess.checkGrant(otherPlatform,first.userId)).access,'none');
+      if(platform==='tontine') {
+        assert.deepEqual(check.personas.map(({key,org,roles})=>({key,org,roles})),[
+          {key:'group-admin',org:'main',roles:['group_admin']},
+          {key:'treasurer',org:'main',roles:['treasurer']},
+          {key:'payout-approver',org:'main',roles:['payout_approver']},
+          {key:'member',org:'main',roles:['member']},
+          {key:'auditor',org:'main',roles:['auditor']},
+          {key:'cooperative-admin',org:'cooperative',roles:['cooperative_admin']},
+          {key:'partner',org:'partner',roles:['partner_admin']},
+        ]);
+        assert.deepEqual([...new Set(check.personas.map(p=>p.org))].sort(),['cooperative','main','partner']);
+        assert.equal(new Set(check.personas.map(p=>p.tenantId)).size,3);
+        assert.deepEqual([...new Set(check.personas.filter(p=>p.org==='main').flatMap(p=>p.roles))].sort(),['auditor','group_admin','member','payout_approver','treasurer']);
+        assert.ok(check.personas.every(p=>!p.roles.some(r=>['platform_admin','tenant_admin','support','reviewer'].includes(r))));
+      }
       await assert.rejects(provision(platform,first.email),/PRIVATE_VISITOR_ACCOUNT_EXISTS/);
       const row=(await svc.pool.query('SELECT is_demo,status,email_verified_at FROM platform.users WHERE id=$1',[first.userId])).rows[0];
       assert.equal(row.is_demo,false); assert.equal(row.status,'active'); assert.equal(row.email_verified_at,null);
@@ -57,6 +75,23 @@ describe('operator private visitors for Education and Agriculture', () => {
       const tokens=await response.json(), claims=JSON.parse(Buffer.from(tokens.access_token.split('.')[1],'base64url'));
       const entry=check.personas.find(p=>p.org==='personal') ?? check.personas.find(p=>p.org==='main') ?? check.personas[0];
       assert.equal(claims.tenant_id,entry.tenantId);
+      if(platform==='tontine') {
+        // All three visitor organisations use the same real ADS session, without creating another account.
+        for(const org of ['main','cooperative','partner']) {
+          const own=check.personas.filter(p=>p.org===org), pending=await code(b,platform,own[0].tenantId);
+          assert.ok(pending.r.location?.startsWith(pending.redirect),'authorized tenant hint returns directly, never another password');
+          const response=await exchange(platform,pending);assert.equal(response.status,200);
+          const body=await response.json(), token=JSON.parse(Buffer.from(body.access_token.split('.')[1],'base64url'));
+          assert.equal(token.sub,first.userId);
+          assert.equal(token.tenant_id,own[0].tenantId);
+          assert.deepEqual([...token.roles].sort(),[...new Set(own.flatMap(p=>p.roles))].sort());
+        }
+        // An unauthorized hint is ignored in favour of the visitor's own entry organisation, never granted.
+        const foreign=other.personas.find(p=>p.org==='main').tenantId;
+        const response=await exchange(platform,await code(b,platform,foreign));assert.equal(response.status,200);
+        const body=await response.json(), token=JSON.parse(Buffer.from(body.access_token.split('.')[1],'base64url'));
+        assert.equal(token.tenant_id,entry.tenantId);assert.notEqual(token.tenant_id,foreign);
+      }
       const main=check.personas.find(p=>p.org==='main');
       await svc.pool.query("UPDATE platform.product_roles SET roles=array_append(roles,'not_in_visitor_grant') WHERE user_id=$1 AND tenant_id=$2 AND client_id=$3",[first.userId,main.tenantId,`${platform}-web`]);
       const switched=await code(b,platform,main.tenantId); assert.ok(switched.r.location?.startsWith(switched.redirect));
@@ -94,12 +129,12 @@ describe('operator private visitors for Education and Agriculture', () => {
     assert.equal((await svc.pool.query("SELECT count(*)::int AS n FROM platform.users WHERE email='not-created@example.test'")).rows[0].n,0);
   });
 
-  it('requires a separate strong platform check secret before creating an account',async()=>{
-    const previous=svc.config.demoAccess.checkSecrets.agriculture;
+  for(const platform of platforms) it(`${platform}: requires its own strong check secret before creating an account`,async()=>{
+    const previous=svc.config.demoAccess.checkSecrets[platform],email=`${platform}.no-secret@example.test`;
     try {
-      svc.config.demoAccess.checkSecrets.agriculture='too-short';
-      await assert.rejects(provision('agriculture','no-secret@example.test'),/PRIVATE_VISITOR_PLATFORM_SECRET_REQUIRED/);
-      assert.equal((await svc.pool.query("SELECT count(*)::int AS n FROM platform.users WHERE email='no-secret@example.test'")).rows[0].n,0);
-    } finally { svc.config.demoAccess.checkSecrets.agriculture=previous; }
+      svc.config.demoAccess.checkSecrets[platform]='too-short';
+      await assert.rejects(provision(platform,email),/PRIVATE_VISITOR_PLATFORM_SECRET_REQUIRED/);
+      assert.equal((await svc.pool.query('SELECT count(*)::int AS n FROM platform.users WHERE email=$1',[email])).rows[0].n,0);
+    } finally { svc.config.demoAccess.checkSecrets[platform]=previous; }
   });
 });
