@@ -15,7 +15,21 @@ import { HttpError, RateLimiter, cookie, fail, isEmail, normalizeEmail, parseCoo
 const MINUTE = 60_000;
 const BODY_LIMIT = 16 * 1024;
 
-export function createApp({ config, pool, keys, mailer, google, log = console, sdkPath, limiter = new RateLimiter() }) {
+// The invite-accept route normally enforces 30 per IP / 15 minutes. The private
+// in-process E2E harness may supply a higher limit ONLY while bound to loopback;
+// the deployed Identity server calls createApp without this parameter.
+export function createApp({ config, pool, keys, mailer, google, log = console, sdkPath, limiter = new RateLimiter(), e2eInviteAcceptPerIp = null }) {
+  // Refuse any attempt to lift this limit on a remotely addressable Identity origin.
+  // CI uses an in-process, loopback-bound Identity instance with fictional accounts.
+  if (e2eInviteAcceptPerIp !== null) {
+    let origin;
+    try { origin = new URL(config.issuer); } catch { throw Error('E2E_INVITE_LIMIT_LOOPBACK_ONLY'); }
+    if (origin.protocol !== 'http:' || !['localhost', '127.0.0.1', '[::1]'].includes(origin.hostname))
+      throw Error('E2E_INVITE_LIMIT_LOOPBACK_ONLY');
+    if (!Number.isInteger(e2eInviteAcceptPerIp) || e2eInviteAcceptPerIp < 30 || e2eInviteAcceptPerIp > 1000)
+      throw Error('E2E_INVITE_LIMIT_INVALID');
+  }
+  const inviteAcceptPerIp = e2eInviteAcceptPerIp ?? 30;
   async function audit(eventType, { userId = null, tenantId = null, projectId = null, outcome, reason = null, ip = null, clientId = null, metadata = {} }, db = pool) {
     await db.query(`INSERT INTO platform.identity_audit(event_type,user_id,tenant_id,project_id,outcome,reason,metadata,ip,client_id)
       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9)`, [eventType, userId, tenantId, projectId, outcome, reason, JSON.stringify(metadata), ip, clientId]);
@@ -599,7 +613,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       const sso = await currentSso(req);
       const token = String(form.token ?? '');
       if (!sso) return redirect(res, `/login?next=${encodeURIComponent(`/invite?token=${token}`)}`);
-      limiter.enforce(`invite-accept-ip:${ip}`, 30, 15 * MINUTE);
+      limiter.enforce(`invite-accept-ip:${ip}`, inviteAcceptPerIp, 15 * MINUTE);
       try {
         const done = await admin.acceptInvitation(token, sso.user, ip);
         return page(req, res, 'invite_accepted', { lang: form.lang, values: done });
