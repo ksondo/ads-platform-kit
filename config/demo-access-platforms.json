@@ -131,7 +131,15 @@
       "entry_url": "https://agriculture.demo.africadigitalsynergy.com/demo/personas",
       "personas": [
         "farmer",
-        "buyer"
+        "buyer",
+        "coop-manager",
+        "extension-officer",
+        "lender-officer",
+        "input-supplier",
+        "farm-reviewer",
+        "help-desk",
+        "org-admin",
+        "demo-colleague"
       ]
     }
   ]

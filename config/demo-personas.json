@@ -191,7 +191,15 @@
         {"key": "farmer", "label": {"en": "Farmer", "fr": "Agriculteur"}, "hint": {"en": "Lists harvests and follows sales", "fr": "Publie ses récoltes et suit ses ventes"}, "org": "main", "roles": ["farmer"]},
         {"key": "buyer", "label": {"en": "Buyer", "fr": "Acheteur"}, "hint": {"en": "Buys produce", "fr": "Achète des produits agricoles"}, "org": "main", "roles": ["buyer"]},
         {"key": "reviewer", "label": {"en": "Reviewer (ADS)", "fr": "Vérificateur (ADS)"}, "hint": {"en": "Reviews listings", "fr": "Vérifie les annonces"}, "org": "staff", "roles": ["reviewer"]},
-        {"key": "support", "label": {"en": "Support agent (ADS)", "fr": "Agent d'assistance (ADS)"}, "hint": {"en": "Answers help requests", "fr": "Répond aux demandes d'aide"}, "org": "staff", "roles": ["support"]}
+        {"key": "support", "label": {"en": "Support agent (ADS)", "fr": "Agent d'assistance (ADS)"}, "hint": {"en": "Answers help requests", "fr": "Répond aux demandes d'aide"}, "org": "staff", "roles": ["support"]},
+        {"key": "coop-manager", "label": {"en": "Cooperative manager", "fr": "Responsable de GIC"}, "hint": {"en": "Members, collection day and statements", "fr": "Membres, jour de collecte et relevés"}, "org": "main", "roles": ["coop_manager"]},
+        {"key": "extension-officer", "label": {"en": "Extension officer", "fr": "Agent de vulgarisation"}, "hint": {"en": "Follows farms, visits and advice", "fr": "Suit les exploitations, les visites et les conseils"}, "org": "main", "roles": ["extension_officer"]},
+        {"key": "lender-officer", "label": {"en": "Lender officer", "fr": "Agent de crédit"}, "hint": {"en": "Credit and grant applications (records only)", "fr": "Demandes de crédit et de subvention (dossiers uniquement)"}, "org": "main", "roles": ["lender_officer"]},
+        {"key": "input-supplier", "label": {"en": "Input supplier", "fr": "Fournisseur d'intrants"}, "hint": {"en": "Offers, orders and pickup codes", "fr": "Offres, commandes et codes de retrait"}, "org": "main", "roles": ["input_supplier"]},
+        {"key": "farm-reviewer", "label": {"en": "Farm reviewer (this demo)", "fr": "Vérificateur (cette démo)"}, "hint": {"en": "Reviews farms and suppliers in this demo only", "fr": "Vérifie les exploitations et les fournisseurs de cette démo uniquement"}, "org": "main", "roles": ["reviewer"]},
+        {"key": "help-desk", "label": {"en": "Help desk (this demo)", "fr": "Assistance (cette démo)"}, "hint": {"en": "Help cases in this demo only", "fr": "Demandes d'aide de cette démo uniquement"}, "org": "main", "roles": ["support"]},
+        {"key": "org-admin", "label": {"en": "Organisation admin", "fr": "Administrateur"}, "hint": {"en": "Manages the team of this demo organisation", "fr": "Gère l'équipe de cette organisation de démo"}, "org": "main", "roles": ["tenant_admin"]},
+        {"key": "demo-colleague", "label": {"en": "Demo colleague (Thérèse Abessolo)", "fr": "Collègue de démo (Thérèse Abessolo)"}, "hint": {"en": "Another person: approves the farm you prepared", "fr": "Une autre personne : approuve l'exploitation que vous avez préparée"}, "org": "main", "roles": ["reviewer"]}
       ]
     },
     "investment": {

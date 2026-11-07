@@ -1160,7 +1160,11 @@
         "buyer",
         "reviewer",
         "support",
-        "tenant_admin"
+        "tenant_admin",
+        "coop_manager",
+        "extension_officer",
+        "lender_officer",
+        "input_supplier"
       ],
       "ads_only_roles": [],
       "needs_client_secret": true,
@@ -1172,7 +1176,13 @@
           "staff": false,
           "roles": [
             "farmer",
-            "buyer"
+            "buyer",
+            "coop_manager",
+            "extension_officer",
+            "lender_officer",
+            "input_supplier",
+            "reviewer",
+            "support"
           ]
         },
         {

@@ -60,7 +60,7 @@ Products send the callback above as `redirect_uri` and carry the intended page i
 ### Visitor personas (organisation in the visitor's own `visit-*` copy)
 
 - Education: main — school-admin, academic-admin, admissions, bursar, teacher, parent, student, applicant; partner — partner.
-- Agriculture: main — farmer, buyer.
+- Agriculture: main — farmer, buyer, coop-manager, extension-officer, lender-officer, input-supplier, farm-reviewer, help-desk, org-admin, demo-colleague. One role each (demo-colleague: `reviewer`, served by Agriculture as a different actor). `farm-reviewer` (`reviewer`) and `help-desk` (`support`) act only inside the visitor's own `visit-*` organisation, never in the ADS staff organisation; `org-admin` (`tenant_admin`) gives no Identity organisation-admin authority, because `visit-*` organisations never do. Release 2 (7 Nov 2026): Agriculture shows the coop-manager, extension-officer, lender-officer and input-supplier personas only when their screens ship; until then it ignores them.
 - Tontine: main — group-admin, treasurer, payout-approver, member, auditor; cooperative — cooperative-admin; partner — partner.
 - Fleet Guard: main — fleet-owner, fleet-manager, approver, driver, mechanic, approver-colleague.
 - Commerce: personal — shopper; main — shop-owner, shop-manager, cashier, accountant; bank — bank-agent, bank-officer.
