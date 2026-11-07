@@ -511,10 +511,12 @@
       "display_name": "ADS Logistics",
       "accent": "#164E80",
       "redirect_uris": [
-        "https://logistics.test.africadigitalsynergy.com/"
+        "https://logistics.test.africadigitalsynergy.com/",
+        "https://logistics.demo.africadigitalsynergy.com/"
       ],
       "post_logout_redirect_uris": [
-        "https://logistics.test.africadigitalsynergy.com/"
+        "https://logistics.test.africadigitalsynergy.com/",
+        "https://logistics.demo.africadigitalsynergy.com/"
       ],
       "self_service_roles": [],
       "allow_personal_workspace": false,
