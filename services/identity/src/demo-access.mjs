@@ -67,7 +67,9 @@ export const visitorPersonaKeys = p => p.personas.map(x => x.key);
 
 // Explicit release scope. Registry presence alone does not certify a product for
 // private operator provisioning. Other products need their own integration review.
-export const PRIVATE_VISITOR_PLATFORMS = new Set(['commerce', 'education', 'agriculture', 'tontine']);
+// Fleet Guard (7 Nov 2026): explicit addition after its own review (single main organisation,
+// owner_admin without Identity admin authority in visitor organisations, demo colleague persona).
+export const PRIVATE_VISITOR_PLATFORMS = new Set(['commerce', 'education', 'agriculture', 'tontine', 'fleet-guard']);
 
 export function createDemoAccess({ pool, config, mailer, audit, log = console, platforms }) {
   const settings = config.demoAccess;

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "$comment": "Per-product demo activation for the ADS demo portal. Values: preparing (default, 'Demo being prepared'), open ('Open demo', links to the reviewed catalogue.json demoDestination), unavailable (clear unavailable state, no link). Switch a product to open only after the operator has confirmed the deployed application, HTTPS and ADS sign-in for it. Destinations are never read from this file. A missing or invalid file keeps every product preparing. Commerce keeps its existing catalogue demoUrl and is not managed here.",
+  "products": {
+    "education": "preparing",
+    "agriculture": "preparing",
+    "digital-tontine": "preparing",
+    "fleet-guard": "preparing"
+  }
+}

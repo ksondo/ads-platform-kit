@@ -4,6 +4,7 @@ import {opportunityCredits} from "./opportunity-image-library.js";
 const app = document.getElementById("root");
 const i18n = {
   en: {
+    allPlatformTools:"View all tools", demoOpen:"Open demo", demoAvailable:"Demo available", demoUnavailable:"Temporarily unavailable", demoUnavailableNote:"This demonstration is temporarily unavailable. ADS is checking it; please come back later.", demoPreparingNote:"This demonstration is being prepared. Its button becomes active once ADS has confirmed the application, its secure HTTPS address and sign-in.", demoOpenNote:"Opens in a new tab: product overview, then sign in with the individual ADS account that ADS approved for you, choose a role and enter your demonstration workspace.",
     openPrivateDemo:"Open private demo", privateDemo:"By prior approval", publicRequestsUnavailable:"Public demo requests are temporarily unavailable. Already approved? Open Commerce and sign in with your individual ADS account.", privateGuideIntro:"Explore the available platform introduction, then sign in with your individual ADS account if ADS has already approved your private demonstration.", privateGuideSecond:"Already approved? Sign in", privateGuideSecondText:"Open Commerce and use your individual ADS account. Public demo requests are temporarily unavailable.", privateGuideThirdText:"Choose an authorised role and explore your isolated demonstration workspace with fictional data. Your access period is shown in the application.",
     home:"Home", platforms:"Platforms", opportunities:"Business Opportunities", cloud:"Cloud Services", about:"About ADS", partners:"Partners", contact:"Contact", demos:"Explore Demos", demoHelp:"How demo access works", demoGuideTitle:"How to access ADS demos", demoGuideIntro:"Choose a platform. It opens in another browser tab while ADS stays open. Demonstrations are opened by ADS on request, one platform at a time, with a shared ADS sign-in.", demoGuideFirst:"Choose a platform", demoGuideFirstText:"Browse ADS platforms; the selected demo opens in another tab while this page stays available.", demoGuideSecond:"Request demo access", demoGuideSecondText:"On the platform's introduction page, enter your email address and select Request demo access. ADS reviews each request; once it is approved, you receive an email invitation to set your own password. No password is shown or stored on this portal.", demoGuideThird:"Explore your demo workspace", demoGuideThirdText:"After accepting the invitation, choose a role such as shopper or shop owner and explore your own demonstration workspace with fictional data. Access lasts 30 days.", demoGuideNotLive:"Demo launch links appear only after their deployed application and login flow have been verified.",
     kicker:"ADS DIGITAL ECOSYSTEM", heroA:"Real Solutions for", heroB:"a Brighter Africa", heroCopy:"Explore our platforms, discover digital business opportunities and experience working demonstrations.",
@@ -17,6 +18,7 @@ const i18n = {
     footer:"Real platforms. Practical opportunities. Shared progress.", external:"Opens the Africa Digital Synergy company website", companyUpdating:"Company website being updated — link temporarily unavailable", statusNote:"Demo buttons become active only when a verified deployment URL is registered.", featuredSubtitle:"Integrated business solutions for modern trade", officePending:"Yaoundé, Cameroon — street address pending confirmation", educationChip:"Education", healthcareChip:"Healthcare", discoveryPaths:"Find your business opportunity", discoveryPathsCopy:"Start with your industry, local business type, or institutional service area.", industriesPath:"Browse industries", industriesCopy:"Explore business sectors and the digital tools relevant to each activity.", businessesPath:"Find a local business type", businessesCopy:"Choose from 52 example business profiles and discover useful tools.", regulatorsPath:"Institutional & regulatory services", regulatorsCopy:"Explore proposed compliance and institutional support services. Official authorizations are still required."
   },
   fr: {
+    allPlatformTools:"Tous les outils", demoOpen:"Ouvrir la démo", demoAvailable:"Démo disponible", demoUnavailable:"Momentanément indisponible", demoUnavailableNote:"Cette démonstration est momentanément indisponible. ADS la vérifie ; revenez un peu plus tard.", demoPreparingNote:"Cette démonstration est en préparation. Son bouton sera activé dès qu’ADS aura confirmé l’application, son adresse HTTPS sécurisée et la connexion.", demoOpenNote:"S’ouvre dans un nouvel onglet : présentation du produit, puis connexion avec le compte ADS individuel approuvé par ADS, choix d’un rôle et accès à votre espace de démonstration.",
     openPrivateDemo:"Ouvrir la démo privée", privateDemo:"Sur autorisation", publicRequestsUnavailable:"Les demandes publiques de démonstration sont temporairement indisponibles. Déjà approuvé ? Ouvrez Commerce et connectez-vous avec votre compte ADS individuel.", privateGuideIntro:"Découvrez la présentation de la plateforme, puis connectez-vous avec votre compte ADS individuel si ADS a déjà approuvé votre démonstration privée.", privateGuideSecond:"Déjà approuvé ? Connectez-vous", privateGuideSecondText:"Ouvrez Commerce et utilisez votre compte ADS individuel. Les demandes publiques de démonstration sont temporairement indisponibles.", privateGuideThirdText:"Choisissez un rôle autorisé et explorez votre espace de démonstration isolé avec des données fictives. La durée de votre accès est indiquée dans l’application.",
     home:"Accueil", platforms:"Plateformes", opportunities:"Opportunités d'affaires", cloud:"Services Cloud", about:"À propos d'ADS", partners:"Partenaires", contact:"Contact", demos:"Explorer les démos", demoHelp:"Comment accéder aux démos", demoGuideTitle:"Comment accéder aux démos ADS", demoGuideIntro:"Choisissez une plateforme. Elle s’ouvre dans un nouvel onglet pendant que la page d’accueil ADS reste ouverte. Les démonstrations sont ouvertes par ADS sur demande, plateforme par plateforme, avec une connexion ADS partagée.", demoGuideFirst:"Choisir une plateforme", demoGuideFirstText:"Explorez les plateformes ADS : la démo choisie s’ouvre dans un autre onglet et cette page reste disponible.", demoGuideSecond:"Demander un accès de démonstration", demoGuideSecondText:"Sur la page de présentation de la plateforme, saisissez votre adresse e-mail et choisissez Demander un accès de démonstration. ADS examine chaque demande ; une fois celle-ci approuvée, vous recevez une invitation par e-mail pour définir votre propre mot de passe. Aucun mot de passe n’est affiché ni stocké sur ce portail.", demoGuideThird:"Explorer votre espace démo", demoGuideThirdText:"Après avoir accepté l’invitation, choisissez un rôle, par exemple client ou propriétaire de boutique, et explorez votre propre espace de démonstration avec des données fictives. L’accès est valable 30 jours.", demoGuideNotLive:"Les liens des démos ne sont activés qu’après vérification de l’application et de son authentification.",
     kicker:"ÉCOSYSTÈME NUMÉRIQUE ADS", heroA:"Des solutions concrètes pour", heroB:"une Afrique meilleure", heroCopy:"Découvrez nos plateformes, les opportunités d'affaires numériques et les démonstrations disponibles.",
@@ -37,6 +39,23 @@ const initialLanguage=()=>{
 };
 let lang=initialLanguage();
 let catalogue = {platforms:[],tools:[],publicSite:"https://africadigitalsynergy.com",companySiteLinksEnabled:false};
+// Per-product demo activation (owner assignment 7 Nov 2026). Destinations are reviewed in catalogue.json
+// (`demoDestination`); the separately served /demo-activation.json only switches each product between
+// "preparing" (default), "open" and "unavailable". Missing file, invalid JSON, unknown product or unknown
+// value all mean "preparing": the portal never links to a demo the operator has not confirmed.
+let activation={};
+const ACTIVATION_STATES=["preparing","open","unavailable"];
+const DEMO_DESTINATION=/^https:\/\/[a-z0-9-]+\.demo\.africadigitalsynergy\.com\/[A-Za-z0-9/_-]*$/;
+const destinationOf=p=>p&&typeof p.demoDestination==="string"&&DEMO_DESTINATION.test(p.demoDestination)?p.demoDestination:null;
+const activationOf=p=>{const v=Object.prototype.hasOwnProperty.call(activation,p.id)?activation[p.id]:null;return ACTIVATION_STATES.includes(v)?v:"preparing";};
+// live: existing verified demoUrl (Commerce, unchanged) · open/unavailable/preparing: activation-managed · none: no destination yet.
+function demoStatus(p){
+ if(safeDemo(p.demoUrl))return "live";
+ if(!destinationOf(p))return "none";
+ return activationOf(p);
+}
+// The product overview receives the visitor's language; the product keeps it through sign-in (ui_locales).
+const destinationUrl=p=>{const u=new URL(destinationOf(p));u.searchParams.set("lang",lang);return u.toString();};
 let opportunityCounts={sectors:null,businesses:null,institutional:null};
 const s = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const t = key => i18n[lang][key] || i18n.en[key] || key;
@@ -112,11 +131,13 @@ function africaArt(){
 function platformCard(p){
  const n=catalogue.tools.filter(x=>x.platformId===p.id).length;
  const demo=safeDemo(p.demoUrl),url=demo||platformUrl(p);
+ const state=demoStatus(p),open=state==="open",href=open?destinationUrl(p):url,external=Boolean(demo)||open;
+ const status=state==="open"?pill(t("demoAvailable"),"online"):state==="unavailable"?pill(t("demoUnavailable"),"warn"):state==="preparing"?pill(t("demoPending"),"muted"):"";
  const media=platformImage(p)?'<img src="'+s(platformImage(p))+'" alt="" decoding="async" loading="lazy" width="640" height="360"/>':'<span class="platform-placeholder" aria-hidden="true">◇</span>';
- return '<a class="platform-card" href="'+s(url)+'"'+(demo?' target="_blank" rel="noopener noreferrer"':'')+'><span class="platform-image">'+media+'</span>'+
+ return '<a class="platform-card" data-demo-state="'+s(state)+'" href="'+s(href)+'"'+(external?' target="_blank" rel="noopener noreferrer"':'')+'><span class="platform-image">'+media+'</span>'+
  '<div class="platform-body"><h3>'+s(title(p))+'</h3><p>'+s(summary(p))+'</p><span class="card-spacer"></span>'+
- '<span class="platform-meta">'+(n?pill(countLabel(n,"tools")):pill(t("demoPending"),"muted"))+'</span>'+
- '<span class="btn btn-outline card-action">'+s(demo?demoLabel(p,"tryDemo"):t("explore"))+' →</span></div></a>';
+ '<span class="platform-meta">'+(status||(n?pill(countLabel(n,"tools")):pill(t("demoPending"),"muted")))+'</span>'+
+ '<span class="btn btn-outline card-action">'+s(open?t("demoOpen"):demo?demoLabel(p,"tryDemo"):t("explore"))+' →</span></div></a>';
 }
 function toolCard(x){
  const media=x.image?'<img src="'+s(photo(x.image))+'" alt="" decoding="async" loading="lazy" width="560" height="315"/>':'<span class="tool-placeholder" aria-hidden="true">◇</span>';
@@ -128,10 +149,10 @@ function searchBar(value=""){
   return '<form class="search-bar" method="get" action="/platforms" role="search"><label class="sr-only" for="portal-search">'+s(t("search"))+'</label><span class="search-glyph">⌕</span><input id="portal-search" name="q" type="search" placeholder="'+s(t("search"))+'" value="'+s(value)+'"/><button class="btn btn-gold" type="submit">'+s(t("searchButton"))+'</button></form>';
 }
 function hero(){
-  const demoCount=catalogue.platforms.filter(p=>safeDemo(p.demoUrl)).length;
+  const demoCount=catalogue.platforms.filter(p=>["live","open"].includes(demoStatus(p))).length;
   return '<section class="hero"><div class="container hero-grid"><div class="hero-copy"><span class="eyebrow">◈ &nbsp;'+s(t("kicker"))+'</span><h1>'+s(t("heroA"))+'<br><em>'+s(t("heroB"))+'</em></h1><p>'+s(t("heroCopy"))+'</p>'+searchBar()+'<div class="popular">'+s(t("popular"))+' <a href="/platforms?q=education">'+s(t("educationChip"))+'</a><a href="/platforms?q=commerce">Commerce</a><a href="/platforms?q=healthcare">'+s(t("healthcareChip"))+'</a><a href="/platforms?q=transport">Transport</a></div></div>'+
    '<div class="hero-art">'+africaArt()+'</div>'+
-   '<div class="hero-stats"><div><span class="stat-symbol">⬡</span><strong>'+catalogue.platforms.length+'</strong><small>'+s(t("platformsCount"))+'</small></div><div><span class="stat-symbol">▦</span><strong>'+catalogue.tools.length+'</strong><small>'+s(t("toolsCount"))+'</small></div><div><span class="stat-symbol">▷</span><strong>'+demoCount+'</strong><small>'+s(t("demosCount"))+'</small></div><div><span class="stat-symbol">♧</span><strong>'+catalogue.platforms.filter(p=>!safeDemo(p.demoUrl)).length+'</strong><small>'+s(t("demoPending"))+'</small></div></div>'+
+   '<div class="hero-stats"><div><span class="stat-symbol">⬡</span><strong>'+catalogue.platforms.length+'</strong><small>'+s(t("platformsCount"))+'</small></div><div><span class="stat-symbol">▦</span><strong>'+catalogue.tools.length+'</strong><small>'+s(t("toolsCount"))+'</small></div><div><span class="stat-symbol">▷</span><strong>'+demoCount+'</strong><small>'+s(t("demosCount"))+'</small></div><div><span class="stat-symbol">♧</span><strong>'+catalogue.platforms.filter(p=>!["live","open"].includes(demoStatus(p))).length+'</strong><small>'+s(t("demoPending"))+'</small></div></div>'+
   '</div></section>';
 }
 function sectionTitle(title,href,label,subtitle=""){
@@ -190,10 +211,22 @@ function toolDirectory(){
     '<section class="section"><div class="container"><div class="filters">'+filters+'</div><div class="section-head"><h2>'+items.length+' '+s(t("toolsCount"))+'</h2></div>'+
    (items.length?'<div class="tool-grid directory-tools">'+items.map(toolCard).join("")+'</div>':'<p class="empty">'+s(t("noResults"))+'</p>')+'</div></section>';
 }
+// Activation-managed products: "Open demo" only when the operator opened it; otherwise a clear, non-clickable state.
+function demoAction(p){
+ const state=demoStatus(p);
+ if(state==="open")return launch(destinationUrl(p),t("demoOpen"));
+ if(state==="unavailable")return '<span class="pill pill-warn" data-testid="demo-unavailable">'+s(t("demoUnavailable"))+'</span>';
+ return launch(p.demoUrl,demoLabel(p,"visitPlatform"));
+}
+function demoStateNote(p){
+ const state=demoStatus(p);
+ const key=state==="open"?"demoOpenNote":state==="unavailable"?"demoUnavailableNote":state==="preparing"?"demoPreparingNote":null;
+ return key?'<p class="detail-note demo-state-note" role="'+(state==="unavailable"?"alert":"note")+'" data-testid="demo-state-'+s(state)+'">'+s(t(key))+'</p>':"";
+}
 function platformDetail(p){
   const items=catalogue.tools.filter(x=>x.platformId===p.id);
-  return '<section class="detail-hero" data-portal-hero="platform"><img class="detail-hero-photo" src="'+s(platformImage(p,1300))+'" alt="" loading="lazy" width="1300" height="420"/><div class="container">'+link("/platforms","← "+s(t("back")),"back-link")+'<div class="eyebrow">'+s(t("platforms"))+'</div><h1>'+s(title(p))+'</h1><p>'+s(summary(p))+'</p><div class="detail-actions">'+launch(p.demoUrl,demoLabel(p,"visitPlatform"))+companyAction("/partners",t("becomePartner"),"btn btn-outline-light")+link("/demo-access",s(t("demoHelp"))+" →","btn btn-outline-light")+'</div>'+(onRequest(p)?accessNotice():"")+'</div></section>'+
-  '<section class="section"><div class="container">'+sectionTitle(t("toolsInside"),"/opportunities?platform="+encodeURIComponent(p.id),t("allTools"))+
+  return '<section class="detail-hero" data-portal-hero="platform"><img class="detail-hero-photo" src="'+s(platformImage(p,1300))+'" alt="" loading="lazy" width="1300" height="420"/><div class="container">'+link("/platforms","← "+s(t("back")),"back-link")+'<div class="eyebrow">'+s(t("platforms"))+'</div><h1>'+s(title(p))+'</h1><p>'+s(summary(p))+'</p><div class="detail-actions">'+demoAction(p)+companyAction("/partners",t("becomePartner"),"btn btn-outline-light")+link("/demo-access",s(t("demoHelp"))+" →","btn btn-outline-light")+'</div>'+(onRequest(p)?accessNotice():"")+demoStateNote(p)+'</div></section>'+
+  '<section class="section"><div class="container">'+sectionTitle(t("toolsInside"),"/opportunities?platform="+encodeURIComponent(p.id),p.id==="commerce"?t("allTools"):t("allPlatformTools"))+
   (items.length?'<div class="tool-grid directory-tools">'+items.map(toolCard).join("")+'</div>':'<p class="empty">'+s(t("noResults"))+'</p>')+
   '<p class="detail-note">'+s(t("statusNote"))+'</p></div></section>';
 }
@@ -275,6 +308,15 @@ document.addEventListener("error",event=>{
   }
 },true);
 
+async function loadActivation(){
+  try {
+    const response=await fetch("/demo-activation.json",{cache:"no-store",credentials:"omit"});
+    if(!response.ok)return {};
+    const data=await response.json();
+    const products=data&&data.schemaVersion===1&&data.products&&typeof data.products==="object"&&!Array.isArray(data.products)?data.products:{};
+    return Object.fromEntries(Object.entries(products).filter(([,v])=>ACTIVATION_STATES.includes(v)));
+  } catch { return {}; } // fail closed: every managed product stays "Demo being prepared"
+}
 async function start(){
   try {
     const response=await fetch("/catalogue.json",{cache:"no-store"});
@@ -282,6 +324,7 @@ async function start(){
     const data=await response.json();
     if(!Array.isArray(data.platforms)||!Array.isArray(data.tools)) throw new Error("invalid catalogue");
     catalogue=data;
+    activation=await loadActivation();
     render(); // Never block page rendering on the optional Opportunities API.
     const endpoints=[["sectors","/api/opportunities/v1/sectors"],["businesses","/api/opportunities/v1/businesses?limit=1"],
       ["institutional","/api/opportunities/v1/discovery/categories?family=institutional"]];

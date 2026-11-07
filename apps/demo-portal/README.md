@@ -61,3 +61,7 @@ Normal internal Portal links now use client-side navigation, preserving the docu
 A public `/photo-credits` page and `images/CREDITS.md` record 17 Cameroon-focused Commons photographers under CC BY-SA 4.0. The visual registry assigns 25 distinct platform images and one dedicated image per 21 discovery category groups. Remote, width-limited Wikimedia/Unsplash images remain externally hosted; avoid claiming a WebP self-host or verified 1.5 MB transfer budget. The production Nginx CSP adds Wikimedia image origins only and retains strict `script-src 'self'`.
 
 The `.github/workflows/demo-portal.yml` Docker smoke verifies `image-library.js` inside the actual packaged container; Chromium checks SPA history and repeated platform images.
+
+## 7 November 2026 — per-product demo activation
+
+Education, Agriculture, Digital Tontine and Fleet Guard have a reviewed `demoDestination` (their `/demo` overview page) in `catalogue.json`, while `demoUrl` stays `null`. `demo-activation.json` switches each of them between `preparing` (shipped default), `open` and `unavailable`; a missing or invalid file keeps all of them `preparing`. Commerce keeps its existing link. Operator steps and rollback: [`docs/demo-access/DEMO_PUBLICATION_CONTRACT.md`](../../docs/demo-access/DEMO_PUBLICATION_CONTRACT.md).
