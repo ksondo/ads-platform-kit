@@ -87,7 +87,17 @@ export async function startIdentity({ databaseUrl, port = 0, host = '127.0.0.1',
     '--identity-port', String(listenPort), '--signing-key-file', keyFile, '--no-mocks', ...(issuer ? ['--issuer', issuer] : []), ...(mocksUrl ? ['--mocks-url', mocksUrl] : [])],
   { stdio: ['ignore', 'inherit', 'inherit'], env: { ...process.env, ...Object.fromEntries(Object.entries(env).map(([k, v]) => [`ADS_E2E_IDENTITY_ENV_${k}`, v])) } });
   const exited = new Promise(r => child.once('exit', r));
-  const state = await waitForState(stateFile, child);
+  // A child writes state.json after starting Identity. Its first bytes may be visible
+  // before the write finishes; if startup really fails, always reap the child and files.
+  let state;
+  try { state = await waitForState(stateFile, child); }
+  catch (error) {
+    if (child.exitCode === null && child.signalCode === null) child.kill('SIGTERM');
+    await Promise.race([exited, new Promise(resolve => setTimeout(resolve, 3000))]);
+    if (child.exitCode === null && child.signalCode === null) child.kill('SIGKILL');
+    await rm(dir, { recursive: true, force: true });
+    throw error;
+  }
   const harness = createHarness({
     url: state.identity.url, issuer: state.identity.issuer, databaseUrl, signingKeyPem, kid: state.identity.kid, mocksUrl, webhookSecret,
     stop: async () => { child.kill('SIGTERM'); await exited; await rm(dir, { recursive: true, force: true }); },
@@ -99,10 +109,17 @@ export async function startIdentity({ databaseUrl, port = 0, host = '127.0.0.1',
 async function waitForState(stateFile, child, timeoutMs = 30_000) {
   const end = Date.now() + timeoutMs;
   for (;;) {
-    if (child && child.exitCode !== null) throw new Error(`e2e-kit: identity process exited with code ${child.exitCode}`);
+    if (child && (child.exitCode !== null || child.signalCode !== null))
+      throw new Error(`e2e-kit: identity process exited with code ${child.exitCode ?? child.signalCode}`);
     if (existsSync(stateFile)) {
-      const state = JSON.parse(readFileSync(stateFile, 'utf8'));
-      if (state.ready) return state;
+      // A concurrent write can expose a truncated JSON document; retry until ready.
+      // Keep other errors visible, and never treat malformed/partial state as success.
+      try {
+        const state = JSON.parse(readFileSync(stateFile, 'utf8'));
+        if (state && state.ready === true && state.identity?.url) return state;
+      } catch (error) {
+        if (!(error instanceof SyntaxError) && error?.code !== 'ENOENT') throw error;
+      }
     }
     if (Date.now() > end) throw new Error('e2e-kit: timed out waiting for the identity process');
     await new Promise(r => setTimeout(r, 100));
