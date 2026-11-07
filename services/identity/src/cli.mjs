@@ -30,7 +30,7 @@ const usage = `Commands:
   mark-staff-org --tenant <tenant uuid> [--staff true|false]   ADS staff organisation flag (ACC-04, token claim ads_staff)
 
 Demo environment only (ADS_ENV=demo AND DEMO_MODE=1; refused everywhere else):
-  demo-visitor-provision [--platform commerce|education|agriculture|tontine] --email visitor@example.test --operator-ref ADS-operator --credentials-out /run/private/visitor.json --apply yes
+  demo-visitor-provision [--platform commerce|education|agriculture|tontine|fleet-guard] --email visitor@example.test --operator-ref ADS-operator --credentials-out /run/private/visitor.json --apply yes
                                        private mode only: one new individual account, registry-listed visitor personas, 30 days; Commerce default; no mail; password only in an exclusive 0600 file
   demo-visitor-revoke --grant <grant uuid> --operator-ref ADS-operator --apply yes
                                        private mode only: revoke a privately provisioned grant without enabling public approvals

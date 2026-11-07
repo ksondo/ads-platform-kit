@@ -50,6 +50,9 @@ jobs:
           done
           curl --fail --silent --show-error http://127.0.0.1:18888/catalogue.json -o /tmp/ads-demo-catalogue.json
           grep -Fq '"ecommerce"' /tmp/ads-demo-catalogue.json
+          # Per-product demo activation ships disabled ("preparing") and is never served by the SPA fallback.
+          curl --fail --silent --show-error http://127.0.0.1:18888/demo-activation.json -o /tmp/ads-demo-activation.json
+          node -e "const d=JSON.parse(require('node:fs').readFileSync('/tmp/ads-demo-activation.json','utf8')); if(d.schemaVersion!==1||Object.values(d.products).some(v=>v!=='preparing'))process.exit(1)"
           # Test assets from the BUILT nginx image. Browser tests that serve the
           # repository directly cannot detect missing Dockerfile COPY directives.
           for asset in main.js opportunities-v2.js opportunities-fr.js image-library.js opportunity-image-library.js styles.css opportunities-v2.css sector-groups.json; do

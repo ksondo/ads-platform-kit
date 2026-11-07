@@ -11,6 +11,7 @@
       "image": "photo-1503676260728-1c00da094a0b",
       "icon": "🎓",
       "demoUrl": null,
+      "demoDestination": "https://education.demo.africadigitalsynergy.com/demo",
       "featured": true,
       "summary_fr": "Solutions numériques pour l'apprentissage et la gestion scolaire",
       "availability": "coming_soon"
@@ -48,6 +49,7 @@
       "image": "photo-1500382017468-9049fed747ef",
       "icon": "🌱",
       "demoUrl": null,
+      "demoDestination": "https://agriculture.demo.africadigitalsynergy.com/demo",
       "featured": true,
       "summary_fr": "Solutions pour l'agriculture et les chaînes de valeur agricoles",
       "availability": "coming_soon"
@@ -169,6 +171,7 @@
       "image": null,
       "icon": "",
       "demoUrl": null,
+      "demoDestination": "https://tontine.demo.africadigitalsynergy.com/demo",
       "featured": false,
       "availability": "coming_soon"
     },
@@ -181,6 +184,7 @@
       "image": null,
       "icon": "",
       "demoUrl": null,
+      "demoDestination": "https://fleetguard.demo.africadigitalsynergy.com/demo",
       "featured": false,
       "availability": "coming_soon"
     },

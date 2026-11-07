@@ -10,5 +10,6 @@ COPY apps/demo-portal/opportunities-fr.js /usr/share/nginx/html/opportunities-fr
 COPY apps/demo-portal/sector-groups.json /usr/share/nginx/html/sector-groups.json
 COPY apps/demo-portal/opportunities-v2.css /usr/share/nginx/html/opportunities-v2.css
 COPY apps/demo-portal/catalogue.json /usr/share/nginx/html/catalogue.json
+COPY apps/demo-portal/demo-activation.json /usr/share/nginx/html/demo-activation.json
 EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD wget -qO- http://127.0.0.1/ >/dev/null || exit 1
