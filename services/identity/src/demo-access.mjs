@@ -67,7 +67,7 @@ export const visitorPersonaKeys = p => p.personas.map(x => x.key);
 
 // Explicit release scope. Registry presence alone does not certify a product for
 // private operator provisioning. Other products need their own integration review.
-export const PRIVATE_VISITOR_PLATFORMS = new Set(['commerce', 'education', 'agriculture']);
+export const PRIVATE_VISITOR_PLATFORMS = new Set(['commerce', 'education', 'agriculture', 'tontine']);
 
 export function createDemoAccess({ pool, config, mailer, audit, log = console, platforms }) {
   const settings = config.demoAccess;
