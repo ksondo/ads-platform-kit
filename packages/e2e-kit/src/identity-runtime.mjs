@@ -56,7 +56,11 @@ export async function runIdentityInProcess({ databaseUrl, host = '127.0.0.1', po
       }).catch(error => log.warn?.(`e2e mail capture failed: ${error.message}`));
     },
   };
-  const app = createApp({ config, pool, keys, mailer, google: null, log, sdkPath: path.join(KIT_ROOT, 'packages/identity-client/ads-identity.js') });
+  // Many Playwright personas accept invitations through one local IP. Only this
+  // disposable loopback E2E service lifts the shared-IP throttle; production's
+  // real Identity server retains 30 invite accepts per 15 minutes.
+  const e2eInviteAcceptPerIp = ['127.0.0.1', '::1', 'localhost'].includes(host) ? 1000 : null;
+  const app = createApp({ config, pool, keys, mailer, google: null, log, sdkPath: path.join(KIT_ROOT, 'packages/identity-client/ads-identity.js'), e2eInviteAcceptPerIp });
   await new Promise((resolve, reject) => { app.server.once('error', reject); app.server.listen(port, host, resolve); });
   return {
     url: publicUrl, issuer: config.issuer, outbox, pool, app,
