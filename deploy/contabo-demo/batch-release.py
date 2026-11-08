@@ -13,7 +13,9 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import socket
+import tempfile
 import stat
 import subprocess
 import sys
@@ -22,6 +24,7 @@ import time
 CONFIG = Path("/etc/ads-demo/batch-release-host.json")
 APPROVAL = Path("/etc/ads-demo/batch-release-approval.json")
 STAGING = Path("/var/lib/ads-demo/batch-release-sources")
+ENV_BACKUPS = Path("/var/lib/ads-demo/batch-release-env-backups")
 LOCK = Path("/var/lock/ads-five-demo-release.lock")
 SECURE_DIRS = ("/etc/ads-demo/", "/var/lib/ads-demo/operator-secrets/")
 SHA = re.compile(r"^[0-9a-f]{40}$")
@@ -153,6 +156,19 @@ def config_for(m):
         require(type(item.get("private_visitor_enabled", False)) is bool,
                 "private_visitor_enabled must be boolean")
         out[key] = dict(item)
+    for p in m["services"]:
+        envpath = Path(out[p["id"]]["env_file"])
+        source = envpath.read_text(encoding="utf-8")
+        for key in image_values(p):
+            require(len(re.findall(r"(?m)^" + re.escape(key) + r"=.*$", source)) == 1,
+                    "Protected operator env needs exactly one image tag field: " + p["id"] + "/" + key)
+        # A running private-visitor grant must never silently lose its paired seed worker.
+        access_var = {"agriculture": "AGRI_DEMO_ACCESS", "fleet-guard": "FLEET_DEMO_ACCESS",
+                      "tontine": "TONTINE_DEMO_ACCESS"}.get(p["id"])
+        if access_var:
+            enabled = re.search(r"(?m)^" + access_var + r"=1$", source) is not None
+            require(enabled == out[p["id"]]["private_visitor_enabled"],
+                    "Private visitor flag/worker mismatch for " + p["id"])
     require(len({s["project"] for s in out.values()}) == 5,
             "Compose projects must remain isolated")
     require(len({s["port"] for s in out.values()}) == 5,
@@ -214,11 +230,15 @@ def compose_args(p, cfg, folder):
 def candidate_image(p):
     return "local/ads-batch-" + p["id"] + ":sha-" + p["sha"]
 
+def image_values(p):
+    result = {p["image_env"]: candidate_image(p)}
+    if p.get("tools_image_env"):
+        result[p["tools_image_env"]] = candidate_image(p) + "-tools"
+    return result
+
 def image_env(p):
     env = os.environ.copy()
-    env[p["image_env"]] = candidate_image(p)
-    if p.get("tools_image_env"):
-        env[p["tools_image_env"]] = candidate_image(p) + "-tools"
+    env.update(image_values(p))
     return env
 
 def compose_preflight(p, cfg, folder):
@@ -291,6 +311,52 @@ def deploy_one(p, cfg, folder, changes):
                 env=env, timeout=180)
     smoke(p, cfg)
 
+def persist_env_tags(p, cfg, release_id, changed):
+    """After all app health checks, persist only exact image tag fields.
+
+    Operator env is backed up first, never printed, never committed, and remains
+    owned by root with 0600. Unexpected or duplicated keys stop the release.
+    """
+    path = Path(cfg["env_file"])
+    old = path.read_text(encoding="utf-8")
+    updated = old
+    for key, value in image_values(p).items():
+        pattern = r"(?m)^" + re.escape(key) + r"=.*$"
+        require(len(re.findall(pattern, updated)) == 1,
+                "Cannot safely persist image key " + p["id"] + "/" + key)
+        updated = re.sub(pattern, lambda _: key + "=" + value, updated)
+    if old == updated:
+        note("PERSISTED_IMAGE=ALREADY_CURRENT " + p["id"])
+        return
+    folder = ENV_BACKUPS / release_id
+    folder.mkdir(parents=True, exist_ok=True, mode=0o700)
+    backup = folder / (p["id"] + ".env.before")
+    require(not backup.exists(), "Refusing to overwrite protected old env backup: " + p["id"])
+    shutil.copy2(path, backup)
+    backup.chmod(0o600)
+    changed.append((path, backup))
+    fd, temporary = tempfile.mkstemp(prefix=".ads-batch-image-", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            stream.write(updated)
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.chmod(temporary, 0o600)
+        os.replace(temporary, path)
+    finally:
+        if os.path.exists(temporary):
+            os.unlink(temporary)
+    note("PERSISTED_IMAGE=PASS " + p["id"])
+
+def rollback_env(changed):
+    for path, backup in reversed(changed):
+        try:
+            shutil.copy2(backup, path)
+            path.chmod(0o600)
+            note("ROLLBACK_ENV=PASS " + path.name)
+        except OSError:
+            note("ROLLBACK_ENV=NEEDS_OPERATOR " + path.name)
+
 def rollback(changes):
     note("STOP: application-only rollback attempted; databases and Identity untouched")
     for p, cfg, folder, service, old in reversed(changes):
@@ -347,11 +413,14 @@ def main():
         # Build all five pinned candidate images before touching any running service.
         for p in m["services"]:
             build_image(p, folder[p["id"]])
-        changes = []
+        changes, changed_env = [], []
         try:
             for p in m["services"]:
                 deploy_one(p, host[p["id"]], folder[p["id"]], changes)
-        except Stop:
+            for p in m["services"]:
+                persist_env_tags(p, host[p["id"]], m["release_id"], changed_env)
+        except (Stop, OSError):
+            rollback_env(changed_env)
             rollback(changes)
             raise
         note("APP_IMAGES_UPDATED=PASS 5 services; verify hosted Identity, EN/FR and "
