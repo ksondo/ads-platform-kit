@@ -1,0 +1,37 @@
+{
+  "host": "vmi3191089",
+  "environment": "demo",
+  "$comment": "Operator fills exact existing Compose project labels from docker inspect (NOT guesses); root-owned 0600 /etc/ads-demo/batch-release-host.json. Leave private_visitor_enabled=false until separate Identity/security approval. Do not edit public VPS ports or Nginx here.",
+  "services": {
+    "education": {
+      "project": "REPLACE_WITH_LIVE_EDUCATION_PROJECT",
+      "env_file": "/var/lib/ads-demo/operator-secrets/education.env",
+      "port": 18501,
+      "private_visitor_enabled": false
+    },
+    "agriculture": {
+      "project": "REPLACE_WITH_LIVE_AGRICULTURE_PROJECT",
+      "env_file": "/var/lib/ads-demo/operator-secrets/agriculture.env",
+      "port": 18140,
+      "private_visitor_enabled": false
+    },
+    "fleet-guard": {
+      "project": "REPLACE_WITH_LIVE_FLEETGUARD_PROJECT",
+      "env_file": "/var/lib/ads-demo/operator-secrets/fleetguard.env",
+      "port": 8793,
+      "private_visitor_enabled": false
+    },
+    "tontine": {
+      "project": "REPLACE_WITH_LIVE_TONTINE_PROJECT",
+      "env_file": "/var/lib/ads-demo/operator-secrets/tontine.env",
+      "port": 18505,
+      "private_visitor_enabled": false
+    },
+    "portal": {
+      "project": "ads-demo-portal",
+      "env_file": "/etc/ads-demo/images.env",
+      "port": 18089,
+      "private_visitor_enabled": false
+    }
+  }
+}
