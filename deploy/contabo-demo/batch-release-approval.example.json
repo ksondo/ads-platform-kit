@@ -1,0 +1,29 @@
+{
+  "release_id": "ads-five-demo-2026-11-08",
+  "manifest_sha256": "FILL_WITH_MANIFEST_SHA256_FROM_PREFLIGHT",
+  "source_shas": {
+    "education": "226662b8ba97b813f713a23c2bb50c1e5b233b1e",
+    "agriculture": "bba34165726c51c5091f4ceff7547657e03aca2f",
+    "fleet-guard": "4bb4ef21817e14bbba98457ba83f60a72f5caf12",
+    "tontine": "e9b1cd622701b4b6d411755efef8d7928ac151d5",
+    "portal": "4fad211011f905dd199294ccb9f952cd5e9a1168"
+  },
+  "$comment": "All booleans start false. Only authorized operators may mark true after independently documenting real results. No passwords, keys, accounts or secret values in this file.",
+  "gates": {
+    "operator_go": false,
+    "independent_security_review": false,
+    "ux_accessibility_acceptance": false,
+    "source_ci_and_pin_review": false,
+    "protected_backups_and_isolated_restore": false,
+    "deployed_identity_and_tls_review": false,
+    "rollback_plan_verified": false,
+    "portal_owner_controller_coordinated": false
+  },
+  "evidence": {
+    "backup_restore_record": "",
+    "security_review": "",
+    "ux_review": "",
+    "identity_tls_review": "",
+    "owner_release_go": ""
+  }
+}
