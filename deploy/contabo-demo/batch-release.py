@@ -288,10 +288,24 @@ def smoke(p, cfg):
             command(["curl", "--noproxy", "*", "--fail", "--silent",
                      "--max-time", "5", "--output", "/dev/null", url], timeout=10)
             note("LOCAL_HEALTH=PASS " + p["id"])
-            return
+            break
         except Stop:
             time.sleep(3)
-    raise Stop("New container failed local health check: " + p["id"])
+    else:
+        raise Stop("New container failed local health check: " + p["id"])
+    # Verify actual public HTTPS and certificate, never -k/--insecure. This is
+    # HTTP reachability only: signed visitor/SSO acceptance is still manual.
+    hosted = "https://" + p["host"] + ("/platforms" if p["id"] == "portal" else "/health")
+    for i in range(8):
+        try:
+            command(["curl", "--noproxy", "*", "--fail", "--silent",
+                     "--max-time", "10", "--output", "/dev/null", hosted], timeout=15)
+            note("PUBLIC_HTTPS=PASS " + p["id"])
+            break
+        except Stop:
+            time.sleep(4)
+    else:
+        raise Stop("New service cannot be verified over public HTTPS: " + p["id"])
 
 def deploy_one(p, cfg, folder, changes):
     args = compose_args(p, cfg, folder)
