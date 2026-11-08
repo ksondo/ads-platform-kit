@@ -171,7 +171,8 @@ def stage_source(p, release_id):
     folder = STAGING / release_id / p["id"]
     repo_url = "git@github.com:" + p["repo"] + ".git"
     folder.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    if not folder.exists():
+    fresh = not folder.exists()
+    if fresh:
         command(["git", "clone", "--quiet", "--no-checkout", repo_url, str(folder)], timeout=240)
     require((folder / ".git").is_dir(), "Untrusted staged Git directory: " + p["id"])
     require(command(["git", "-C", str(folder), "remote", "get-url", "origin"]) == repo_url,
@@ -179,10 +180,14 @@ def stage_source(p, release_id):
     command(["git", "-C", str(folder), "fetch", "--quiet", "--no-tags", "origin", "main"], timeout=240)
     command(["git", "-C", str(folder), "merge-base", "--is-ancestor", p["sha"], "origin/main"])
     current = command(["git", "-C", str(folder), "rev-parse", "HEAD"])
-    if current != p["sha"]:
-        require(not command(["git", "-C", str(folder), "status", "--porcelain"]),
-                "Staged repository contains local changes: " + p["id"])
+    if fresh or current != p["sha"]:
+        if not fresh:
+            require(not command(["git", "-C", str(folder), "status", "--porcelain"]),
+                    "Staged repository contains local changes: " + p["id"])
         command(["git", "-C", str(folder), "checkout", "--quiet", "--detach", p["sha"]])
+    else:
+        require(not command(["git", "-C", str(folder), "status", "--porcelain"]),
+                "Staged repository must remain immutable: " + p["id"])
     require(command(["git", "-C", str(folder), "rev-parse", "HEAD"]) == p["sha"],
             "Source commit not pinned: " + p["id"])
     require((folder / p["dockerfile"]).is_file() and
