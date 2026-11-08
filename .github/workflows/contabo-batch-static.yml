@@ -1,0 +1,47 @@
+name: Contabo batch release - safe source validation
+
+on:
+  pull_request:
+    paths:
+      - 'deploy/contabo-demo/batch-release*'
+      - '.github/workflows/contabo-five-demo-release.yml'
+      - '.github/workflows/contabo-batch-static.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/contabo-demo/batch-release*'
+      - '.github/workflows/contabo-five-demo-release.yml'
+      - '.github/workflows/contabo-batch-static.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  safe-static:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compile deployment runner without host or Docker access
+        run: python3 -m py_compile deploy/contabo-demo/batch-release.py
+      - name: Test pin validation, approval gates and operator-only dispatch
+        run: python3 -m unittest discover -s deploy/contabo-demo -p 'test_batch_release.py' -v
+      - name: Check manual workflow YAML parses
+        run: |
+          python3 -m pip install -q pyyaml
+          python3 - <<'PY'
+          import yaml
+          from pathlib import Path
+          p=Path('.github/workflows/contabo-five-demo-release.yml')
+          w=yaml.safe_load(p.read_text())
+          trigger=w.get('on', w.get(True,{}))
+          assert isinstance(trigger,dict) and set(trigger)=={'workflow_dispatch'}, trigger
+          job=w['jobs']['batch']
+          assert job['environment']=='contabo-demo-release'
+          assert job['if']=="github.ref == 'refs/heads/main'"
+          assert 'contabo-demo-release' in w['concurrency']['group']
+          print('MANUAL_ONLY_ACTION=PASS')
+          PY
