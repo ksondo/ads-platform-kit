@@ -120,11 +120,13 @@ def opportunities_api_ready():
         return json.loads(run("curl", "--noproxy", "*", "-fsS", "--max-time", "12",
                               PORTAL + "/api/opportunities/v1" + path))
 
+    # Migration 003 retired one withheld sector and its five mappings and one public solution.
+    # These are published-source exact counts, not a minimum that could expose withheld data.
     sectors = fetch("/sectors")
-    require(sectors.get("total") == 50, "Opportunities: expected 50 sector categories")
+    require(sectors.get("total") == 49, "Opportunities: expected 49 approved sector categories")
     mappings = fetch("/opportunities?limit=1")
-    require(mappings.get("total") == 333,
-            "Opportunities: expected 333 sector-to-tool mappings")
+    require(mappings.get("total") == 328,
+            "Opportunities: expected 328 approved sector-to-tool mappings")
     categories_business = fetch("/discovery/categories?family=business")
     categories_institutional = fetch("/discovery/categories?family=institutional")
     require(categories_business.get("total") == 13 and
@@ -132,9 +134,9 @@ def opportunities_api_ready():
             "Opportunities: expected 13+8 discovery categories")
     business = fetch("/discovery/solutions?family=business&limit=1")
     institutional = fetch("/discovery/solutions?family=institutional&limit=1")
-    require(business.get("total") == 102 and institutional.get("total") == 20,
-            "Opportunities: expected 102+20 solution summaries")
-    log("OPPORTUNITIES_API=PASS 50 sectors / 333 tools / 21 categories / 122 solutions")
+    require(business.get("total") == 101 and institutional.get("total") == 20,
+            "Opportunities: expected 101+20 approved solution summaries")
+    log("OPPORTUNITIES_API=PASS 49 sectors / 328 tools / 21 categories / 121 solutions")
 
 
 def approved_source():
