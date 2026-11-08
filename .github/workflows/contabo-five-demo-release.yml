@@ -1,0 +1,95 @@
+name: Contabo - five ADS demos (one manual release)
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: First run preflight (pull/check only). Deploy requires recorded host approvals.
+        type: choice
+        options: [preflight, deploy]
+        default: preflight
+        required: true
+      confirmation:
+        description: For deploy only, type DEPLOY-ADS-FIVE; never paste credentials.
+        type: string
+        default: ""
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ads-contabo-five-demo-release
+  cancel-in-progress: false
+
+jobs:
+  batch:
+    name: Pull pinned repos on Contabo and check the five-service release
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 170
+    environment: contabo-demo-release
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate dispatch intent and pinned manifest
+        env:
+          OPERATION: ${{ inputs.operation }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          python3 -m py_compile deploy/contabo-demo/batch-release.py
+          payload="$(base64 -w0 < deploy/contabo-demo/batch-release.manifest.json)"
+          python3 deploy/contabo-demo/batch-release.py --mode self-check --manifest-b64 "$payload"
+          if [[ "$OPERATION" == deploy ]]; then
+            [[ "$CONFIRMATION" == DEPLOY-ADS-FIVE ]] || { echo "::error::Type DEPLOY-ADS-FIVE to authorize the operator-gated deploy."; exit 1; }
+          else
+            [[ "$OPERATION" == preflight ]] || exit 1
+          fi
+      - name: Configure pinned SSH host key and dedicated release key
+        env:
+          SSH_KEY: ${{ secrets.CONTABO_DEPLOY_SSH_KEY }}
+          HOST_KEYS: ${{ secrets.CONTABO_DEPLOY_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          [[ -n "$SSH_KEY" && -n "$HOST_KEYS" ]] || { echo "::error::Missing required protected SSH secrets."; exit 1; }
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_KEY" > "$HOME/.ssh/ads-contabo-deploy"
+          printf '%s\n' "$HOST_KEYS" > "$HOME/.ssh/known_hosts"
+          chmod 600 "$HOME/.ssh/ads-contabo-deploy" "$HOME/.ssh/known_hosts"
+      - name: Run host-owned Git pulls and sequential preflight/deploy
+        env:
+          OPERATION: ${{ inputs.operation }}
+          HOST: ${{ vars.CONTABO_DEPLOY_HOST }}
+          USER: ${{ vars.CONTABO_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+          [[ "$HOST" =~ ^[A-Za-z0-9.-]+$ && -n "$HOST" ]] || { echo "::error::Configure CONTABO_DEPLOY_HOST in the protected environment."; exit 1; }
+          [[ "$USER" =~ ^[a-z_][a-z0-9_-]*$ ]] || { echo "::error::Configure CONTABO_DEPLOY_USER in the protected environment."; exit 1; }
+          payload="$(base64 -w0 < deploy/contabo-demo/batch-release.manifest.json)"
+          ssh=(ssh -T -i "$HOME/.ssh/ads-contabo-deploy"
+               -o StrictHostKeyChecking=yes -o IdentitiesOnly=yes
+               -o BatchMode=yes -o ConnectTimeout=20
+               -o UserKnownHostsFile="$HOME/.ssh/known_hosts")
+          if [[ "$USER" == root ]]; then
+            runner=python3
+          else
+            runner="sudo -n python3"
+          fi
+          # Host runs reviewed script via stdin and pulls each private repo
+          # from GitHub at an immutable SHA, with host-only read access.
+          "${ssh[@]}" "${USER}@${HOST}" "$runner - --mode '$OPERATION' --manifest-b64 '$payload'" \
+            < deploy/contabo-demo/batch-release.py
+      - name: GitHub release summary
+        if: always()
+        env:
+          OPERATION: ${{ inputs.operation }}
+        run: |
+          {
+            echo "## ADS five-service Contabo run"
+            echo "Mode: $OPERATION. Host result is in this job's logs."
+            echo "Five source commits are pinned in deploy/contabo-demo/batch-release.manifest.json."
+            echo "No automatic migrations, seed reset, live payments, Identity mutation or public demo activation."
+            echo "Private sign-in, EN/FR and rollback acceptance remain operator gates."
+          } >> "$GITHUB_STEP_SUMMARY"
