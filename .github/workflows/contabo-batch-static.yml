@@ -42,6 +42,6 @@ jobs:
           job=w['jobs']['batch']
           assert job['environment']=='contabo-demo-release'
           assert job['if']=="github.ref == 'refs/heads/main'"
-          assert 'contabo-demo-release' in w['concurrency']['group']
+          assert w['concurrency']['group']=='ads-contabo-five-demo-release'
           print('MANUAL_ONLY_ACTION=PASS')
           PY
