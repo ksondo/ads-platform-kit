@@ -80,15 +80,15 @@ class PortalPublisherTest(unittest.TestCase):
             target = args[-1]
             calls.append(target)
             if "/sectors" in target:
-                return json.dumps({"total": 50})
+                return json.dumps({"total": 49})
             if "/opportunities?limit=1" in target:
-                return json.dumps({"total": 333})
+                return json.dumps({"total": 328})
             if "categories?family=business" in target:
                 return json.dumps({"total": 13})
             if "categories?family=institutional" in target:
                 return json.dumps({"total": 8})
             if "solutions?family=business" in target:
-                return json.dumps({"total": 102})
+                return json.dumps({"total": 101})
             if "solutions?family=institutional" in target:
                 return json.dumps({"total": 20})
             raise AssertionError(target)
@@ -97,9 +97,17 @@ class PortalPublisherTest(unittest.TestCase):
         self.assertEqual(len(calls), 6)
         def incomplete(*args, **kwargs):
             if args[-1].endswith("/sectors"):
-                return json.dumps({"total": 49})
+                return json.dumps({"total": 48})
             return fake(*args, **kwargs)
         with patch.object(publisher, "run", side_effect=incomplete):
+            with self.assertRaises(publisher.Gate):
+                publisher.opportunities_api_ready()
+        # Previously withheld public-launch rows must not be reintroduced.
+        def extra(*args, **kwargs):
+            if args[-1].endswith("/sectors"):
+                return json.dumps({"total": 50})
+            return fake(*args, **kwargs)
+        with patch.object(publisher, "run", side_effect=extra):
             with self.assertRaises(publisher.Gate):
                 publisher.opportunities_api_ready()
 
