@@ -12,7 +12,7 @@ const sdkSource = await readFile(path.resolve(here, '../../../packages/identity-
 const PASSWORD = 'Ndole-et-Plantain-2026';
 
 // Loads the browser library into a simulated product page, the way a product would include it.
-function productPage(url, svc, clientId, sessionStorageState) {
+function productPage(url, svc, clientId, sessionStorageState, extraConfig = {}) {
   const assigned = [];
   const dom = new JSDOM(`<!doctype html><button id="b"></button>`, { url, runScripts: 'outside-only' });
   const { window } = dom;
@@ -20,7 +20,7 @@ function productPage(url, svc, clientId, sessionStorageState) {
   window.fetch = (u, init) => fetch(u, init);
   window.TextEncoder = TextEncoder;
   if (sessionStorageState) for (const [k, v] of Object.entries(sessionStorageState)) window.sessionStorage.setItem(k, v);
-  window.adsIdentityConfig = { issuer: svc.base, clientId, redirectUri: 'https://health.example.test/app/' };
+  window.adsIdentityConfig = { issuer: svc.base, clientId, redirectUri: 'https://health.example.test/app/', ...extraConfig };
   // jsdom cannot navigate across origins; record where the library sends the browser.
   window.__go = u => assigned.push(u);
   window.eval(sdkSource.replaceAll('location.assign(issuer', 'window.__go(issuer'));
@@ -97,5 +97,60 @@ describe('browser library (window.adsIdentity)', () => {
     const page = productPage('https://health.example.test/app/', svc, 'health-web');
     // Same check as src/public/workspace.js in the template repos.
     assert.equal(typeof page.window.adsIdentity?.getAccessToken, 'function');
+  });
+
+  // Demo visitor products: Identity answers a sign-in without access with error=access_denied (RFC 6749 4.1.2.1).
+  describe('a refused sign-in (error=access_denied)', () => {
+    const KEY = 'ads-identity:health-web';
+    const started = (state, returnTo = '/app/demo/personas?lang=fr') => ({ [`${KEY}:pkce:${state}`]: JSON.stringify({ verifier: 'v'.repeat(64), returnTo }) });
+    const back = (q, svcBase) => `https://health.example.test/app/?${new URLSearchParams({ error: 'access_denied', state: 'S1', iss: svcBase, ...q })}`;
+
+    it('exposes the error, cleans the address, keeps the return path and does not sign in again (autoSignIn)', async () => {
+      const page = productPage(back({ error_description: 'NO_DEMO_ACCESS' }, svc.base), svc, 'health-web', started('S1'), { autoSignIn: true });
+      await page.window.adsIdentity.ready;
+      assert.deepEqual({ ...page.window.adsIdentity.getLastError() }, { error: 'access_denied', description: 'NO_DEMO_ACCESS' });
+      assert.equal(page.assigned.length, 0, 'no new sign-in: a refusal never loops back to Identity');
+      assert.equal(page.window.location.pathname + page.window.location.search, '/app/demo/personas?lang=fr', 'return path kept, error removed');
+      assert.equal(page.window.adsIdentity.isSignedIn(), false);
+      assert.equal(await page.window.adsIdentity.getAccessToken(), null);
+      // Survives a reload of the same tab; signIn() starts afresh and forgets it.
+      const saved = { [`${KEY}:error`]: page.window.sessionStorage.getItem(`${KEY}:error`) };
+      const reloaded = productPage('https://health.example.test/app/demo/personas', svc, 'health-web', saved, { autoSignIn: true });
+      await reloaded.window.adsIdentity.ready;
+      assert.equal(reloaded.assigned.length, 0);
+      assert.equal(reloaded.window.adsIdentity.getLastError().error, 'access_denied');
+      await reloaded.window.adsIdentity.signIn();
+      assert.equal(reloaded.window.adsIdentity.getLastError(), null);
+      assert.equal(reloaded.assigned.length, 1);
+    });
+
+    it('clearLastError() and signOut() forget it', async () => {
+      const page = productPage(back({ error_description: 'DEMO_ACCESS_EXPIRED' }, svc.base), svc, 'health-web', started('S1'));
+      await page.window.adsIdentity.ready;
+      assert.equal(page.window.adsIdentity.getLastError().description, 'DEMO_ACCESS_EXPIRED');
+      page.window.adsIdentity.clearLastError();
+      assert.equal(page.window.adsIdentity.getLastError(), null);
+      const again = productPage(back({}, svc.base), svc, 'health-web', started('S1'));
+      await again.window.adsIdentity.ready;
+      assert.deepEqual({ ...again.window.adsIdentity.getLastError() }, { error: 'access_denied', description: null });
+      await again.window.adsIdentity.signOut();
+      assert.equal(again.window.adsIdentity.getLastError(), null);
+    });
+
+    it('ignores an error for a sign-in this tab did not start, from another issuer, or with an unexpected shape', async () => {
+      for (const [url, storage] of [
+        [back({ error_description: 'NO_DEMO_ACCESS' }, svc.base), {}],
+        [back({ error_description: 'NO_DEMO_ACCESS' }, 'https://evil.example'), started('S1')],
+        [back({ error: '<b>x</b>' }, svc.base), started('S1')],
+      ]) {
+        const page = productPage(url, svc, 'health-web', storage);
+        await page.window.adsIdentity.ready;
+        assert.equal(page.window.adsIdentity.getLastError(), null, url);
+        assert.equal(page.window.location.search.includes('error'), false, 'error removed from the address');
+      }
+      const odd = productPage(back({ error_description: '<script>alert(1)</script>' }, svc.base), svc, 'health-web', started('S1'));
+      await odd.window.adsIdentity.ready;
+      assert.deepEqual({ ...odd.window.adsIdentity.getLastError() }, { error: 'access_denied', description: null }, 'free text is never kept');
+    });
   });
 });

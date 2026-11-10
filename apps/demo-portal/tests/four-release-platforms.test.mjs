@@ -28,5 +28,5 @@ test('source-ready cards never publish an unverified Contabo demo link',()=>{
  }
  const commerce=catalogue.platforms.find(x=>x.id==='commerce');
  assert.equal(commerce.demoUrl,'https://commerce.demo.africadigitalsynergy.com/commerce/demo');
- assert.equal(catalogue.publicDemoRequestsEnabled,true,'keep existing request-entry behavior');
+ assert.equal(catalogue.publicDemoRequestsEnabled,false,'private mode: Identity admits approved visitors only (owner decision 10 Nov 2026)');
 });

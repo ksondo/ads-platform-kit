@@ -120,8 +120,8 @@
       "key": "agriculture",
       "reference_prefix": "AGR",
       "name": {
-        "en": "ADS Agriculture",
-        "fr": "ADS Agriculture"
+        "en": "ADS Agriculture (AfriNourish)",
+        "fr": "ADS Agriculture (AfriNourish)"
       },
       "client_id": "agriculture-web",
       "product_slug": "agriculture",

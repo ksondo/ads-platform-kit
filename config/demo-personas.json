@@ -72,7 +72,7 @@
       "personas": [
         {"key": "shopper", "label": {"en": "Shopper", "fr": "Client"}, "hint": {"en": "Finds products, orders and tracks them", "fr": "Trouve des produits, commande et suit"}, "org": "personal", "roles": ["commerce_buyer"]},
         {"key": "shop-owner", "label": {"en": "Shop owner", "fr": "Propriétaire de la boutique"}, "hint": {"en": "Products, orders, sales and cash to the bank", "fr": "Produits, commandes, ventes et dépôts"}, "org": "main", "roles": ["merchant_owner"]},
-        {"key": "shop-manager", "label": {"en": "Shop manager", "fr": "Gérant de la boutique"}, "hint": {"en": "Approves refunds and runs the shop", "fr": "Valide les remboursements et gère la boutique"}, "org": "main", "roles": ["commerce_manager"]},
+        {"key": "shop-manager", "label": {"en": "Shop manager", "fr": "Gérant de la boutique"}, "hint": {"en": "Approves refunds with a PIN at the till", "fr": "Approuve les remboursements avec un code au point de vente"}, "org": "main", "roles": ["commerce_manager"]},
         {"key": "cashier", "label": {"en": "Cashier", "fr": "Caissier"}, "hint": {"en": "Rings up counter sales", "fr": "Enregistre les ventes au comptoir"}, "org": "main", "roles": ["commerce_cashier"]},
         {"key": "accountant", "label": {"en": "Accountant", "fr": "Comptable"}, "hint": {"en": "Sales and cash reports", "fr": "Rapports de ventes et de caisse"}, "org": "main", "roles": ["commerce_accountant"]},
         {"key": "investor", "label": {"en": "Investor", "fr": "Investisseur"}, "hint": {"en": "Follows a shop that gave consent (read-only)", "fr": "Suit une boutique qui a donné son accord (lecture seule)"}, "org": "main", "roles": ["commerce_investor"], "internal_only": true},
@@ -190,8 +190,8 @@
       "personas": [
         {"key": "farmer", "label": {"en": "Farmer", "fr": "Agriculteur"}, "hint": {"en": "Lists harvests and follows sales", "fr": "Publie ses récoltes et suit ses ventes"}, "org": "main", "roles": ["farmer"]},
         {"key": "buyer", "label": {"en": "Buyer", "fr": "Acheteur"}, "hint": {"en": "Buys produce", "fr": "Achète des produits agricoles"}, "org": "main", "roles": ["buyer"]},
-        {"key": "reviewer", "label": {"en": "Reviewer (ADS)", "fr": "Vérificateur (ADS)"}, "hint": {"en": "Reviews listings", "fr": "Vérifie les annonces"}, "org": "staff", "roles": ["reviewer"]},
-        {"key": "support", "label": {"en": "Support agent (ADS)", "fr": "Agent d'assistance (ADS)"}, "hint": {"en": "Answers help requests", "fr": "Répond aux demandes d'aide"}, "org": "staff", "roles": ["support"]},
+        {"key": "reviewer", "label": {"en": "Reviewer (ADS)", "fr": "Vérificateur (ADS)"}, "hint": {"en": "Reviews listings", "fr": "Vérifie les annonces"}, "org": "staff", "roles": ["reviewer"], "internal_only": true},
+        {"key": "support", "label": {"en": "Support agent (ADS)", "fr": "Agent d'assistance (ADS)"}, "hint": {"en": "Answers help requests", "fr": "Répond aux demandes d'aide"}, "org": "staff", "roles": ["support"], "internal_only": true},
         {"key": "coop-manager", "label": {"en": "Cooperative manager", "fr": "Responsable de GIC"}, "hint": {"en": "Members, collection day and statements", "fr": "Membres, jour de collecte et relevés"}, "org": "main", "roles": ["coop_manager"]},
         {"key": "extension-officer", "label": {"en": "Extension officer", "fr": "Agent de vulgarisation"}, "hint": {"en": "Follows farms, visits and advice", "fr": "Suit les exploitations, les visites et les conseils"}, "org": "main", "roles": ["extension_officer"]},
         {"key": "lender-officer", "label": {"en": "Lender officer", "fr": "Agent de crédit"}, "hint": {"en": "Credit and grant applications (records only)", "fr": "Demandes de crédit et de subvention (dossiers uniquement)"}, "org": "main", "roles": ["lender_officer"]},

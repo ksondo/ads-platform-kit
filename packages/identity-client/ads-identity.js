@@ -9,6 +9,12 @@
  *
  * Then: await adsIdentity.getAccessToken()  -> string | null
  *       adsIdentity.signIn() / adsIdentity.signIn({ screen: 'register' }) / adsIdentity.signOut()
+ *       adsIdentity.getLastError() -> { error, description } | null
+ *         A sign-in this tab started came back refused (RFC 6749 4.1.2.1), e.g. a demo product's visitor
+ *         without access: { error: 'access_denied', description: 'NO_DEMO_ACCESS' | 'DEMO_ACCESS_EXPIRED' |
+ *         'DEMO_ACCESS_REVOKED' }. Show the product's own "no access" card (with Sign out / Switch account)
+ *         instead of signing in again. Kept in this tab's sessionStorage until the next signIn(), signOut()
+ *         or clearLastError(); autoSignIn is not attempted while it is set, so a refusal never loops.
  *
  * Security notes: tokens are never put in localStorage. The short-lived access token lives in
  * memory; the rotating refresh token lives in sessionStorage (this tab only) so a reload does not
@@ -36,6 +42,8 @@
   var KEY = 'ads-identity:' + clientId;
 
   var accessToken = null;
+  var ERROR_CODE = /^[a-z_]{1,64}$/;
+  var ERROR_DESCRIPTION = /^[A-Za-z0-9_]{1,64}$/;
   var accessExp = 0;
   var refreshPromise = null;
   var listeners = [];
@@ -185,10 +193,17 @@
       var rest = params.toString();
       history.replaceState(null, '', pending.returnTo || (location.pathname + (rest ? '?' + rest : '') + location.hash));
     };
+    // A refusal of a sign-in this tab started (state matches; issuer, when given, is ours): remember it so the
+    // product can show its "no access" card. Only a fixed-shape code is kept, never free text from the address.
+    var error = params.get('error');
+    if (saved && error && (!params.get('iss') || params.get('iss') === issuer) && ERROR_CODE.test(error)) {
+      var description = params.get('error_description');
+      ss('error', JSON.stringify({ error: error, description: description && ERROR_DESCRIPTION.test(description) ? description : null }));
+    }
     // Unknown state (not started here), an error, or a response from another issuer: discard it.
-    if (!saved || params.get('error') || params.get('iss') !== issuer) { clean(); return Promise.resolve(); }
+    if (!saved || error || params.get('iss') !== issuer) { clean(); return Promise.resolve(); }
     return postForm('/token', { grant_type: 'authorization_code', code: params.get('code'), code_verifier: pending.verifier, client_id: clientId, redirect_uri: redirectUri })
-      .then(store)
+      .then(function (tokens) { ss('error', null); store(tokens); })
       .catch(function () { clear(); })
       .then(clean);
   }
@@ -212,9 +227,15 @@
       return { id: c.sub, email: c.email, name: c.name || null, tenantId: c.tenant_id, roles: c.roles || [] };
     },
     isSignedIn: function () { return Boolean(accessToken && accessExp > Date.now()) || Boolean(ss('refresh')); },
+    // The refusal of this tab's last sign-in ({ error, description }), or null. See the header comment.
+    getLastError: function () {
+      try { var e = JSON.parse(ss('error') || 'null'); return e && ERROR_CODE.test(e.error) ? { error: e.error, description: e.description || null } : null; } catch (x) { return null; }
+    },
+    clearLastError: function () { ss('error', null); },
     signIn: function (options) {
       if (!configured()) throw new Error('ADS Identity is not configured (data-issuer and data-client-id).');
       options = options || {};
+      ss('error', null);
       var verifier = random(48);
       var state = random(18);
       return challenge(verifier).then(function (codeChallenge) {
@@ -231,6 +252,7 @@
       var rt = ss('refresh');
       var go = function () {
         clear();
+        ss('error', null);
         location.assign(issuer + '/logout?' + new URLSearchParams({ client_id: clientId, post_logout_redirect_uri: postLogoutRedirectUri }).toString());
       };
       if (!rt) return go();
@@ -253,7 +275,8 @@
         if (!accessToken && ss('refresh')) return refresh();
         return null;
       }).then(function () {
-        if (autoSignIn && !api.isSignedIn()) return api.signIn();
+        // A refused sign-in is not retried automatically: the product shows its "no access" card instead.
+        if (autoSignIn && !api.isSignedIn() && !api.getLastError()) return api.signIn();
         return null;
       })
     : Promise.resolve();

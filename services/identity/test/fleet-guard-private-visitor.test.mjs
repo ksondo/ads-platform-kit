@@ -1,7 +1,7 @@
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { browser, csrfFrom, pkce, startService } from './helpers.mjs';
+import { assertAccessDenied, browser, csrfFrom, pkce, startService } from './helpers.mjs';
 import { hashPassword } from '../src/security.mjs';
 import { PRIVATE_VISITOR_PLATFORMS } from '../src/demo-access.mjs';
 
@@ -115,7 +115,7 @@ describe('Fleet Guard private operator visitors', () => {
     const stale = await code(b);
     await svc.pool.query("UPDATE platform.demo_access_grants SET expires_at=now()-interval '1 second' WHERE id=$1", [v.grantId]);
     assert.equal((await exchange(stale)).status, 400);
-    assert.equal((await code(b)).r.status, 403);
+    assertAccessDenied((await code(b)).r, REDIRECT, 'fleet-private', 'DEMO_ACCESS_EXPIRED');
     assert.equal((await refresh(rotated.refresh_token)).status, 400);
     assert.equal((await svc.app.demoAccess.checkGrant('fleet-guard', v.userId)).reason, 'EXPIRED');
     assert.equal((await svc.pool.query('SELECT count(*)::int AS n FROM platform.users WHERE id=$1', [v.userId])).rows[0].n, 1);
@@ -131,7 +131,7 @@ describe('Fleet Guard private operator visitors', () => {
     assert.equal((await svc.app.demoAccess.checkGrant('fleet-guard', v.userId)).reason, 'REVOKED');
     assert.equal((await exchange(pending)).status, 400);
     assert.equal((await refresh(tokens.refresh_token)).status, 400);
-    assert.equal((await code(b)).r.status, 403);
+    assertAccessDenied((await code(b)).r, REDIRECT, 'fleet-private', 'DEMO_ACCESS_REVOKED');
   });
 
   it('requires its own strong check secret before creating any account', async () => {

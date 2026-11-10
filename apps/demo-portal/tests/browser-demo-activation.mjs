@@ -68,9 +68,9 @@ test('demo activation: preparing by default, open/unavailable on operator switch
        assert.match(await card.innerText(),state==='unavailable'?(lang==='fr'?/Momentanément indisponible/:/Temporarily unavailable/):(lang==='fr'?/Démo en préparation/:/Demo being prepared/));
       }
      }
-     // Commerce keeps its existing link whatever the activation file says.
+     // Commerce keeps its existing link whatever the activation file says, with the portal language added.
      const commerce=page.locator('.platform-card[data-demo-state="live"]');
-     assert.equal(await commerce.count(),1);assert.equal(await commerce.getAttribute('href'),COMMERCE);
+     assert.equal(await commerce.count(),1);assert.equal(await commerce.getAttribute('href'),COMMERCE+'?lang='+lang);
      assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'overflow /platforms '+width+' '+lang);
      if(shots)await page.screenshot({path:join(shots,`portal-${name}-platforms-${width}-${lang}.png`),fullPage:true,animations:'disabled'});
      // Detail pages: open = one launch link; unavailable/preparing = clear state, no link to the product host.

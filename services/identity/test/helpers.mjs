@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -164,4 +165,17 @@ export async function createActiveUser(pool, email, password) {
   const id = crypto.randomUUID();
   await pool.query("INSERT INTO platform.users(id,email,password_hash,status,email_verified_at) VALUES ($1,$2,$3,'active',now())", [id, email, await hashPassword(password)]);
   return { id, email, password };
+}
+
+// A demo visitor product's refused sign-in (RFC 6749 §4.1.2.1): 302 back to the registered redirect URI with
+// error=access_denied, the request's state and a machine-readable reason; never a code, never an Identity page.
+export function assertAccessDenied(r, redirect, state, description) {
+  assert.equal(r.status, 302, 'access_denied goes back to the product');
+  const url = new URL(r.location);
+  assert.equal(url.origin + url.pathname, redirect, 'exactly the registered redirect URI');
+  assert.equal(url.searchParams.get('error'), 'access_denied');
+  assert.equal(url.searchParams.get('state'), state);
+  if (description) assert.equal(url.searchParams.get('error_description'), description);
+  assert.equal(url.searchParams.get('code'), null, 'no authorization code');
+  return url;
 }

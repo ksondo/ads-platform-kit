@@ -1,7 +1,7 @@
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { browser, csrfFrom, pkce, startService } from './helpers.mjs';
+import { assertAccessDenied, browser, csrfFrom, pkce, startService } from './helpers.mjs';
 import { hashPassword } from '../src/security.mjs';
 
 const secrets = { education: 'education-private-fixture-' + 'e'.repeat(40), agriculture: 'agriculture-private-fixture-' + 'a'.repeat(40), tontine: 'tontine-private-fixture-' + 't'.repeat(40) };
@@ -144,7 +144,7 @@ describe('operator private visitors for Education, Agriculture and Tontine', () 
       const stale=await code(b,platform);
       await svc.pool.query("UPDATE platform.demo_access_grants SET expires_at=now()-interval '1 second' WHERE id=$1",[first.grantId]);
       assert.equal((await exchange(platform,stale)).status,400,'pre-issued code refused after clock expiry');
-      assert.equal((await code(b,platform)).r.status,403,'expiry cannot fall back to ordinary personal access');
+      { const denied=await code(b,platform); assertAccessDenied(denied.r,denied.redirect,'private-platform','DEMO_ACCESS_EXPIRED'); } // expiry cannot fall back to ordinary personal access
       const refresh=await fetch(`${svc.base}/token`,{method:'POST',body:new URLSearchParams({grant_type:'refresh_token',refresh_token:tokens.refresh_token,client_id:`${platform}-web`})});
       assert.equal(refresh.status,400);
       const secondBrowser=browser(svc.base), secondLogin=await secondBrowser.get('/login');
@@ -156,7 +156,7 @@ describe('operator private visitors for Education, Agriculture and Tontine', () 
       assert.equal((await exchange(platform,secondPending)).status,400,'pre-issued code refused after revocation');
       const revokedRefresh=await fetch(`${svc.base}/token`,{method:'POST',body:new URLSearchParams({grant_type:'refresh_token',refresh_token:secondTokens.refresh_token,client_id:`${platform}-web`})});
       assert.equal(revokedRefresh.status,400);
-      assert.equal((await code(secondBrowser,platform)).r.status,403,'revoked visitor cannot obtain a new code');
+      { const denied=await code(secondBrowser,platform); assertAccessDenied(denied.r,denied.redirect,'private-platform','DEMO_ACCESS_REVOKED'); } // revoked visitor cannot obtain a new code
       assert.equal((await svc.pool.query('SELECT count(*)::int AS n FROM platform.users WHERE id=ANY($1::uuid[])',[[first.userId,second.userId]])).rows[0].n,2,'expiry/revocation retain accounts');
       assert.equal(svc.mailer.outbox.length,0);
     });
