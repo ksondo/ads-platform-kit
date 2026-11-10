@@ -185,9 +185,11 @@ export function assertAccessDenied(r, redirect, state, description) {
 // Sets the per-client access_denied return (clients.demo.json demo_access_denied_redirect) of a running demo
 // service: the reviewed client list is loaded with the flag true for exactly these clients (false for all
 // others) and the Demo Access registry is rebuilt through the same loader the service uses.
+// clientIds = null restores the reviewed list exactly as committed (the service default).
 export function setDeniedRedirect(svc, clientIds = []) {
   const doc = JSON.parse(readFileSync(path.resolve(here, '../../../config/clients.demo.json'), 'utf8'));
-  for (const client of doc.products) client.demo_access_denied_redirect = clientIds.includes(client.client_id);
+  if (clientIds !== null) for (const client of doc.products) client.demo_access_denied_redirect = clientIds.includes(client.client_id);
+  clientIds ??= doc.products.filter(c => c.demo_access_denied_redirect === true).map(c => c.client_id);
   for (const id of clientIds) assert.ok(doc.products.some(c => c.client_id === id), `unknown client ${id}`);
   const registry = svc.app.demoAccess.registry;
   const fresh = loadPlatforms({ platformsFile: svc.config.demoAccess.platformsFile, clientsDoc: doc });
@@ -196,10 +198,10 @@ export function setDeniedRedirect(svc, clientIds = []) {
   for (const id of clientIds) assert.ok([...registry.values()].some(p => p.clientId === id && p.deniedRedirect === true), `${id} is a Demo Access product`);
 }
 
-// Runs fn with the access_denied return turned on for these clients, then turns it off again.
+// Runs fn with the access_denied return turned on for exactly these clients, then restores the reviewed list.
 export async function withDeniedRedirect(svc, clientIds, fn) {
   setDeniedRedirect(svc, clientIds);
-  try { return await fn(); } finally { setDeniedRedirect(svc, []); }
+  try { return await fn(); } finally { setDeniedRedirect(svc, null); }
 }
 
 // The Identity "No access yet" page (403): what every product gets unless its client opted in to access_denied.

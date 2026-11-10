@@ -115,8 +115,10 @@ describe('Fleet Guard private operator visitors', () => {
     const stale = await code(b);
     await svc.pool.query("UPDATE platform.demo_access_grants SET expires_at=now()-interval '1 second' WHERE id=$1", [v.grantId]);
     assert.equal((await exchange(stale)).status, 400);
-    assertNoAccessPage((await code(b)).r); // default (flag off): the Identity page, as on main
-    await withDeniedRedirect(svc, ['fleet-guard-web'], async () => assertAccessDenied((await code(b)).r, REDIRECT, 'fleet-private', 'DEMO_ACCESS_EXPIRED'));
+    // Default (fleet-guard-web opted in, clients.demo.json): access_denied back to Fleet Guard, no code.
+    const denied = assertAccessDenied((await code(b)).r, REDIRECT, 'fleet-private', 'DEMO_ACCESS_EXPIRED');
+    assert.equal(denied.searchParams.get('iss'), svc.config.issuer);
+    await withDeniedRedirect(svc, [], async () => assertNoAccessPage((await code(b)).r)); // flag off: the Identity page
     assert.equal((await refresh(rotated.refresh_token)).status, 400);
     assert.equal((await svc.app.demoAccess.checkGrant('fleet-guard', v.userId)).reason, 'EXPIRED');
     assert.equal((await svc.pool.query('SELECT count(*)::int AS n FROM platform.users WHERE id=$1', [v.userId])).rows[0].n, 1);
@@ -132,8 +134,10 @@ describe('Fleet Guard private operator visitors', () => {
     assert.equal((await svc.app.demoAccess.checkGrant('fleet-guard', v.userId)).reason, 'REVOKED');
     assert.equal((await exchange(pending)).status, 400);
     assert.equal((await refresh(tokens.refresh_token)).status, 400);
-    assertNoAccessPage((await code(b)).r); // default (flag off): the Identity page, as on main
-    await withDeniedRedirect(svc, ['fleet-guard-web'], async () => assertAccessDenied((await code(b)).r, REDIRECT, 'fleet-private', 'DEMO_ACCESS_REVOKED'));
+    // Default (fleet-guard-web opted in, clients.demo.json): access_denied back to Fleet Guard, no code.
+    const denied = assertAccessDenied((await code(b)).r, REDIRECT, 'fleet-private', 'DEMO_ACCESS_REVOKED');
+    assert.equal(denied.searchParams.get('iss'), svc.config.issuer);
+    await withDeniedRedirect(svc, [], async () => assertNoAccessPage((await code(b)).r)); // flag off: the Identity page
   });
 
   it('requires its own strong check secret before creating any account', async () => {
@@ -151,6 +155,9 @@ describe('Fleet Guard private operator visitors', () => {
     assert.deepEqual(c.personas, ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'bank-agent', 'bank-officer']);
     assert.equal((await svc.app.demoAccess.checkGrant('fleet-guard', c.userId)).access, 'none');
     assert.equal((await svc.app.demoAccess.checkGrant('commerce', c.userId)).access, 'granted');
+    // No Fleet Guard grant: by default access_denied back to Fleet Guard with state and iss, never a code.
+    const denied = assertAccessDenied((await code(await signIn(c.email))).r, REDIRECT, 'fleet-private', 'NO_DEMO_ACCESS');
+    assert.equal(denied.searchParams.get('iss'), svc.config.issuer);
     assert.equal(svc.mailer.outbox.length, 0, 'private mode sends no mail');
   });
 });

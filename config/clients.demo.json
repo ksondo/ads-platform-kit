@@ -646,7 +646,7 @@
       ],
       "self_service_roles": [],
       "allow_personal_workspace": false,
-      "demo_access_denied_redirect": false,
+      "demo_access_denied_redirect": true,
       "admin_roles": [
         "owner_admin"
       ],
