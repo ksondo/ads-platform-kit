@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "release_id": "ads-contabo-consolidated-2026-11-10",
+  "target": {
+    "host": "vmi3191089",
+    "environment": "demo",
+    "ingress": "https://demo.africadigitalsynergy.com"
+  },
+  "status": "SOURCE_PINNED__NOT_APPROVED_FOR_DEPLOY",
+  "summary": "One coordinated maintenance-window release. No CI, deployment, migration, seed reset, account creation, or portal activation happens when this manifest is committed.",
+  "immutable_sources": [
+    {
+      "id": "ads-identity",
+      "repo": "ksondo/ads-platform-kit",
+      "sha": "119eb34017029817eb237230649735a3395c5864",
+      "kind": "shared-auth",
+      "deployment_order": 1,
+      "host": "login.demo.africadigitalsynergy.com",
+      "required_gates": [
+        "independent_security_review",
+        "demo_identity_backup_restore",
+        "oidc_callback_check"
+      ]
+    },
+    {
+      "id": "commerce",
+      "repo": "ksondo/ADS-Commerce-Platform",
+      "sha": "7c40e214c6b364d075506d45eba06ac708c0a424",
+      "kind": "product",
+      "deployment_order": 2,
+      "host": "commerce.demo.africadigitalsynergy.com",
+      "migration": "125_product_names_en_fr.sql",
+      "required_gates": [
+        "commerce_database_backup_restore",
+        "migration_125_verified",
+        "reset_explicitly_approved"
+      ]
+    },
+    {
+      "id": "education",
+      "repo": "ksondo/Education-and-intelligent-services",
+      "sha": "bf4fb02e4c46ec370ade3cb461666b48ffac2135",
+      "kind": "product",
+      "deployment_order": 3,
+      "host": "education.demo.africadigitalsynergy.com",
+      "required_gates": [
+        "education_schema_085_086_checked",
+        "education_seed_and_login_verified"
+      ]
+    },
+    {
+      "id": "agriculture",
+      "repo": "ksondo/Agriculture",
+      "sha": "7c6d8db8c3f0685f527d334507cabedd7356a54b",
+      "kind": "product",
+      "deployment_order": 4,
+      "host": "agriculture.demo.africadigitalsynergy.com",
+      "required_gates": [
+        "privileged_seed_worker_isolated",
+        "visitor_grant_test"
+      ]
+    },
+    {
+      "id": "fleet-guard",
+      "repo": "ksondo/Fleet-guard-and-intelligent-services",
+      "sha": "f73bfb3c0659eeeeaf2658225161ab2d9a4c77ec",
+      "kind": "product",
+      "deployment_order": 5,
+      "host": "fleetguard.demo.africadigitalsynergy.com",
+      "depends_on": [
+        "ads-identity"
+      ],
+      "required_gates": [
+        "refusal_return_live_oidc",
+        "visitor_grant_test"
+      ]
+    },
+    {
+      "id": "ads-portal",
+      "repo": "ksondo/ads-platform-kit",
+      "sha": "119eb34017029817eb237230649735a3395c5864",
+      "kind": "public-portal",
+      "deployment_order": 6,
+      "host": "demo.africadigitalsynergy.com",
+      "depends_on": [
+        "ads-identity",
+        "commerce",
+        "education",
+        "agriculture",
+        "fleet-guard"
+      ],
+      "required_gates": [
+        "portal_owner_controller_coordinated",
+        "no_public_activation_before_acceptance"
+      ]
+    }
+  ],
+  "excluded_until_certified": [
+    {
+      "id": "digital-tontine",
+      "repo": "ksondo/Digital-tontine-and-intelligent-services",
+      "pr": 42,
+      "reason": "Latest demo-journey E2E was in progress, PR remains draft, and protected isolated database restore + financial-security approval are not evidenced. Must not use older pinned SHA from five-demo manifest."
+    }
+  ],
+  "hard_gates": {
+    "preflight": "Not run on Contabo; verify live compose project labels/ports/network, SSH credentials, disk capacity, HTTPS issuer and current container/image digests.",
+    "source_ci": "Exact merged SHAs must be on origin/main; build images and record matching immutable SHA tags/digests.",
+    "security": "Independent Identity, tenant isolation, grant expiry/revocation, privileged worker and financial mock-mode review required before change window.",
+    "backups": "Protected pre-change snapshots AND independently verified isolated restores of existing Commerce, shared demo Identity and each modified product database; retain current images.",
+    "migration": "Run Commerce schema migration 125 with approved schema-owner migrator after backup and before new Commerce API; validate RLS and retained rows. Never auto-rollback SQL.",
+    "reset": "Demo-only Commerce --reset only after backup and explicit data-reset approval; it rewrites seeded products and clears demo POS/cash activity. No production reset.",
+    "accounts": "QA/partner accounts require confirmed recipient identities and operator-only credential storage; do not commit or print passwords.",
+    "activation": "Test local health then live HTTPS, OIDC, EN/FR, persona switching, no-access, role/tenant separation, fake-money and rollback; publish portal links last.",
+    "approval": "Release owner and authorized host operator must approve exact SHA/digests and evidence before any deploy."
+  },
+  "existing_workflow_constraint": "The existing contabo-five-demo-release workflow requires Education, Agriculture, Fleet Guard, Tontine and Portal, does not deploy Commerce or Identity, and currently pins older SHAs. Do not dispatch it for this six-service release without separately reviewed workflow changes.",
+  "operator_runbook": "deploy/contabo-demo/ADS_ONE_TIME_RELEASE_20261110.md"
+}
