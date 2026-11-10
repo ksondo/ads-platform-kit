@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withTransaction } from './db.mjs';
 import { isDemoDomain } from './config.mjs';
-import { ensurePersonalWorkspace } from './demo.mjs';
+import { demoAccessDeniedRedirect, ensurePersonalWorkspace } from './demo.mjs';
 import { renderEmail } from './mailer.mjs';
 import { fail, isEmail, normalizeEmail, randomToken, safeEqual, sha256 } from './security.mjs';
 
@@ -37,6 +37,8 @@ export function loadPlatforms({ platformsFile, personasDoc, clientsDoc }) {
     if (!/^[a-z][a-z0-9-]{1,39}$/.test(p.key ?? '')) throw new Error(`DEMO_ACCESS_PLATFORM_KEY_INVALID:${p.key}`);
     const client = clients.products.find(c => c.client_id === p.client_id);
     if (!client) throw new Error(`DEMO_ACCESS_CLIENT_UNKNOWN:${p.client_id}`);
+    let deniedRedirect;
+    try { deniedRedirect = demoAccessDeniedRedirect(client); } catch { throw new Error(`DEMO_ACCESS_DENIED_REDIRECT_INVALID:${p.client_id}`); }
     const defs = personas.products?.[p.product_slug]?.personas ?? [];
     const orgs = new Map((client.demo_orgs ?? []).map(o => [o.key, o]));
     const list = (p.personas ?? []).map(key => {
@@ -54,7 +56,7 @@ export function loadPlatforms({ platformsFile, personasDoc, clientsDoc }) {
     if (!orgKeys.length) throw new Error(`DEMO_ACCESS_NO_ORGANISATION:${p.key}`);
     out.set(p.key, {
       key: p.key, prefix: String(p.reference_prefix ?? p.key.slice(0, 3)).toUpperCase(), name: p.name, clientId: p.client_id,
-      slug: p.product_slug, origins: p.origins ?? [], entryUrl: p.entry_url, personas: list,
+      slug: p.product_slug, origins: p.origins ?? [], entryUrl: p.entry_url, personas: list, deniedRedirect,
       orgs: orgKeys.map(k => ({ key: k, name: orgs.get(k).name })), inviteOrg: orgKeys.includes('main') ? 'main' : orgKeys[0],
     });
   }

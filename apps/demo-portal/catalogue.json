@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "publicDemoRequestsEnabled": true,
+  "publicDemoRequestsEnabled": false,
   "publicSite": "https://africadigitalsynergy.com",
   "platforms": [
     {
@@ -43,8 +43,8 @@
     },
     {
       "id": "agriculture",
-      "name": "Agriculture",
-      "fr": "Agriculture",
+      "name": "Agriculture (AfriNourish)",
+      "fr": "Agriculture (AfriNourish)",
       "summary": "Farm records, production cycles, buyer journeys and offline-friendly tools in a private test workspace",
       "image": "photo-1500382017468-9049fed747ef",
       "icon": "🌱",

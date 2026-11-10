@@ -4,6 +4,7 @@
   "environment": "demo",
   "domain": "test.africadigitalsynergy.com",
   "demo_grants": "demo-orgs: the demo user and second demo user get every role listed in each demo organisation (customer and staff roles); the demo admin owns every demo organisation and gets the product admin_roles there.",
+  "demo_access_denied_redirect_rule": "Demo Access products only (config/demo-access-platforms.json). Default false: a visitor without access (no grant, expired or revoked) sees the Identity \"No access yet\" page. Set true for a product only once its app uses the kit ads-identity.js getLastError() and shows its own no-access card with Sign out and Switch account; Identity then returns error=access_denied to the product's registered redirect URI.",
   "role_rules": "assignable_roles never contain ADS-only roles (ads_only_roles); those are granted only by the operator CLI (grant-role, demo-orgs) inside organisations flagged ADS staff.",
   "products": [
     {
@@ -239,6 +240,7 @@
         "applicant"
       ],
       "allow_personal_workspace": true,
+      "demo_access_denied_redirect": false,
       "admin_roles": [
         "institution_admin"
       ],
@@ -382,6 +384,7 @@
       ],
       "self_service_roles": [],
       "allow_personal_workspace": false,
+      "demo_access_denied_redirect": false,
       "admin_roles": [
         "tenant_admin"
       ],
@@ -442,6 +445,7 @@
         "commerce_buyer"
       ],
       "allow_personal_workspace": true,
+      "demo_access_denied_redirect": false,
       "admin_roles": [
         "merchant_owner"
       ],
@@ -642,6 +646,7 @@
       ],
       "self_service_roles": [],
       "allow_personal_workspace": false,
+      "demo_access_denied_redirect": true,
       "admin_roles": [
         "owner_admin"
       ],
@@ -715,6 +720,7 @@
       ],
       "self_service_roles": [],
       "allow_personal_workspace": false,
+      "demo_access_denied_redirect": false,
       "admin_roles": [
         "group_admin"
       ],
@@ -1146,6 +1152,7 @@
         "buyer"
       ],
       "allow_personal_workspace": true,
+      "demo_access_denied_redirect": false,
       "admin_roles": [
         "tenant_admin"
       ],

@@ -51,7 +51,7 @@ test('private-first portal and Commerce introduction: EN/FR at 360/768/1280 with
      if(name==='portal-commerce'){
       const label=lang==='fr'?'Ouvrir la démo privée':'Open private demo';
       const launch=page.getByRole('link',{name:new RegExp(label)}).first();
-      assert.equal(await launch.getAttribute('href'),'https://commerce.demo.africadigitalsynergy.com/commerce/demo');
+      assert.equal(await launch.getAttribute('href'),'https://commerce.demo.africadigitalsynergy.com/commerce/demo?lang='+lang);
       assert.equal(await launch.getAttribute('rel'),'noopener noreferrer');
      }
     }

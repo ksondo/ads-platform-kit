@@ -55,6 +55,7 @@ function demoStatus(p){
  return activationOf(p);
 }
 // The product overview receives the visitor's language; the product keeps it through sign-in (ui_locales).
+const withLang=url=>{const u=new URL(url);u.searchParams.set("lang",lang);return u.toString();};
 const destinationUrl=p=>{const u=new URL(destinationOf(p));u.searchParams.set("lang",lang);return u.toString();};
 let opportunityCounts={sectors:null,businesses:null,institutional:null};
 const s = (v) => String(v == null ? "" : v).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -105,7 +106,8 @@ function launch(target, label) {
   // opens from an explicit user click into a separate tab. Inside that tab,
   // ADS Identity redirects to sign-in and then back to the same platform.
   // noopener prevents the new tab from controlling the portal.
-  return url ? link(url,s(label)+' ↗',"btn btn-gold",'target="_blank" rel="noopener noreferrer"') : pill(t("demoPending"),"muted");
+  // The product receives the portal language (?lang=en|fr) and keeps it through sign-in.
+  return url ? link(withLang(url),s(label)+' ↗',"btn btn-gold",'target="_blank" rel="noopener noreferrer"') : pill(t("demoPending"),"muted");
 }
 function corporateReturnBar(){
  if(catalogue.companySiteLinksEnabled!==true)return '';
@@ -131,7 +133,8 @@ function africaArt(){
 function platformCard(p){
  const n=catalogue.tools.filter(x=>x.platformId===p.id).length;
  const demo=safeDemo(p.demoUrl),url=demo||platformUrl(p);
- const state=demoStatus(p),open=state==="open",href=open?destinationUrl(p):url,external=Boolean(demo)||open;
+ // Verified demo links (Commerce) also carry the portal language, like the activation-managed products.
+ const state=demoStatus(p),open=state==="open",href=open?destinationUrl(p):demo?withLang(demo):url,external=Boolean(demo)||open;
  const status=state==="open"?pill(t("demoAvailable"),"online"):state==="unavailable"?pill(t("demoUnavailable"),"warn"):state==="preparing"?pill(t("demoPending"),"muted"):"";
  const media=platformImage(p)?'<img src="'+s(platformImage(p))+'" alt="" decoding="async" loading="lazy" width="640" height="360"/>':'<span class="platform-placeholder" aria-hidden="true">◇</span>';
  return '<a class="platform-card" data-demo-state="'+s(state)+'" href="'+s(href)+'"'+(external?' target="_blank" rel="noopener noreferrer"':'')+'><span class="platform-image">'+media+'</span>'+

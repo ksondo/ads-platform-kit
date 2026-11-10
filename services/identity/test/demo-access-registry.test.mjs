@@ -40,4 +40,22 @@ describe('demo access platform registry', () => {
       assert.match(p.entryUrl, /^https:\/\/[a-z-]+\.demo\.africadigitalsynergy\.com\/.*demo\/personas$/);
     }
   });
+  // Demo parity (10 Nov 2026): Agriculture's ADS staff personas are internal like Commerce's staff-only personas,
+  // the visitor list is unchanged, and the product is shown under its owner-chosen name.
+  it('Agriculture: reviewer and support are internal ADS staff personas; visitors keep the same ten personas', () => {
+    const personas = JSON.parse(readFileSync(new URL('../../../config/demo-personas.json', import.meta.url), 'utf8')).products.agriculture.personas;
+    for (const key of ['reviewer', 'support']) {
+      const def = personas.find(x => x.key === key);
+      assert.equal(def.internal_only, true, key);
+      assert.equal(def.org, 'staff', key);
+    }
+    const agriculture = registry.get('agriculture');
+    assert.deepEqual(agriculture.personas.map(x => x.key), ['farmer', 'buyer', 'coop-manager', 'extension-officer', 'lender-officer', 'input-supplier', 'farm-reviewer', 'help-desk', 'org-admin', 'demo-colleague']);
+    assert.deepEqual(agriculture.name, { en: 'ADS Agriculture (AfriNourish)', fr: 'ADS Agriculture (AfriNourish)' });
+  });
+  it('Commerce shop manager card says how refunds are approved (PIN at the till)', () => {
+    const def = JSON.parse(readFileSync(new URL('../../../config/demo-personas.json', import.meta.url), 'utf8')).products.commerce.personas.find(x => x.key === 'shop-manager');
+    assert.deepEqual(def.hint, { en: 'Approves refunds with a PIN at the till', fr: 'Approuve les remboursements avec un code au point de vente' });
+    assert.deepEqual(registry.get('commerce').personas.find(x => x.key === 'shop-manager').hint, def.hint);
+  });
 });

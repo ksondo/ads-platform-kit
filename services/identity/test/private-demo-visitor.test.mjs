@@ -6,7 +6,7 @@ import { chmod, mkdtemp, readFile, rm, stat, symlink, writeFile } from 'node:fs/
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { browser, csrfFrom, pkce, startService, DATABASE_URL } from './helpers.mjs';
+import { assertAccessDenied, assertNoAccessPage, browser, csrfFrom, pkce, startService, withDeniedRedirect, DATABASE_URL } from './helpers.mjs';
 import { hashPassword } from '../src/security.mjs';
 import { loadConfig } from '../src/config.mjs';
 import { createMailer } from '../src/mailer.mjs';
@@ -158,7 +158,9 @@ describe('private visitor uses canonical ADS identity and grant activation', () 
     const tokens = (await token(b, p.tenantId)).body;
     assert.equal((await svc.app.demoAccess.revokePrivate({ grantId: second.grantId, operatorRef: 'test-operator' })).status, 'revoked');
     assert.equal((await check(second.userId)).body.reason, 'REVOKED');
-    assert.equal((await deniedAuthorization(b)).status, 403, 'revoked visitor cannot receive a new product code');
+    // Revoked visitor cannot receive a new product code: Identity page by default, access_denied when Commerce opts in.
+    assertNoAccessPage(await deniedAuthorization(b));
+    await withDeniedRedirect(svc, [clientId], async () => assertAccessDenied(await deniedAuthorization(b), redirect, 'denied', 'DEMO_ACCESS_REVOKED'));
     const renewal = await fetch(`${svc.base}/token`, { method: 'POST', body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: tokens.refresh_token, client_id: clientId }) });
     assert.equal(renewal.status, 400);
     assert.equal((await svc.app.demoAccess.revokePrivate({ grantId: second.grantId, operatorRef: 'test-operator' })).duplicate, true);
@@ -171,7 +173,9 @@ describe('private visitor uses canonical ADS identity and grant activation', () 
     const oldCode = new URL(pendingCode.location).searchParams.get('code');
     await svc.pool.query("UPDATE platform.demo_access_grants SET expires_at=now()-interval '1 second' WHERE id=$1", [first.grantId]);
     assert.equal((await check(first.userId)).body.reason, 'EXPIRED');
-    assert.equal((await deniedAuthorization(expiredBrowser)).status, 403, 'expired visitor cannot fall back to personal buyer scope');
+    // Expired visitor cannot fall back to personal buyer scope: Identity page by default, access_denied when opted in.
+    assertNoAccessPage(await deniedAuthorization(expiredBrowser));
+    await withDeniedRedirect(svc, [clientId], async () => assertAccessDenied(await deniedAuthorization(expiredBrowser), redirect, 'denied', 'DEMO_ACCESS_EXPIRED'));
     const expiredRefresh = await fetch(`${svc.base}/token`, { method: 'POST', body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: beforeExpiryTokens.refresh_token, client_id: clientId }) });
     assert.equal(expiredRefresh.status, 400, 'clock expiry blocks refresh before housekeeping');
     const expiredCode = await fetch(`${svc.base}/token`, { method: 'POST', body: new URLSearchParams({ grant_type: 'authorization_code', code: oldCode, code_verifier: verifier, client_id: clientId, redirect_uri: redirect }) });

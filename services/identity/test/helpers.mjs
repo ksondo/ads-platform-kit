@@ -1,4 +1,6 @@
+import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
@@ -7,6 +9,7 @@ import { migrate } from '../src/db.mjs';
 import { loadSigningKey } from '../src/keys.mjs';
 import { createMailer } from '../src/mailer.mjs';
 import { createApp } from '../src/server.mjs';
+import { loadPlatforms } from '../src/demo-access.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const DATABASE_URL = process.env.TEST_DATABASE_URL ?? 'postgres://kit:kit@127.0.0.1:5432/kit_test';
@@ -164,4 +167,47 @@ export async function createActiveUser(pool, email, password) {
   const id = crypto.randomUUID();
   await pool.query("INSERT INTO platform.users(id,email,password_hash,status,email_verified_at) VALUES ($1,$2,$3,'active',now())", [id, email, await hashPassword(password)]);
   return { id, email, password };
+}
+
+// A demo visitor product's refused sign-in (RFC 6749 §4.1.2.1): 302 back to the registered redirect URI with
+// error=access_denied, the request's state and a machine-readable reason; never a code, never an Identity page.
+export function assertAccessDenied(r, redirect, state, description) {
+  assert.equal(r.status, 302, 'access_denied goes back to the product');
+  const url = new URL(r.location);
+  assert.equal(url.origin + url.pathname, redirect, 'exactly the registered redirect URI');
+  assert.equal(url.searchParams.get('error'), 'access_denied');
+  assert.equal(url.searchParams.get('state'), state);
+  if (description) assert.equal(url.searchParams.get('error_description'), description);
+  assert.equal(url.searchParams.get('code'), null, 'no authorization code');
+  return url;
+}
+
+// Sets the per-client access_denied return (clients.demo.json demo_access_denied_redirect) of a running demo
+// service: the reviewed client list is loaded with the flag true for exactly these clients (false for all
+// others) and the Demo Access registry is rebuilt through the same loader the service uses.
+// clientIds = null restores the reviewed list exactly as committed (the service default).
+export function setDeniedRedirect(svc, clientIds = []) {
+  const doc = JSON.parse(readFileSync(path.resolve(here, '../../../config/clients.demo.json'), 'utf8'));
+  if (clientIds !== null) for (const client of doc.products) client.demo_access_denied_redirect = clientIds.includes(client.client_id);
+  clientIds ??= doc.products.filter(c => c.demo_access_denied_redirect === true).map(c => c.client_id);
+  for (const id of clientIds) assert.ok(doc.products.some(c => c.client_id === id), `unknown client ${id}`);
+  const registry = svc.app.demoAccess.registry;
+  const fresh = loadPlatforms({ platformsFile: svc.config.demoAccess.platformsFile, clientsDoc: doc });
+  registry.clear();
+  for (const [key, value] of fresh) registry.set(key, value);
+  for (const id of clientIds) assert.ok([...registry.values()].some(p => p.clientId === id && p.deniedRedirect === true), `${id} is a Demo Access product`);
+}
+
+// Runs fn with the access_denied return turned on for exactly these clients, then restores the reviewed list.
+export async function withDeniedRedirect(svc, clientIds, fn) {
+  setDeniedRedirect(svc, clientIds);
+  try { return await fn(); } finally { setDeniedRedirect(svc, null); }
+}
+
+// The Identity "No access yet" page (403): what every product gets unless its client opted in to access_denied.
+export function assertNoAccessPage(r) {
+  assert.equal(r.status, 403, 'Identity "No access yet" page');
+  assert.equal(r.location, null, 'no redirect');
+  assert.match(r.text, /data-ads-no-access="true"/, 'the No access yet page');
+  assert.doesNotMatch(r.text, /[?&]code=/);
 }

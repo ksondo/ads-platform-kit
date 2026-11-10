@@ -21,7 +21,7 @@ function renderer(lang,publicRequestsEnabled=false) {
     "globalThis.__render = { setCatalogue: c => { catalogue = c; }, platformDetail, toolDetail, platformCard, toolCard, demoAccessGuide, landing };");
   const sandbox = {
     imageUrl: () => "", platformImage: () => "", photo: () => "", credits: [], opportunityCredits: [],
-    ADSOpportunities: {}, URLSearchParams,
+    ADSOpportunities: {}, URLSearchParams, URL,
     document: { getElementById: () => ({ innerHTML: "" }), documentElement: {}, addEventListener: () => {} },
     localStorage: { getItem: () => lang },
     navigator: { language: lang },
@@ -67,7 +67,7 @@ for (const [lang, button, pill] of [["en", "Request demo access", "Demo on reque
     const commerce = catalogue.platforms.find(p => p.id === "commerce");
     const detail = r.platformDetail(commerce);
     assert.ok(detail.includes(button), "platform detail button");
-    assert.ok(detail.includes('href="' + REQUEST_PAGE + '"'));
+    assert.ok(detail.includes('href="' + REQUEST_PAGE + '?lang=' + lang + '"'));
     assert.match(detail, /target="_blank" rel="noopener noreferrer"/);
     assert.ok(r.platformCard(commerce).includes(button), "platform card label");
     for (const id of ["ecommerce", "pos"]) {
@@ -101,7 +101,7 @@ for(const [lang,button,pill,notice] of [
   const r=renderer(lang),commerce=catalogue.platforms.find(p=>p.id==='commerce');
   for(const html of [r.platformDetail(commerce),...commerceEntries().filter(x=>x.id!=='commerce').map(r.toolDetail)]){
    assert.ok(html.includes(button));assert.ok(html.includes(notice));
-   assert.ok(html.includes('href="'+REQUEST_PAGE+'"'));
+   assert.ok(html.includes('href="'+REQUEST_PAGE+'?lang='+lang+'"'));
    assert.match(html,/target="_blank" rel="noopener noreferrer"/);
    assert.doesNotMatch(html,/<form|<input/i);
   }
@@ -120,6 +120,24 @@ test("portal source files contain no administration links and no demo password r
   }
 });
 
-test("the shipped catalogue opens public demo requests (ADS Demo Access public mode, owner decision 5 Nov 2026)",()=>{
- assert.equal(catalogue.publicDemoRequestsEnabled,true);
+test("the shipped catalogue is in private mode (owner decision 10 Nov 2026: Identity admits approved visitors only)",()=>{
+ assert.equal(catalogue.publicDemoRequestsEnabled,false);
+});
+
+for(const lang of ["en","fr"]){
+ test(`${lang}: every Commerce link opens the introduction in the portal language (?lang=${lang})`,()=>{
+  const r=renderer(lang),commerce=catalogue.platforms.find(p=>p.id==='commerce');
+  const html=[r.platformCard(commerce),r.platformDetail(commerce),...commerceEntries().filter(x=>x.id!=='commerce').map(r.toolDetail)].join("");
+  const hrefs=[...html.matchAll(/href="(https:\/\/commerce\.demo\.[^"]+)"/g)].map(m=>m[1]);
+  assert.ok(hrefs.length>=4,"Commerce card, detail and two tool links");
+  for(const h of hrefs)assert.equal(h,REQUEST_PAGE+"?lang="+lang);
+ });
+}
+
+test("private-mode guide explains sign-in for approved visitors and never offers a request step",()=>{
+ for(const [lang,second] of [["en","Already approved? Sign in"],["fr","Déjà approuvé ? Connectez-vous"]]){
+  const guide=renderer(lang).demoAccessGuide();
+  assert.ok(guide.includes(second));
+  assert.doesNotMatch(guide,/Request demo access|Demander un accès de démonstration/);
+ }
 });
