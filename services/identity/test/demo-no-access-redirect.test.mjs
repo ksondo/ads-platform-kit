@@ -1,11 +1,15 @@
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { assertAccessDenied, browser, createActiveUser, csrfFrom, pkce, registerClient, reqFrom, startService } from './helpers.mjs';
+import { assertAccessDenied, assertNoAccessPage, browser, createActiveUser, csrfFrom, pkce, registerClient, reqFrom, setDeniedRedirect, startService } from './helpers.mjs';
+import { demoAccessDeniedRedirect, validateClientList } from '../src/demo.mjs';
+import { loadPlatforms } from '../src/demo-access.mjs';
 
-// Demo visitor products (config/demo-access-platforms.json): a signed-in person with no access to the product
-// goes back to the product with error=access_denied (RFC 6749 §4.1.2.1) so the product shows its own
-// "no access" card. Other products keep the Identity "No access yet" page. Never an open redirect.
+// Demo visitor products (config/demo-access-platforms.json) whose client opted in (config/clients.demo.json
+// demo_access_denied_redirect: true; default false): a signed-in person with no access to the product goes back
+// to the product with error=access_denied (RFC 6749 §4.1.2.1) so the product shows its own "no access" card.
+// Every other product, including demo visitor products that have not opted in, keeps the Identity
+// "No access yet" page (403) exactly as before. Never an open redirect.
 const clients = JSON.parse(readFileSync(new URL('../../../config/clients.demo.json', import.meta.url))).products;
 const FLEET = 'https://fleetguard.demo.africadigitalsynergy.com/';
 const secrets = { commerce: 'commerce-private-fixture-' + 'c'.repeat(40), fleet_guard: 'fleet-guard-private-fixture-' + 'f'.repeat(40) };
@@ -26,7 +30,37 @@ async function signedIn(svc, email) {
   return b;
 }
 
-describe('demo visitor product: no access returns access_denied to the product', () => {
+describe('client registry: demo_access_denied_redirect', () => {
+  const doc = () => JSON.parse(JSON.stringify(JSON.parse(readFileSync(new URL('../../../config/clients.demo.json', import.meta.url)))));
+  it('defaults to false when the client does not set it', () => {
+    const d = doc();
+    delete d.products.find(c => c.client_id === 'fleet-guard-web').demo_access_denied_redirect;
+    assert.equal(demoAccessDeniedRedirect(d.products.find(c => c.client_id === 'fleet-guard-web')), false);
+    validateClientList(d);
+    assert.equal(loadPlatforms({ clientsDoc: d }).get('fleet-guard').deniedRedirect, false);
+  });
+  it('carries true to the Demo Access registry for that client only', () => {
+    const d = doc();
+    d.products.find(c => c.client_id === 'fleet-guard-web').demo_access_denied_redirect = true;
+    const registry = loadPlatforms({ clientsDoc: validateClientList(d) });
+    for (const p of registry.values()) assert.equal(p.deniedRedirect, p.clientId === 'fleet-guard-web', p.key);
+  });
+  it('rejects a value that is not true or false', () => {
+    for (const bad of ['true', 1, 0, null, 'yes', {}, []]) {
+      const d = doc();
+      d.products.find(c => c.client_id === 'fleet-guard-web').demo_access_denied_redirect = bad;
+      assert.throws(() => validateClientList(d), /fleet-guard-web: demo_access_denied_redirect must be true or false/, JSON.stringify(bad));
+      assert.throws(() => loadPlatforms({ clientsDoc: d }), /DEMO_ACCESS_DENIED_REDIRECT_INVALID:fleet-guard-web/, JSON.stringify(bad));
+    }
+  });
+  it('is off for every product in the reviewed list until its app shows a no-access card from getLastError', () => {
+    // Turn a product on here and in config/clients.demo.json together, once its app handles the refusal.
+    assert.deepEqual(clients.filter(c => demoAccessDeniedRedirect(c)).map(c => c.client_id), []);
+    assert.deepEqual([...loadPlatforms({}).values()].filter(p => p.deniedRedirect).map(p => p.key), []);
+  });
+});
+
+describe('demo visitor product: no access returns access_denied to the product (flag on)', () => {
   let svc;
   before(async () => {
     svc = await startService({ env: { ADS_ENV: 'demo', DEMO_MODE: '1', DEMO_ACCESS_ENABLED: '0', DEMO_ACCESS_PRIVATE_ENABLED: '1',
@@ -34,6 +68,7 @@ describe('demo visitor product: no access returns access_denied to the product',
     for (const id of ['fleet-guard-web', 'commerce-web']) await registerDemoClient(svc.pool, id);
     await registerClient(svc.pool, { id: 'plain-web', redirect: 'https://plain.example.test/app/', selfRoles: [], personal: false });
     await createActiveUser(svc.pool, 'nobody@example.test', password);
+    setDeniedRedirect(svc, ['fleet-guard-web']);
   });
   after(async () => { await svc?.stop(); });
 
@@ -62,6 +97,31 @@ describe('demo visitor product: no access returns access_denied to the product',
     assert.equal((await svc.app.demoAccess.checkGrant('fleet-guard', v.userId)).access, 'none');
     const b = await signedIn(svc, 'commerce.only@example.test');
     assertAccessDenied(await b.get(authorizeQuery('fleet-guard-web', FLEET, 'fg-state-3')), FLEET, 'fg-state-3', 'NO_DEMO_ACCESS');
+  });
+
+  it('a demo visitor product that has not opted in (Commerce here) keeps the Identity page (403), from SSO and from sign-in', async () => {
+    const { hashPassword } = await import('../src/security.mjs');
+    const v = await svc.app.demoAccess.provisionPrivate({ platform: 'commerce', email: 'commerce.revoked@example.test', passwordHash: await hashPassword(password), operatorRef: 'no-access-test' });
+    assert.equal((await svc.app.demoAccess.revokePrivate({ grantId: v.grantId, operatorRef: 'no-access-test' })).status, 'revoked');
+    const COMMERCE = clients.find(c => c.client_id === 'commerce-web').redirect_uris[0];
+    const b = await signedIn(svc, 'commerce.revoked@example.test');
+    assertNoAccessPage(await b.get(authorizeQuery('commerce-web', COMMERCE, 'c-state-1')));
+    const fresh = browser(svc.base);
+    const start = await fresh.get(authorizeQuery('commerce-web', COMMERCE, 'c-state-2'));
+    const page = await fresh.get(start.location);
+    assertNoAccessPage(await fresh.post('/login', { csrf: csrfFrom(page.text), req: reqFrom(start.location), email: 'commerce.revoked@example.test', password }));
+    // The same revoked visitor at Fleet Guard (opted in here): access_denied back to Fleet Guard.
+    assertAccessDenied(await b.get(authorizeQuery('fleet-guard-web', FLEET, 'fg-state-5')), FLEET, 'fg-state-5', 'NO_DEMO_ACCESS');
+  });
+
+  it('with the flag off (the default), Fleet Guard itself is back to the Identity page exactly as before', async () => {
+    setDeniedRedirect(svc, []);
+    try {
+      const b = await signedIn(svc, 'nobody@example.test');
+      const r = await b.get(authorizeQuery('fleet-guard-web', FLEET, 'fg-off'));
+      assertNoAccessPage(r);
+      assert.match(r.text, /No access yet/);
+    } finally { setDeniedRedirect(svc, ['fleet-guard-web']); }
   });
 
   it('a non-demo product keeps the Identity "No access yet" page (403)', async () => {
@@ -99,7 +159,7 @@ describe('demo visitor product: no access returns access_denied to the product',
   });
 });
 
-describe('without Demo Access (production): the same client keeps the Identity page', () => {
+describe('without Demo Access (production): the same client keeps the Identity page, whatever the flag', () => {
   let svc;
   before(async () => {
     svc = await startService();

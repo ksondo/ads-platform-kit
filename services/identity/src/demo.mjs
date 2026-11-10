@@ -200,6 +200,18 @@ async function demoAccountIds(db) {
   return ids;
 }
 
+// Opt-in per client (config/clients.demo.json `demo_access_denied_redirect`, default false): a Demo Access
+// visitor of this product without access (NO_DEMO_ACCESS / DEMO_ACCESS_EXPIRED / DEMO_ACCESS_REVOKED) is sent
+// back to the product with error=access_denied instead of the Identity "No access yet" page. Turn it on only
+// once the product's app reads the error (ads-identity.js getLastError) and shows its own "no access" card;
+// an older app copy discards the error and would leave the visitor on the product with no explanation.
+export function demoAccessDeniedRedirect(client) {
+  const value = client?.demo_access_denied_redirect;
+  if (value === undefined) return false;
+  if (typeof value !== 'boolean') refuse(`${client.client_id}: demo_access_denied_redirect must be true or false`);
+  return value;
+}
+
 // Checks the reviewed client list (config/clients.demo.json) enough to use it safely.
 export function validateClientList(doc) {
   if (!doc || !Array.isArray(doc.products) || !doc.products.length) refuse('client list has no products');
@@ -208,6 +220,7 @@ export function validateClientList(doc) {
     if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(String(p.client_id))) refuse(`bad client_id ${p.client_id}`);
     if (seen.has(p.client_id)) refuse(`duplicate client_id ${p.client_id}`);
     seen.add(p.client_id);
+    demoAccessDeniedRedirect(p);
     const adsOnly = new Set(p.ads_only_roles ?? []);
     for (const r of p.assignable_roles ?? []) if (adsOnly.has(r)) refuse(`${p.client_id}: ADS-only role ${r} must not be assignable`);
     const orgKeys = new Set();

@@ -77,16 +77,11 @@ for (const lang of ['en', 'fr']) for (const width of [360, 768, 1280]) {
       expect(secretless.status).toBe(401);
       await svc.app.demoAccess.revokePrivate({ grantId: grant.grantId, operatorRef: 'browser-test-operator' });
       const denied = await page.goto(`${svc.url}/authorize?${new URLSearchParams({ response_type: 'code', client_id: 'commerce-web', redirect_uri: redirect, state: 'revoked', code_challenge: 'x'.repeat(43), code_challenge_method: 'S256' })}`);
-      // Demo-only OAuth refusals now return to the verified client callback. A 200 is the
-      // callback's harmless response, not permission: the URL must carry a refusal, no code.
-      expect(denied.status()).toBe(200);
-      const refusedUrl = new URL(page.url());
-      expect(refusedUrl.origin + refusedUrl.pathname).toBe(redirect);
-      expect(refusedUrl.searchParams.get('error')).toBe('access_denied');
-      expect(refusedUrl.searchParams.get('error_description')).toBe('DEMO_ACCESS_REVOKED');
-      expect(refusedUrl.searchParams.get('state')).toBe('revoked');
-      expect(refusedUrl.searchParams.get('iss')).toBe(svc.url);
-      expect(refusedUrl.searchParams.has('code')).toBe(false);
+      // commerce-web has not opted in to the access_denied return (clients.demo.json demo_access_denied_redirect):
+      // the revoked visitor gets the Identity "No access yet" page, never a product code.
+      expect(denied.status()).toBe(403);
+      expect(new URL(page.url()).searchParams.has('code')).toBe(false);
+      await expect(page.locator('[data-ads-no-access="true"]')).toBeVisible();
       expect(svc.outbox).toHaveLength(0);
     } finally { await context.close(); }
   });

@@ -204,7 +204,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     if (result.choose) return page(req, res, 'choose_workspace', { authRequest, values: { workspaces: result.choose } });
     if (result.noAccess) {
       await audit('authorize', { userId: sso.user.id, outcome: 'denied', reason: 'NO_PRODUCT_ACCESS', clientId: authRequest.client_id, ip: clientIp(req) });
-      // Demo visitor products show their own "no access" card: send access_denied back to the product.
+      // Demo visitor products that opted in show their own "no access" card: send access_denied back to them.
       const denied = await oauth.denyToClient(authRequest, result.reason);
       if (denied) return redirect(res, denied);
       return page(req, res, 'no_access', { authRequest }, 403);

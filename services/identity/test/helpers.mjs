@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import pg from 'pg';
@@ -8,6 +9,7 @@ import { migrate } from '../src/db.mjs';
 import { loadSigningKey } from '../src/keys.mjs';
 import { createMailer } from '../src/mailer.mjs';
 import { createApp } from '../src/server.mjs';
+import { loadPlatforms } from '../src/demo-access.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const DATABASE_URL = process.env.TEST_DATABASE_URL ?? 'postgres://kit:kit@127.0.0.1:5432/kit_test';
@@ -178,4 +180,32 @@ export function assertAccessDenied(r, redirect, state, description) {
   if (description) assert.equal(url.searchParams.get('error_description'), description);
   assert.equal(url.searchParams.get('code'), null, 'no authorization code');
   return url;
+}
+
+// Sets the per-client access_denied return (clients.demo.json demo_access_denied_redirect) of a running demo
+// service: the reviewed client list is loaded with the flag true for exactly these clients (false for all
+// others) and the Demo Access registry is rebuilt through the same loader the service uses.
+export function setDeniedRedirect(svc, clientIds = []) {
+  const doc = JSON.parse(readFileSync(path.resolve(here, '../../../config/clients.demo.json'), 'utf8'));
+  for (const client of doc.products) client.demo_access_denied_redirect = clientIds.includes(client.client_id);
+  for (const id of clientIds) assert.ok(doc.products.some(c => c.client_id === id), `unknown client ${id}`);
+  const registry = svc.app.demoAccess.registry;
+  const fresh = loadPlatforms({ platformsFile: svc.config.demoAccess.platformsFile, clientsDoc: doc });
+  registry.clear();
+  for (const [key, value] of fresh) registry.set(key, value);
+  for (const id of clientIds) assert.ok([...registry.values()].some(p => p.clientId === id && p.deniedRedirect === true), `${id} is a Demo Access product`);
+}
+
+// Runs fn with the access_denied return turned on for these clients, then turns it off again.
+export async function withDeniedRedirect(svc, clientIds, fn) {
+  setDeniedRedirect(svc, clientIds);
+  try { return await fn(); } finally { setDeniedRedirect(svc, []); }
+}
+
+// The Identity "No access yet" page (403): what every product gets unless its client opted in to access_denied.
+export function assertNoAccessPage(r) {
+  assert.equal(r.status, 403, 'Identity "No access yet" page');
+  assert.equal(r.location, null, 'no redirect');
+  assert.match(r.text, /data-ads-no-access="true"/, 'the No access yet page');
+  assert.doesNotMatch(r.text, /[?&]code=/);
 }

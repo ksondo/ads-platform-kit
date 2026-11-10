@@ -9,8 +9,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 // Tokens are JWTs with the claims every ADS product already checks: sub, tenant_id, roles.
 export function createOAuth({ pool, config, keys, audit, demoAccess = null }) {
   const visitorPlatform = client => [...PRIVATE_VISITOR_PLATFORMS].find(key => demoAccess?.platformOf(key)?.clientId === client.client_id);
-  // A product registered for demo visitors (config/demo-access-platforms.json, Demo Access enabled).
-  const isDemoVisitorClient = client => Boolean(client && demoAccess?.registry && [...demoAccess.registry.values()].some(p => p.clientId === client.client_id));
+  // A product registered for demo visitors (config/demo-access-platforms.json, Demo Access enabled) whose client
+  // opted in to the access_denied return (clients.demo.json demo_access_denied_redirect: true; default false).
+  const deniesToClient = client => Boolean(client && demoAccess?.registry && [...demoAccess.registry.values()].some(p => p.clientId === client.client_id && p.deniedRedirect === true));
   async function getClient(clientId) {
     if (typeof clientId !== 'string' || !/^[a-z0-9][a-z0-9-]{1,62}$/.test(clientId)) return null;
     return (await pool.query("SELECT * FROM platform.oauth_clients WHERE client_id=$1 AND status='active'", [clientId])).rows[0] ?? null;
@@ -109,11 +110,12 @@ export function createOAuth({ pool, config, keys, audit, demoAccess = null }) {
 
   // RFC 6749 §4.1.2.1: a demo product's visitor without access goes back to the product with
   // error=access_denied, so the product shows its own "no access" card instead of an Identity page.
-  // Only for demo visitor products, and only to the redirect URI of the sign-in request, which must still
-  // be one of the client's registered addresses (never an address taken from the query). null = show the page.
+  // Only for demo visitor products that opted in (their app shows a card from getLastError), and only to the
+  // redirect URI of the sign-in request, which must still be one of the client's registered addresses (never
+  // an address taken from the query). null = show the Identity "No access yet" page (403), as before.
   async function denyToClient(authRequest, reason) {
     const client = authRequest?.client;
-    if (!isDemoVisitorClient(client) || !client.redirect_uris.includes(authRequest.redirect_uri)) return null;
+    if (!deniesToClient(client) || !client.redirect_uris.includes(authRequest.redirect_uri)) return null;
     await pool.query('DELETE FROM platform.auth_requests WHERE id=$1', [authRequest.id]);
     const url = new URL(authRequest.redirect_uri);
     url.searchParams.set('error', 'access_denied');
