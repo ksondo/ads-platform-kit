@@ -33,9 +33,9 @@ test("home, directory and demo-access guide all prioritize the five demos",()=>{
  assert.match(main,/return hero\(\)\+priorityDemoSection\(\)\+opportunityDiscoveryPaths\(\)/);
  assert.match(main,/function demoAccessGuide\(\)[\s\S]*priorityDemoSection\(\)/);
  assert.match(main,/function platformDirectory\(\)[\s\S]*if\(!q\)return[\s\S]*priorityDemoSection\(\)/);
- assert.match(main,/const ready=items\.filter\(p=>\["live","open"\]\.includes\(demoStatus\(p\)\)\)\.length/);
+ assert.doesNotMatch(main,/const ready=items\.filter\(p=>\["live","open"\]\.includes\(demoStatus\(p\)\)\)\.length/);
  assert.match(main,/href=open\?destinationUrl\(p\):demo\?withLang\(demo\):url/);
- assert.match(main,/data-testid="priority-demo-count"/);
+ assert.doesNotMatch(main,/data-testid="priority-demo-count"/);
  assert.match(css,/@media\(max-width:520px\).*priority-demo-grid/);
 });
 test("private instructions in both languages never imply all 25 demos are open",()=>{
