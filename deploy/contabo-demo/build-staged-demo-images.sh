@@ -3,6 +3,11 @@
 # migrations, demo seed, Nginx, HTTPS or portal changes.
 set -Eeuo pipefail
 umask 077
+# SUPERSEDED (11 Nov 2026): the image list below pins stale source SHAs (Education b3202c7, Fleet Guard ce3a488,
+# Mama Care c8cb4d2, Tontine 125e2b6). It is kept as provenance only and refuses to run in every mode.
+echo 'ADS_CANDIDATE_IMAGES=SUPERSEDED: build-staged-demo-images.sh pins stale SHAs and must not run.' >&2
+echo 'Use deploy/contabo-demo/ads-release-20261111.manifest.json and ADS_ONE_TIME_RELEASE_20261111.md; check with release-acceptance.sh.' >&2
+exit 3
 [[ $# -eq 1 && ( "$1" == '--plan' || "$1" == '--build' ) ]] || {
  echo 'Usage: bash build-staged-demo-images.sh --plan|--build' >&2; exit 2;
 }

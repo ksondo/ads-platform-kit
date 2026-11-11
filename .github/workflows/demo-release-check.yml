@@ -15,6 +15,11 @@ on:
 permissions:
   contents: read
 
+# CI cost (owner rule 11 Nov 2026): a newer push to the same ref cancels the older run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest

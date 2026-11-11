@@ -2,13 +2,19 @@
 # at this commit, exactly as a product repo would call it.
 name: e2e-selftest
 
+# Browser e2e (Playwright): pull requests and manual runs only, never on push to main (CI cost, owner rule
+# 11 Nov 2026).
 on:
-  push:
-    branches: [main]
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
+
+# A newer push to the same ref cancels the older run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   sample-product:

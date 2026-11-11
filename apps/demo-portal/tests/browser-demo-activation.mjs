@@ -27,12 +27,14 @@ function server(activation){
   res.end(readFileSync(asset));
  });
 }
-const MIXED={schemaVersion:1,products:{education:'open','fleet-guard':'open',agriculture:'unavailable','digital-tontine':'bogus'}};
+const MIXED={schemaVersion:1,products:{education:'open','fleet-guard':'open',agriculture:'unavailable','digital-tontine':'bogus',ventureworks:'open'}};
+const ALL_PREPARING={education:'preparing',agriculture:'preparing','digital-tontine':'preparing','fleet-guard':'preparing',ventureworks:'preparing'};
 const SCENARIOS=[
- ['default',undefined,{education:'preparing',agriculture:'preparing','digital-tontine':'preparing','fleet-guard':'preparing'}],
- ['mixed',MIXED,{education:'open',agriculture:'unavailable','digital-tontine':'preparing','fleet-guard':'open'}],
- ['missing',null,{education:'preparing',agriculture:'preparing','digital-tontine':'preparing','fleet-guard':'preparing'}],
- ['invalid','{not json',{education:'preparing',agriculture:'preparing','digital-tontine':'preparing','fleet-guard':'preparing'}],
+ ['default',undefined,ALL_PREPARING],
+ ['mixed',MIXED,{education:'open',agriculture:'unavailable','digital-tontine':'preparing','fleet-guard':'open',ventureworks:'open'}],
+ ['missing',null,ALL_PREPARING],
+ ['invalid','{not json',ALL_PREPARING],
+ ['ventureworks-unavailable',{schemaVersion:1,products:{ventureworks:'unavailable'}},{...ALL_PREPARING,ventureworks:'unavailable'}],
 ];
 test('demo activation: preparing by default, open/unavailable on operator switch, fail closed; EN/FR 360/768/1280',{timeout:300000},async()=>{
  const shots=process.env.ADS_UI_SCREENSHOT_DIR?resolve(process.env.ADS_UI_SCREENSHOT_DIR):null;
@@ -75,7 +77,7 @@ test('demo activation: preparing by default, open/unavailable on operator switch
      if(shots)await page.screenshot({path:join(shots,`portal-${name}-platforms-${width}-${lang}.png`),fullPage:true,animations:'disabled'});
      // Detail pages: open = one launch link; unavailable/preparing = clear state, no link to the product host.
      for(const [id,state] of Object.entries(expected)){
-      if(name!=='mixed'&&id!=='education')continue;
+      if(name!=='mixed'&&id!=='education'&&id!=='ventureworks')continue;
       const p=catalogue.platforms.find(x=>x.id===id),host=new URL(p.demoDestination).host;
       await page.goto(base+'/platforms/'+id,{waitUntil:'domcontentloaded'});
       await page.getByTestId('demo-state-'+state).waitFor();

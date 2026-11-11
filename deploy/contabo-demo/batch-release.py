@@ -83,6 +83,12 @@ def manifest_from_arg(encoded):
         m = json.loads(raw)
     except (ValueError, TypeError):
         raise Stop("Invalid GitHub pinned manifest") from None
+    # 11 Nov 2026: the five-demo manifest pins stale SHAs. It stays as provenance and is refused here.
+    superseded = m.get("superseded") if isinstance(m, dict) else None
+    require(not superseded,
+            "SUPERSEDED: " + str(m.get("release_id")) + " pins stale source SHAs and must not run. Use " +
+            str((superseded or {}).get("by", "deploy/contabo-demo/ads-release-20261111.manifest.json")) +
+            " with deploy/contabo-demo/ADS_ONE_TIME_RELEASE_20261111.md and release-acceptance.sh.")
     require(m.get("version") == 1 and m.get("environment") == "demo" and
             m.get("host") == "vmi3191089" and RELEASE.fullmatch(m.get("release_id", "")),
             "Unknown release, host or environment")

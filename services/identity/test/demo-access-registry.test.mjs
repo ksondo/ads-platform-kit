@@ -50,7 +50,7 @@ describe('demo access platform registry', () => {
       assert.equal(def.org, 'staff', key);
     }
     const agriculture = registry.get('agriculture');
-    assert.deepEqual(agriculture.personas.map(x => x.key), ['farmer', 'buyer', 'coop-manager', 'extension-officer', 'lender-officer', 'input-supplier', 'farm-reviewer', 'help-desk', 'org-admin', 'demo-colleague']);
+    assert.deepEqual(agriculture.personas.map(x => x.key), ['farmer', 'buyer', 'coop-manager', 'extension-officer', 'agronomist', 'lender-officer', 'input-supplier', 'farm-reviewer', 'help-desk', 'org-admin', 'demo-colleague']);
     assert.deepEqual(agriculture.name, { en: 'ADS Agriculture (AfriNourish)', fr: 'ADS Agriculture (AfriNourish)' });
   });
   it('Commerce shop manager card says how refunds are approved (PIN at the till)', () => {

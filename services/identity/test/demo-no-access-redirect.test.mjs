@@ -41,6 +41,7 @@ describe('client registry: demo_access_denied_redirect', () => {
   });
   it('carries true to the Demo Access registry for that client only', () => {
     const d = doc();
+    for (const c of d.products) c.demo_access_denied_redirect = false;
     d.products.find(c => c.client_id === 'fleet-guard-web').demo_access_denied_redirect = true;
     const registry = loadPlatforms({ clientsDoc: validateClientList(d) });
     for (const p of registry.values()) assert.equal(p.deniedRedirect, p.clientId === 'fleet-guard-web', p.key);
@@ -53,13 +54,15 @@ describe('client registry: demo_access_denied_redirect', () => {
       assert.throws(() => loadPlatforms({ clientsDoc: d }), /DEMO_ACCESS_DENIED_REDIRECT_INVALID:fleet-guard-web/, JSON.stringify(bad));
     }
   });
-  it('is on for exactly fleet-guard-web in the reviewed list; every other client stays off until its app shows a no-access card', () => {
-    // Fleet Guard shows its own no-access card from getLastError (Switch account / ADS home).
+  it('is on for exactly fleet-guard-web, tontine-web and ventureworks-web in the reviewed list; every other client stays off until its app shows a no-access card', () => {
+    // Fleet Guard, Tontine and VentureWorks (PR #102, main 3744e3c) show their own no-access card from getLastError
+    // (kit ads-identity.js). Tontine PR #43 (main b2ed524) ships the same card.
     // Turn another product on here and in config/clients.demo.json together, once its app handles the refusal.
-    assert.deepEqual(clients.filter(c => demoAccessDeniedRedirect(c)).map(c => c.client_id), ['fleet-guard-web']);
-    for (const c of clients) if (c.client_id !== 'fleet-guard-web') assert.equal(demoAccessDeniedRedirect(c), false, c.client_id);
-    assert.deepEqual([...loadPlatforms({}).values()].filter(p => p.deniedRedirect).map(p => p.key), ['fleet-guard']);
-    assert.deepEqual([...loadPlatforms({}).values()].filter(p => !p.deniedRedirect).map(p => p.key).sort(), ['agriculture', 'commerce', 'education', 'tontine', 'ventureworks']);
+    const ON = ['fleet-guard-web', 'tontine-web', 'ventureworks-web'];
+    assert.deepEqual(clients.filter(c => demoAccessDeniedRedirect(c)).map(c => c.client_id).sort(), ON);
+    for (const c of clients) if (!ON.includes(c.client_id)) assert.equal(demoAccessDeniedRedirect(c), false, c.client_id);
+    assert.deepEqual([...loadPlatforms({}).values()].filter(p => p.deniedRedirect).map(p => p.key).sort(), ['fleet-guard', 'tontine', 'ventureworks']);
+    assert.deepEqual([...loadPlatforms({}).values()].filter(p => !p.deniedRedirect).map(p => p.key).sort(), ['agriculture', 'commerce', 'education']);
   });
 });
 

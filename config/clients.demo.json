@@ -384,7 +384,7 @@
       ],
       "self_service_roles": [],
       "allow_personal_workspace": false,
-      "demo_access_denied_redirect": false,
+      "demo_access_denied_redirect": true,
       "admin_roles": [
         "tenant_admin"
       ],
@@ -720,7 +720,7 @@
       ],
       "self_service_roles": [],
       "allow_personal_workspace": false,
-      "demo_access_denied_redirect": false,
+      "demo_access_denied_redirect": true,
       "admin_roles": [
         "group_admin"
       ],
@@ -1170,6 +1170,7 @@
         "tenant_admin",
         "coop_manager",
         "extension_officer",
+        "agronomist",
         "lender_officer",
         "input_supplier"
       ],
@@ -1186,6 +1187,7 @@
             "buyer",
             "coop_manager",
             "extension_officer",
+            "agronomist",
             "lender_officer",
             "input_supplier",
             "reviewer",

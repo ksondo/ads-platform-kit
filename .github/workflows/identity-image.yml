@@ -19,9 +19,10 @@ on:
 permissions:
   contents: read
 
+# CI cost (owner rule 11 Nov 2026): superseded pull request runs are cancelled; main runs (image publish) never are.
 concurrency:
-  group: identity-image-${{ github.ref }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:

@@ -6,7 +6,7 @@
     "environment": "demo",
     "ingress": "https://demo.africadigitalsynergy.com"
   },
-  "status": "SOURCE_PINNED__NOT_APPROVED_FOR_DEPLOY",
+  "status": "SUPERSEDED_BY_ads-release-20261111__NOT_APPROVED_FOR_DEPLOY",
   "summary": "One coordinated maintenance-window release. No CI, deployment, migration, seed reset, account creation, or portal activation happens when this manifest is committed.",
   "immutable_sources": [
     {
@@ -115,5 +115,6 @@
     "approval": "Release owner and authorized host operator must approve exact SHA/digests and evidence before any deploy."
   },
   "existing_workflow_constraint": "The existing contabo-five-demo-release workflow requires Education, Agriculture, Fleet Guard, Tontine and Portal, does not deploy Commerce or Identity, and currently pins older SHAs. Do not dispatch it for this six-service release without separately reviewed workflow changes.",
-  "operator_runbook": "deploy/contabo-demo/ADS_ONE_TIME_RELEASE_20261110.md"
+  "operator_runbook": "deploy/contabo-demo/ADS_ONE_TIME_RELEASE_20261110.md",
+  "superseded_by": "deploy/contabo-demo/ads-release-20261111.manifest.json"
 }

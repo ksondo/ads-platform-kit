@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'apps/demo-portal/**'
+      - 'deploy/contabo-demo/compose.portal.yml'
       - '.github/workflows/demo-portal.yml'
   push:
     branches: [main]
@@ -15,9 +16,11 @@ on:
 permissions:
   contents: read
 
+# CI cost (owner rule 11 Nov 2026): superseded pull request runs are cancelled. Runs on main are never cancelled,
+# because "publish" pushes the image and demo-portal-approve.yml tags it only after a successful main run.
 concurrency:
-  group: demo-portal-${{ github.ref }}
-  cancel-in-progress: false
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   test:
@@ -68,6 +71,9 @@ jobs:
 
   browser-discovery:
     name: Chromium opportunity discovery acceptance
+    # Browser job: pull requests and manual runs only, never on push to main (CI cost, owner rule 11 Nov 2026).
+    # "publish" needs only "test", so the main image publish and its approval tag do not depend on this job.
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     container:
       image: mcr.microsoft.com/playwright:v1.56.1-noble

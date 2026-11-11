@@ -7,6 +7,17 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:${ADS_PORTAL_PORT:-18089}:80"
+    # Operator demo activation (docs/demo-access/DEMO_PUBLICATION_CONTRACT.md, RUNBOOK.md §G2): the host
+    # DIRECTORY /etc/ads-demo/portal, read-only. nginx serves only its demo-activation.json at /demo-activation.json
+    # and falls back to the bundled file (every product 'preparing') when that file is missing. A directory, not a
+    # file, is mounted so a missing host file never stops the portal from starting.
+    volumes:
+      - type: bind
+        source: ${ADS_PORTAL_OPERATOR_DIR:-/etc/ads-demo/portal}
+        target: /etc/ads-portal-operator
+        read_only: true
+        bind:
+          create_host_path: true
     security_opt:
       - no-new-privileges:true
     healthcheck:

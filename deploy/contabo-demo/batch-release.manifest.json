@@ -1,6 +1,10 @@
 {
   "version": 1,
   "release_id": "ads-five-demo-2026-11-08",
+  "superseded": {
+    "by": "deploy/contabo-demo/ads-release-20261111.manifest.json",
+    "reason": "Pins stale source SHAs (Education 226662b, Agriculture bba3416, Fleet Guard 4bb4ef2, Tontine e9b1cd6, portal 4fad211) and omits Commerce, Identity and VentureWorks. Kept as provenance only; batch-release.py refuses it."
+  },
   "host": "vmi3191089",
   "environment": "demo",
   "purpose": "Manual one-run source pull and sequential application-only deployment; NO automatic schema migrations, database reset, live payments or public demo activation.",
