@@ -10,7 +10,7 @@
       "summary": "Digital lessons, assessments, learner progress and school operations in a private test workspace",
       "image": "photo-1503676260728-1c00da094a0b",
       "icon": "🎓",
-      "demoUrl": null,
+      "demoUrl": "https://education.demo.africadigitalsynergy.com/demo",
       "demoDestination": "https://education.demo.africadigitalsynergy.com/demo",
       "featured": true,
       "summary_fr": "Cours numériques, évaluations, suivi des apprenants et gestion scolaire dans un espace de démonstration privé",
@@ -38,11 +38,10 @@
       "summary": "Health services and patient management",
       "image": "photo-1576091160399-112ba8d25d1d",
       "icon": "♥",
-      "demoUrl": null,
+      "demoUrl": "https://health.test.africadigitalsynergy.com/",
       "featured": false,
       "summary_fr": "Services de santé et gestion des patients",
-      "availability": "coming_soon",
-      "qaTestDestination": "https://health.test.africadigitalsynergy.com/"
+      "availability": "coming_soon"
     },
     {
       "id": "agriculture",
@@ -51,13 +50,12 @@
       "summary": "Farm records, production cycles, buyer journeys and offline-friendly tools in a private test workspace",
       "image": "photo-1500382017468-9049fed747ef",
       "icon": "🌱",
-      "demoUrl": null,
+      "demoUrl": "https://agriculture.demo.africadigitalsynergy.com/demo",
       "demoDestination": "https://agriculture.demo.africadigitalsynergy.com/demo",
       "featured": true,
       "summary_fr": "Dossiers agricoles, cycles de production, parcours d'achat et outils utilisables hors ligne dans une démo privée",
       "availability": "coming_soon",
-      "demoPriority": 3,
-      "qaTestDestination": "https://agriculture.demo.africadigitalsynergy.com/demo"
+      "demoPriority": 3
     },
     {
       "id": "finance",
@@ -78,11 +76,10 @@
       "summary": "Mobility and logistics solutions",
       "image": "photo-1519003722824-194d4455a60c",
       "icon": "🚚",
-      "demoUrl": null,
+      "demoUrl": "https://transport.test.africadigitalsynergy.com/",
       "featured": false,
       "summary_fr": "Solutions de mobilité et de logistique",
-      "availability": "coming_soon",
-      "qaTestDestination": "https://transport.test.africadigitalsynergy.com/"
+      "availability": "coming_soon"
     },
     {
       "id": "ventureworks",
@@ -91,12 +88,11 @@
       "summary": "Venture preparation, planning and execution",
       "image": "photo-1497366811353-6870744d04b2",
       "icon": "◇",
-      "demoUrl": null,
+      "demoUrl": "https://ventureworks.demo.africadigitalsynergy.com/demo",
       "demoDestination": "https://ventureworks.demo.africadigitalsynergy.com/demo",
       "featured": false,
       "summary_fr": "Préparation, planification et développement d'entreprises",
-      "availability": "coming_soon",
-      "qaTestDestination": "https://ventureworks.demo.africadigitalsynergy.com/demo"
+      "availability": "coming_soon"
     },
     {
       "id": "morphoo",
@@ -178,12 +174,11 @@
       "summary_fr": "Registres de tontines, cotisations et validations fictives à deux personnes — aucun fonds détenu par ADS",
       "image": null,
       "icon": "",
-      "demoUrl": null,
+      "demoUrl": "https://tontine.demo.africadigitalsynergy.com/demo",
       "demoDestination": "https://tontine.demo.africadigitalsynergy.com/demo",
       "featured": true,
       "availability": "coming_soon",
-      "demoPriority": 5,
-      "qaTestDestination": "https://tontine.demo.africadigitalsynergy.com/demo"
+      "demoPriority": 5
     },
     {
       "id": "fleet-guard",
@@ -193,12 +188,11 @@
       "summary_fr": "Suivi des véhicules et équipements, ordres d'entretien et contrôles de sécurité des chauffeurs en mode test",
       "image": null,
       "icon": "",
-      "demoUrl": null,
+      "demoUrl": "https://fleetguard.demo.africadigitalsynergy.com/demo",
       "demoDestination": "https://fleetguard.demo.africadigitalsynergy.com/demo",
       "featured": true,
       "availability": "coming_soon",
-      "demoPriority": 4,
-      "qaTestDestination": "https://fleetguard.demo.africadigitalsynergy.com/demo"
+      "demoPriority": 4
     },
     {
       "id": "real-estate",
@@ -268,10 +262,9 @@
       "summary_fr": "Services touristiques et expériences visiteurs",
       "image": null,
       "icon": "",
-      "demoUrl": null,
+      "demoUrl": "https://tourism.demo.africadigitalsynergy.com/",
       "featured": false,
-      "availability": "coming_soon",
-      "qaTestDestination": "https://tourism.demo.africadigitalsynergy.com/"
+      "availability": "coming_soon"
     },
     {
       "id": "law-firms",
