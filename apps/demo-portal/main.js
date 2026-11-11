@@ -47,8 +47,10 @@ let catalogue = {platforms:[],tools:[],publicSite:"https://africadigitalsynergy.
 // value all mean "preparing": the portal never links to a demo the operator has not confirmed.
 let activation={};
 const ACTIVATION_STATES=["preparing","open","unavailable"];
-const DEMO_DESTINATION=/^https:\/\/[a-z0-9-]+\.(?:demo|test)\.africadigitalsynergy\.com\/[A-Za-z0-9/_-]*$/;
-const destinationOf=p=>p&&typeof p.demoDestination==="string"&&DEMO_DESTINATION.test(p.demoDestination)?p.demoDestination:null;
+const DEMO_DESTINATION=/^https:\/\/[a-z0-9-]+\.demo\.africadigitalsynergy\.com\/[A-Za-z0-9/_-]*$/;
+// Explicitly configured test hosts for the existing Transport and Health QA entry routes.
+const REVIEWED_TEST_DESTINATIONS=new Set(["https://transport.test.africadigitalsynergy.com/","https://health.test.africadigitalsynergy.com/"]);
+const destinationOf=p=>p&&typeof p.demoDestination==="string"&&(DEMO_DESTINATION.test(p.demoDestination)||REVIEWED_TEST_DESTINATIONS.has(p.demoDestination))?p.demoDestination:null;
 const activationOf=p=>{const v=Object.prototype.hasOwnProperty.call(activation,p.id)?activation[p.id]:null;return ACTIVATION_STATES.includes(v)?v:"preparing";};
 // live: existing verified demoUrl (Commerce, unchanged) · open/unavailable/preparing: activation-managed · none: no destination yet.
 function demoStatus(p){
