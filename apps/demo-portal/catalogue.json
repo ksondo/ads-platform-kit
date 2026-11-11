@@ -14,7 +14,8 @@
       "demoDestination": "https://education.demo.africadigitalsynergy.com/demo",
       "featured": true,
       "summary_fr": "Cours numériques, évaluations, suivi des apprenants et gestion scolaire dans un espace de démonstration privé",
-      "availability": "coming_soon"
+      "availability": "coming_soon",
+      "demoPriority": 2
     },
     {
       "id": "commerce",
@@ -27,7 +28,8 @@
       "demoAccess": "request",
       "featured": false,
       "summary_fr": "Solutions pour le commerce et les entreprises sur les marchés africains",
-      "availability": "verified_demo"
+      "availability": "verified_demo",
+      "demoPriority": 1
     },
     {
       "id": "healthcare",
@@ -52,7 +54,8 @@
       "demoDestination": "https://agriculture.demo.africadigitalsynergy.com/demo",
       "featured": true,
       "summary_fr": "Dossiers agricoles, cycles de production, parcours d'achat et outils utilisables hors ligne dans une démo privée",
-      "availability": "coming_soon"
+      "availability": "coming_soon",
+      "demoPriority": 3
     },
     {
       "id": "finance",
@@ -174,7 +177,8 @@
       "demoUrl": null,
       "demoDestination": "https://tontine.demo.africadigitalsynergy.com/demo",
       "featured": true,
-      "availability": "coming_soon"
+      "availability": "coming_soon",
+      "demoPriority": 5
     },
     {
       "id": "fleet-guard",
@@ -187,7 +191,8 @@
       "demoUrl": null,
       "demoDestination": "https://fleetguard.demo.africadigitalsynergy.com/demo",
       "featured": true,
-      "availability": "coming_soon"
+      "availability": "coming_soon",
+      "demoPriority": 4
     },
     {
       "id": "real-estate",
