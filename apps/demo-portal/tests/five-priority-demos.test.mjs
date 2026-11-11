@@ -28,7 +28,9 @@ test("Commerce alone is verified in the source; four priority activations fail c
  assert.equal(activation.products.ventureworks,"preparing");
  assert.equal(catalogue.publicDemoRequestsEnabled,false);
 });
-test("home, directory and demo-access guide all prioritize the five demos",()=>{
+test("home, directory and demo-access guide feature only activated demos",()=>{
+ assert.match(main,/const priorityPlatforms=\(\)=>catalogue\.platforms\.filter\(p=>\["live","open"\]\.includes\(demoStatus\(p\)\)\)/);
+ assert.match(main,/const other=items\.filter\(p=>!priorityPlatforms\(\)\.some\(x=>x\.id===p\.id\)\)/);
  assert.match(main,/function priorityDemoSection\(\)/);
  assert.match(main,/return hero\(\)\+priorityDemoSection\(\)\+opportunityDiscoveryPaths\(\)/);
  assert.match(main,/function demoAccessGuide\(\)[\s\S]*priorityDemoSection\(\)/);
@@ -39,9 +41,16 @@ test("home, directory and demo-access guide all prioritize the five demos",()=>{
  assert.match(css,/@media\(max-width:520px\).*priority-demo-grid/);
 });
 test("private instructions in both languages never imply all 25 demos are open",()=>{
- for (const line of ["Five priority demos","Cinq démos prioritaires","Open an available demo","Ouvrez une démo disponible"]){
+ for (const line of ["Explore available demos","Découvrir les démos disponibles","Open an available demo","Ouvrez une démo disponible"]){
   assert.ok(main.includes(line),line);
  }
  assert.ok(!main.includes("Open Commerce and use your individual ADS account"));
  assert.ok(!main.includes("Ouvrez Commerce et utilisez votre compte ADS individuel"));
+});
+
+test("only Commerce is active with the bundled operator-default activation",()=>{
+ const live=catalogue.platforms.filter(p=>Boolean(p.demoUrl)||activation.products[p.id]==="open");
+ assert.deepEqual(live.map(p=>p.id),["commerce"]);
+ assert.ok(catalogue.platforms.filter(p=>!live.includes(p)).length===24);
+ assert.doesNotMatch(main,/demoPending:"Demo being prepared"/);
 });
