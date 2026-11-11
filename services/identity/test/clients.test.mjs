@@ -85,6 +85,41 @@ describe('client registration list (config/clients.demo.json)', () => {
     assert.ok(bySlug.africover.operator_setup[0].includes('platform_operators(tenant_id,name)'));
   });
 
+  it('Agriculture wave 2: demo roles follow the other demos, agriculture-web may exchange for Commerce sector offers', () => {
+    const agri = bySlug.agriculture;
+    // Same pattern as the other demos (one role per persona, product admin role in admin_roles); actual roles are settled at MVP.
+    assert.deepEqual(agri.admin_roles, ['tenant_admin']);
+    for (const r of ['org_member_admin', 'helpdesk_demo', 'ads_operator']) {
+      assert.ok(!agri.assignable_roles.includes(r), r);
+      for (const o of agri.demo_orgs) assert.ok(!o.roles.includes(r), `${o.key} ${r}`);
+    }
+    assert.deepEqual(agri.tokenExchange, [{ audience: 'ads-commerce-api', scopes: ['commerce.sector_offers'] }]);
+    assert.equal(agri.needs_client_secret, true);
+  });
+
+  it('lists the Agriculture <-> Commerce service clients in service_clients, never in products, without sign-in fields or secrets', () => {
+    const services = doc.service_clients;
+    assert.ok(Array.isArray(services));
+    const byId = Object.fromEntries(services.map(c => [c.client_id, c]));
+    assert.deepEqual(Object.keys(byId).sort(), ['agriculture-sector-service', 'commerce-sector-service']);
+    assert.deepEqual(byId['agriculture-sector-service'].allowedServiceScopes, ['commerce.sector_outcomes.read']);
+    assert.deepEqual(byId['agriculture-sector-service'].allowedAudiences, ['ads-commerce-api']);
+    assert.deepEqual(byId['commerce-sector-service'].allowedServiceScopes, ['agri.input_vouchers']);
+    assert.deepEqual(byId['commerce-sector-service'].allowedAudiences, ['ads-agriculture-api']);
+    const ids = new Set([...doc.products, ...services].map(c => c.client_id));
+    const scope = /^[a-z][a-z0-9_]{0,39}(\.[a-z][a-z0-9_]{0,39}){1,4}$/;
+    const audiences = [...services.flatMap(c => c.allowedAudiences), ...doc.products.flatMap(p => (p.tokenExchange ?? []).map(e => e.audience))];
+    for (const a of audiences) assert.ok(!ids.has(a), `audience ${a} must not be a client id`);
+    for (const s of [...services.flatMap(c => c.allowedServiceScopes), ...doc.products.flatMap(p => (p.tokenExchange ?? []).flatMap(e => e.scopes))]) assert.match(s, scope);
+    for (const c of services) {
+      assert.equal(c.kind, 'service');
+      assert.ok(!doc.products.some(p => p.client_id === c.client_id), `${c.client_id} must not be a sign-in client`);
+      for (const k of ['redirect_uris', 'post_logout_redirect_uris', 'self_service_roles', 'admin_scopes', 'admin_roles', 'assignable_roles', 'ads_only_roles', 'demo_orgs', 'tenant_settings', 'tokenExchange']) assert.equal(c[k], undefined, `${c.client_id} ${k}`);
+    }
+    for (const p of doc.products) for (const e of p.tokenExchange ?? []) assert.deepEqual(Object.keys(e).sort(), ['audience', 'scopes'], p.client_id);
+    assert.ok(!JSON.stringify(services).match(/"(secret|client_secret)"\s*:/), 'no secret values');
+  });
+
   it('refuses a list that makes an ADS-only role assignable', () => {
     const bad = structuredClone(doc);
     bad.products.find(p => p.slug === 'commerce').assignable_roles.push('commerce_reviewer');
