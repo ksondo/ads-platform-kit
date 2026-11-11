@@ -11,7 +11,7 @@ const i18n = {
     kicker:"ADS DIGITAL ECOSYSTEM", heroA:"Real Solutions for", heroB:"a Brighter Africa", heroCopy:"Explore our platforms, discover digital business opportunities and experience working demonstrations.",
     search:"Search platforms, tools or business opportunities…", searchButton:"Search", popular:"Popular:", discover:"Explore Our Platforms", discoverCopy:"Discover integrated digital platforms built around real-world needs.", allPlatforms:"View all platforms",
     featured:"FEATURED PLATFORM", commerceCopy:"From e-commerce and point of sale to inventory, payments and customer management, Commerce connects tools that help businesses grow.",
-    experience:"Experience Commerce Platform", commerceTools:"Digital Tools in Commerce", allTools:"View all Commerce tools", explore:"Explore", learn:"Learn More", tryDemo:"Try Demo", requestDemo:"Request demo access", demoPending:"Demo being prepared", live:"Live Demo", onRequest:"Demo on request",
+    experience:"Experience Commerce Platform", commerceTools:"Digital Tools in Commerce", allTools:"View all Commerce tools", explore:"Explore", learn:"Learn More", tryDemo:"Try Demo", requestDemo:"Request demo access", demoPending:"", live:"Live Demo", onRequest:"Demo on request",
     platformsCount:"Platforms listed", toolsCount:"Digital tools listed", demosCount:"Verified demos", partnerships:"Partnership pathways", businessTitle:"Turn digital capabilities into businesses", businessCopy:"Every platform can offer several tools. Explore practical business models and discover ways to operate, adapt or offer these tools with ADS.", browseOpportunities:"Explore business opportunities",
     partnerTitle:"Build the next opportunity with ADS", partnerCopy:"Whether you are an entrepreneur, institution, technology provider, data centre or enterprise, discover how to become a partner.", becomePartner:"Be a Partner",
     catalogPlatforms:"Discover Platforms", catalogTools:"Explore Business Opportunities", catalogCopy:"Browse digital tools by platform and learn how they could serve a business or community.", all:"All sectors", noResults:"No matching entries. Try another search.", back:"Back to platforms", toolsInside:"Digital tools within this platform", howWorks:"Business model", audience:"Who it serves", visitPlatform:"Open platform demo", returnTools:"Back to opportunities",
@@ -26,7 +26,7 @@ const i18n = {
     kicker:"ÉCOSYSTÈME NUMÉRIQUE ADS", heroA:"Des solutions concrètes pour", heroB:"une Afrique meilleure", heroCopy:"Découvrez nos plateformes, les opportunités d'affaires numériques et les démonstrations disponibles.",
     search:"Rechercher plateformes, outils ou opportunités…", searchButton:"Rechercher", popular:"Populaire :", discover:"Explorez nos plateformes", discoverCopy:"Découvrez des plateformes numériques intégrées qui répondent à des besoins réels.", allPlatforms:"Toutes les plateformes",
     featured:"PLATEFORME À LA UNE", commerceCopy:"Du commerce en ligne et de la caisse à la gestion des stocks, aux paiements et aux clients, Commerce rassemble des outils pour faire grandir les entreprises.",
-    experience:"Explorer la plateforme Commerce", commerceTools:"Outils numériques du Commerce", allTools:"Tous les outils Commerce", explore:"Explorer", learn:"En savoir plus", tryDemo:"Essayer la démo", requestDemo:"Demander un accès de démonstration", demoPending:"Démo en préparation", live:"Démo en ligne", onRequest:"Démo sur demande",
+    experience:"Explorer la plateforme Commerce", commerceTools:"Outils numériques du Commerce", allTools:"Tous les outils Commerce", explore:"Explorer", learn:"En savoir plus", tryDemo:"Essayer la démo", requestDemo:"Demander un accès de démonstration", demoPending:"", live:"Démo en ligne", onRequest:"Démo sur demande",
     platformsCount:"Plateformes présentées", toolsCount:"Outils présentés", demosCount:"Démos vérifiées", partnerships:"Types de partenariat", businessTitle:"Transformez les outils en entreprises", businessCopy:"Chaque plateforme peut offrir plusieurs outils. Découvrez des modèles économiques et comment exploiter ces solutions avec ADS.", browseOpportunities:"Explorer les opportunités",
     partnerTitle:"Construisons ensemble avec ADS", partnerCopy:"Entrepreneur, institution, fournisseur technologique, centre de données ou entreprise : découvrez comment devenir partenaire.", becomePartner:"Devenir partenaire",
     catalogPlatforms:"Découvrir les plateformes", catalogTools:"Explorer les opportunités", catalogCopy:"Parcourez les outils par plateforme et découvrez leur modèle économique.", all:"Tous les secteurs", noResults:"Aucun résultat. Essayez une autre recherche.", back:"Retour aux plateformes", toolsInside:"Outils de cette plateforme", howWorks:"Modèle économique", audience:"Public concerné", visitPlatform:"Ouvrir la démo", returnTools:"Retour aux opportunités",
@@ -113,7 +113,7 @@ function launch(target, label) {
   // ADS Identity redirects to sign-in and then back to the same platform.
   // noopener prevents the new tab from controlling the portal.
   // The product receives the portal language (?lang=en|fr) and keeps it through sign-in.
-  return url ? link(withLang(url),s(label)+' ↗',"btn btn-gold",'target="_blank" rel="noopener noreferrer"') : pill(t("demoPending"),"muted");
+  return url ? link(withLang(url),s(label)+' ↗',"btn btn-gold",'target="_blank" rel="noopener noreferrer"') : "";
 }
 function corporateReturnBar(){
  if(catalogue.companySiteLinksEnabled!==true)return '';
@@ -141,16 +141,16 @@ function platformCard(p){
  const demo=safeDemo(p.demoUrl),url=demo||platformUrl(p);
  // Verified demo links (Commerce) also carry the portal language, like the activation-managed products.
  const state=demoStatus(p),open=state==="open",href=open?destinationUrl(p):demo?withLang(demo):url,external=Boolean(demo)||open;
- const status=state==="open"?pill(t("demoAvailable"),"online"):state==="unavailable"?pill(t("demoUnavailable"),"warn"):state==="preparing"?pill(t("demoPending"),"muted"):"";
+ const status=["open","live"].includes(state)?pill(t("demoAvailable"),"online"):"";
  const media=platformImage(p)?'<img src="'+s(platformImage(p))+'" alt="" decoding="async" loading="lazy" width="640" height="360"/>':'<span class="platform-placeholder" aria-hidden="true">◇</span>';
  return '<a class="platform-card" data-demo-state="'+s(state)+'" href="'+s(href)+'"'+(external?' target="_blank" rel="noopener noreferrer"':'')+'><span class="platform-image">'+media+'</span>'+
  '<div class="platform-body"><h3>'+s(title(p))+'</h3><p>'+s(summary(p))+'</p><span class="card-spacer"></span>'+
- '<span class="platform-meta">'+(status||(n?pill(countLabel(n,"tools")):pill(t("demoPending"),"muted")))+'</span>'+
+ '<span class="platform-meta">'+(status||(n?pill(countLabel(n,"tools")):""))+'</span>'+
  '<span class="btn btn-outline card-action">'+s(open?t("demoOpen"):demo?demoLabel(p,"tryDemo"):t("explore"))+' →</span></div></a>';
 }
 function toolCard(x){
  const media=x.image?'<img src="'+s(photo(x.image))+'" alt="" decoding="async" loading="lazy" width="560" height="315"/>':'<span class="tool-placeholder" aria-hidden="true">◇</span>';
- return '<a class="tool-card" href="'+toolUrl(x)+'"><span class="tool-photo">'+media+(safeDemo(x.demoUrl)?pill(onRequest(x)?t(publicRequestsOpen()?"onRequest":"privateDemo"):t("live"),"online"):pill(t("demoPending"),"muted"))+'</span>'+
+ return '<a class="tool-card" href="'+toolUrl(x)+'"><span class="tool-photo">'+media+(safeDemo(x.demoUrl)?pill(onRequest(x)?t(publicRequestsOpen()?"onRequest":"privateDemo"):t("live"),"online"):"")+'</span>'+
  '<div class="tool-body"><h3>'+s(title(x))+'</h3><p>'+s(summary(x))+'</p><span class="card-spacer"></span>'+
  '<span class="btn btn-outline card-action">'+s(t("learn"))+' →</span></div></a>';
 }
@@ -161,7 +161,7 @@ function hero(){
   const demoCount=catalogue.platforms.filter(p=>["live","open"].includes(demoStatus(p))).length;
   return '<section class="hero"><div class="container hero-grid"><div class="hero-copy"><span class="eyebrow">◈ &nbsp;'+s(t("kicker"))+'</span><h1>'+s(t("heroA"))+'<br><em>'+s(t("heroB"))+'</em></h1><p>'+s(t("heroCopy"))+'</p>'+searchBar()+'<div class="popular">'+s(t("popular"))+' <a href="/platforms?q=education">'+s(t("educationChip"))+'</a><a href="/platforms?q=commerce">Commerce</a><a href="/platforms?q=healthcare">'+s(t("healthcareChip"))+'</a><a href="/platforms?q=transport">Transport</a></div></div>'+
    '<div class="hero-art">'+africaArt()+'</div>'+
-   '<div class="hero-stats"><div><span class="stat-symbol">⬡</span><strong>'+catalogue.platforms.length+'</strong><small>'+s(t("platformsCount"))+'</small></div><div><span class="stat-symbol">▦</span><strong>'+catalogue.tools.length+'</strong><small>'+s(t("toolsCount"))+'</small></div><div><span class="stat-symbol">▷</span><strong>'+demoCount+'</strong><small>'+s(t("demosCount"))+'</small></div><div><span class="stat-symbol">♧</span><strong>'+catalogue.platforms.filter(p=>!["live","open"].includes(demoStatus(p))).length+'</strong><small>'+s(t("demoPending"))+'</small></div></div>'+
+   '<div class="hero-stats"><div><span class="stat-symbol">⬡</span><strong>'+catalogue.platforms.length+'</strong><small>'+s(t("platformsCount"))+'</small></div><div><span class="stat-symbol">▦</span><strong>'+catalogue.tools.length+'</strong><small>'+s(t("toolsCount"))+'</small></div><div><span class="stat-symbol">▷</span><strong>'+demoCount+'</strong><small>'+s(t("demosCount"))+'</small></div><div><span class="stat-symbol">♧</span><strong>'+catalogue.platforms.filter(p=>!["live","open"].includes(demoStatus(p))).length+'</strong><small>'+s(t("platformsCount"))+'</small></div></div>'+
   '</div></section>';
 }
 function sectionTitle(title,href,label,subtitle=""){
@@ -235,12 +235,12 @@ function toolDirectory(){
 function demoAction(p){
  const state=demoStatus(p);
  if(state==="open")return launch(destinationUrl(p),t("demoOpen"));
- if(state==="unavailable")return '<span class="pill pill-warn" data-testid="demo-unavailable">'+s(t("demoUnavailable"))+'</span>';
+ if(state==="unavailable")return "";
  return launch(p.demoUrl,demoLabel(p,"visitPlatform"));
 }
 function demoStateNote(p){
  const state=demoStatus(p);
- const key=state==="open"?"demoOpenNote":state==="unavailable"?"demoUnavailableNote":state==="preparing"?"demoPreparingNote":null;
+ const key=state==="open"?"demoOpenNote":null;
  return key?'<p class="detail-note demo-state-note" role="'+(state==="unavailable"?"alert":"note")+'" data-testid="demo-state-'+s(state)+'">'+s(t(key))+'</p>':"";
 }
 function platformDetail(p){
@@ -248,7 +248,7 @@ function platformDetail(p){
   return '<section class="detail-hero" data-portal-hero="platform"><img class="detail-hero-photo" src="'+s(platformImage(p,1300))+'" alt="" loading="lazy" width="1300" height="420"/><div class="container">'+link("/platforms","← "+s(t("back")),"back-link")+'<div class="eyebrow">'+s(t("platforms"))+'</div><h1>'+s(title(p))+'</h1><p>'+s(summary(p))+'</p><div class="detail-actions">'+demoAction(p)+companyAction("/partners",t("becomePartner"),"btn btn-outline-light")+link("/demo-access",s(t("demoHelp"))+" →","btn btn-outline-light")+'</div>'+(onRequest(p)?accessNotice():"")+demoStateNote(p)+'</div></section>'+
   '<section class="section"><div class="container">'+sectionTitle(t("toolsInside"),"/opportunities?platform="+encodeURIComponent(p.id),p.id==="commerce"?t("allTools"):t("allPlatformTools"))+
   (items.length?'<div class="tool-grid directory-tools">'+items.map(toolCard).join("")+'</div>':'<p class="empty">'+s(t("noResults"))+'</p>')+
-  '<p class="detail-note">'+s(t("statusNote"))+'</p></div></section>';
+  '</div></section>';
 }
 function toolDetail(x){
  const p=catalogue.platforms.find(p=>p.id===x.platformId);
