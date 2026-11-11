@@ -161,7 +161,7 @@ function hero(){
   const demoCount=catalogue.platforms.filter(p=>["live","open"].includes(demoStatus(p))).length;
   return '<section class="hero"><div class="container hero-grid"><div class="hero-copy"><span class="eyebrow">◈ &nbsp;'+s(t("kicker"))+'</span><h1>'+s(t("heroA"))+'<br><em>'+s(t("heroB"))+'</em></h1><p>'+s(t("heroCopy"))+'</p>'+searchBar()+'<div class="popular">'+s(t("popular"))+' <a href="/platforms?q=education">'+s(t("educationChip"))+'</a><a href="/platforms?q=commerce">Commerce</a><a href="/platforms?q=healthcare">'+s(t("healthcareChip"))+'</a><a href="/platforms?q=transport">Transport</a></div></div>'+
    '<div class="hero-art">'+africaArt()+'</div>'+
-   '<div class="hero-stats"><div><span class="stat-symbol">⬡</span><strong>'+catalogue.platforms.length+'</strong><small>'+s(t("platformsCount"))+'</small></div><div><span class="stat-symbol">▦</span><strong>'+catalogue.tools.length+'</strong><small>'+s(t("toolsCount"))+'</small></div><div><span class="stat-symbol">▷</span><strong>'+demoCount+'</strong><small>'+s(t("demosCount"))+'</small></div><div><span class="stat-symbol">♧</span><strong>'+catalogue.platforms.filter(p=>!["live","open"].includes(demoStatus(p))).length+'</strong><small>'+s(t("platformsCount"))+'</small></div></div>'+
+   '<div class="hero-stats"><div><span class="stat-symbol">⬡</span><strong>'+catalogue.platforms.length+'</strong><small>'+s(t("platformsCount"))+'</small></div><div><span class="stat-symbol">▦</span><strong>'+catalogue.tools.length+'</strong><small>'+s(t("toolsCount"))+'</small></div><div><span class="stat-symbol">▷</span><strong>'+demoCount+'</strong><small>'+s(t("demosCount"))+'</small></div></div>'+
   '</div></section>';
 }
 function sectionTitle(title,href,label,subtitle=""){
@@ -181,13 +181,11 @@ function opportunityDiscoveryPaths(){
 }
 function priorityDemoSection(){
  const items=priorityPlatforms();
- const ready=items.filter(p=>["live","open"].includes(demoStatus(p))).length;
- const count=t("priorityDemoCount").replace("{ready}",String(ready)).replace("{total}",String(items.length));
  return '<section class="section priority-demo-section" id="priority-demos" data-testid="priority-demos"><div class="container">'+
   sectionTitle(t("priorityDemos"),"/demo-access",t("demoHelp"),t("priorityDemoIntro"))+
-  '<p class="priority-demo-count" role="status" data-testid="priority-demo-count">'+s(count)+'</p>'+
+  
   '<div class="priority-demo-grid">'+items.map(platformCard).join("")+'</div>'+
-  '<p class="priority-demo-note">'+s(t("priorityDemoNote"))+'</p></div></section>';
+  '</div></section>';
 }
 function landing(){
  const commerce=catalogue.platforms.find(p=>p.id==="commerce");
