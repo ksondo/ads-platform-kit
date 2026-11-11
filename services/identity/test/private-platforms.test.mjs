@@ -63,12 +63,13 @@ describe('operator private visitors for Education, Agriculture and Tontine', () 
         assert.ok(check.personas.every(p=>!p.roles.some(r=>['platform_admin','tenant_admin','support','reviewer'].includes(r))));
       }
       if(platform==='agriculture') {
-        // Release 2: 9 personas plus the demo colleague, each with only its own role, all in the visitor's own organisation.
+        // Release 2: 9 personas, the wave-2 agronomist (11 Nov 2026) and the demo colleague, each with only its own role, all in the visitor's own organisation.
         const expected=[
           {key:'farmer',org:'main',roles:['farmer']},
           {key:'buyer',org:'main',roles:['buyer']},
           {key:'coop-manager',org:'main',roles:['coop_manager']},
           {key:'extension-officer',org:'main',roles:['extension_officer']},
+          {key:'agronomist',org:'main',roles:['agronomist']},
           {key:'lender-officer',org:'main',roles:['lender_officer']},
           {key:'input-supplier',org:'main',roles:['input_supplier']},
           {key:'farm-reviewer',org:'main',roles:['reviewer']},
@@ -81,7 +82,7 @@ describe('operator private visitors for Education, Agriculture and Tontine', () 
         // Narrowing a token to one persona (intersection, as the product server does) leaves exactly that persona's role.
         const held=(await svc.pool.query('SELECT roles FROM platform.product_roles WHERE user_id=$1 AND tenant_id=$2 AND client_id=$3',[first.userId,check.personas[0].tenantId,'agriculture-web'])).rows[0].roles;
         for(const persona of check.personas) assert.deepEqual(held.filter(r=>persona.roles.includes(r)),persona.roles,persona.key);
-        assert.deepEqual([...held].sort(),['buyer','coop_manager','extension_officer','farmer','input_supplier','lender_officer','reviewer','support','tenant_admin']);
+        assert.deepEqual([...held].sort(),['agronomist','buyer','coop_manager','extension_officer','farmer','input_supplier','lender_officer','reviewer','support','tenant_admin']);
         // Never ADS staff: the visitor belongs to no staff organisation, and its own organisation is a non-staff visit-* copy.
         const orgs=(await svc.pool.query(`SELECT o.is_staff,o.demo_key,m.role FROM platform.memberships m JOIN platform.tenants t ON t.id=m.tenant_id
           JOIN platform.organizations o ON o.id=t.organization_id WHERE m.user_id=$1`,[first.userId])).rows;
@@ -144,8 +145,8 @@ describe('operator private visitors for Education, Agriculture and Tontine', () 
       const stale=await code(b,platform);
       await svc.pool.query("UPDATE platform.demo_access_grants SET expires_at=now()-interval '1 second' WHERE id=$1",[first.grantId]);
       assert.equal((await exchange(platform,stale)).status,400,'pre-issued code refused after clock expiry');
-      // Expiry cannot fall back to ordinary personal access: Identity page by default, access_denied when the product opts in.
-      assertNoAccessPage((await code(b,platform)).r);
+      // Expiry cannot fall back to ordinary personal access: Identity page with the flag off, access_denied when the product opts in.
+      await withDeniedRedirect(svc,[],async()=>assertNoAccessPage((await code(b,platform)).r));
       await withDeniedRedirect(svc,[`${platform}-web`],async()=>{ const denied=await code(b,platform); assertAccessDenied(denied.r,denied.redirect,'private-platform','DEMO_ACCESS_EXPIRED'); });
       const refresh=await fetch(`${svc.base}/token`,{method:'POST',body:new URLSearchParams({grant_type:'refresh_token',refresh_token:tokens.refresh_token,client_id:`${platform}-web`})});
       assert.equal(refresh.status,400);
@@ -158,8 +159,8 @@ describe('operator private visitors for Education, Agriculture and Tontine', () 
       assert.equal((await exchange(platform,secondPending)).status,400,'pre-issued code refused after revocation');
       const revokedRefresh=await fetch(`${svc.base}/token`,{method:'POST',body:new URLSearchParams({grant_type:'refresh_token',refresh_token:secondTokens.refresh_token,client_id:`${platform}-web`})});
       assert.equal(revokedRefresh.status,400);
-      // Revoked visitor cannot obtain a new code: Identity page by default, access_denied when the product opts in.
-      assertNoAccessPage((await code(secondBrowser,platform)).r);
+      // Revoked visitor cannot obtain a new code: Identity page with the flag off, access_denied when the product opts in.
+      await withDeniedRedirect(svc,[],async()=>assertNoAccessPage((await code(secondBrowser,platform)).r));
       await withDeniedRedirect(svc,[`${platform}-web`],async()=>{ const denied=await code(secondBrowser,platform); assertAccessDenied(denied.r,denied.redirect,'private-platform','DEMO_ACCESS_REVOKED'); });
       assert.equal((await svc.pool.query('SELECT count(*)::int AS n FROM platform.users WHERE id=ANY($1::uuid[])',[[first.userId,second.userId]])).rows[0].n,2,'expiry/revocation retain accounts');
       assert.equal(svc.mailer.outbox.length,0);

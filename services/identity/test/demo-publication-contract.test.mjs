@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 import { loadPlatforms, PRIVATE_VISITOR_PLATFORMS } from '../src/demo-access.mjs';
 import { loadConfig } from '../src/config.mjs';
 
-// Publication contract (owner assignment 7 Nov 2026) for the four products published next to Commerce.
+// Publication contract (owner assignment 7 Nov 2026) for the products published next to Commerce
+// (VentureWorks added 11 Nov 2026).
 // Pins the exact registry entry, OAuth callback/logout URLs, visitor personas and organisations, the
 // check-secret variable name and private provisioning. Changing any of these needs a reviewed PR that
 // also updates the product and docs/demo-access/DEMO_PUBLICATION_CONTRACT.md.
@@ -19,15 +20,17 @@ const PRODUCTS = {
   education: { client: 'education-web', slug: 'education', host: 'education.demo.africadigitalsynergy.com', entry: '/demo/personas', env: 'DEMO_ACCESS_CHECK_SECRET_EDUCATION',
     personas: { 'school-admin': 'main', 'academic-admin': 'main', admissions: 'main', bursar: 'main', teacher: 'main', parent: 'main', student: 'main', applicant: 'main', partner: 'partner' } },
   agriculture: { client: 'agriculture-web', slug: 'agriculture', host: 'agriculture.demo.africadigitalsynergy.com', entry: '/demo/personas', env: 'DEMO_ACCESS_CHECK_SECRET_AGRICULTURE',
-    personas: { farmer: 'main', buyer: 'main', 'coop-manager': 'main', 'extension-officer': 'main', 'lender-officer': 'main', 'input-supplier': 'main',
+    personas: { farmer: 'main', buyer: 'main', 'coop-manager': 'main', 'extension-officer': 'main', agronomist: 'main', 'lender-officer': 'main', 'input-supplier': 'main',
       'farm-reviewer': 'main', 'help-desk': 'main', 'org-admin': 'main', 'demo-colleague': 'main' } },
   tontine: { client: 'tontine-web', slug: 'tontine', host: 'tontine.demo.africadigitalsynergy.com', entry: '/demo/personas', env: 'DEMO_ACCESS_CHECK_SECRET_TONTINE',
     personas: { 'group-admin': 'main', treasurer: 'main', 'payout-approver': 'main', member: 'main', auditor: 'main', 'cooperative-admin': 'cooperative', partner: 'partner' } },
   'fleet-guard': { client: 'fleet-guard-web', slug: 'fleetguard', host: 'fleetguard.demo.africadigitalsynergy.com', entry: '/demo/personas', env: 'DEMO_ACCESS_CHECK_SECRET_FLEET_GUARD',
     personas: { 'fleet-owner': 'main', 'fleet-manager': 'main', approver: 'main', driver: 'main', mechanic: 'main', 'approver-colleague': 'main' } },
+  ventureworks: { client: 'ventureworks-web', slug: 'ventureworks', host: 'ventureworks.demo.africadigitalsynergy.com', entry: '/demo/personas', env: 'DEMO_ACCESS_CHECK_SECRET_VENTUREWORKS',
+    personas: { founder: 'main', 'venture-manager': 'main', contributor: 'main', 'evidence-reviewer': 'main', 'regulatory-reviewer': 'main' } },
 };
 
-describe('demo publication contract: Commerce, Education, Agriculture, Tontine, Fleet Guard', () => {
+describe('demo publication contract: Commerce, Education, Agriculture, Tontine, Fleet Guard, VentureWorks', () => {
   for (const [key, x] of Object.entries(PRODUCTS)) {
     it(`${key}: registry entry, exact origin and persona-page entry URL`, () => {
       const entries = registryDoc.platforms.filter(p => p.key === key);

@@ -17,9 +17,11 @@ test('home discovery features exactly the four source release candidates',()=>{
    'no unverified hosting claims: '+id);
  }
 });
+// VentureWorks (11 Nov 2026) is activation-managed like the four, but not featured on the home page.
+const MANAGED=[...FOUR,'ventureworks'];
 test('source-ready cards never publish an unverified Contabo demo link',()=>{
- assert.deepEqual(Object.keys(activation.products).sort(),[...FOUR].sort());
- for(const id of FOUR){
+ assert.deepEqual(Object.keys(activation.products).sort(),[...MANAGED].sort());
+ for(const id of MANAGED){
   const p=catalogue.platforms.find(x=>x.id===id);
   assert.equal(p.availability,'coming_soon');
   assert.equal(p.demoUrl,null);

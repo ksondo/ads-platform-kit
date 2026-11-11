@@ -1,5 +1,7 @@
 # ADS — one coordinated Contabo demo release (10 November 2026)
 
+> **Superseded on 11 November 2026** by [`ADS_ONE_TIME_RELEASE_20261111.md`](ADS_ONE_TIME_RELEASE_20261111.md) and `ads-release-20261111.manifest.json` (same pins plus Digital Tontine and VentureWorks). Kept as provenance; do not execute this revision.
+
 **Status: release package prepared; deployment NOT executed or authorized.** This file and `ads-release-20261110.manifest.json` pin all merged, CI-verified source changes. **One-time** means a single coordinated maintenance window, not that GitHub CI automatically deploys, migrates or creates accounts.
 
 ## Exact source snapshot

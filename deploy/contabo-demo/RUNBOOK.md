@@ -221,6 +221,21 @@ Verify registration without exposing credentials:
 
 Expected exact callback and post-logout URI: `https://commerce.demo.africadigitalsynergy.com/`. Continue browser PKCE sign-in/out and role/tenant isolation E2E after the hostname is serving Commerce over valid HTTPS.
 
+#### E3.1 Fix one drifted client with `register-identity-client.sh` (11 November 2026)
+
+When `release-acceptance.sh` reports `FAIL <product> client-drift` (the registered redirect or post-logout URIs differ from the reviewed `config/clients.demo.json` inside the running Identity image), re-register **that one client** with all its reviewed fields (name, accent, redirect and post-logout URIs, self-service roles, personal-workspace flag, admin scopes, admin roles, assignable roles). Do not rerun `apply-clients.mjs` or any bootstrap.
+
+1. Take the protected Identity database backup first and record it in a root-only marker file outside any repository (for example `/var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker`: backup path, time and checksum; no passwords).
+2. Dry run (reads only; prints the field-by-field difference):
+
+       bash deploy/contabo-demo/register-identity-client.sh ventureworks-web --backup-confirmed /var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker
+
+3. Apply, for that client only, after reviewing the difference:
+
+       bash deploy/contabo-demo/register-identity-client.sh ventureworks-web --backup-confirmed /var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker --apply
+
+The script refuses without an existing, non-empty `--backup-confirmed` file, refuses an Identity container that is not `ADS_ENV=demo`/`DEMO_MODE=1`, runs the existing `node src/cli.mjs register-client` inside `ads-demo-identity`, then re-reads the row and fails unless it matches. It never reads `client_secret_hash` or prints a secret; accounts, memberships, roles, signing keys and client secrets are unchanged. Container names follow `release-acceptance.sh` (`ADS_ACC_IDENTITY_CONTAINER`, `ADS_ACC_IDENTITY_DB_CONTAINER`). Then rerun `release-acceptance.sh --product <id>`.
+
 ## F. Commerce integrated demo THIRD (in Commerce repository)
 
 See `ksondo/ADS-Commerce-Platform/deploy/demo/DEPLOYMENT_GATE.md`. The demo API, web and forward-only migrator images must come from **one reviewed Commerce commit**. Provision a dedicated commerce demo PostgreSQL instance, apply migrations as a schema owner, then run the app under `commerce_demo_app` with tenant RLS enabled. Test public e-commerce and restricted cashier/merchant POS separately.
@@ -277,6 +292,28 @@ Only after verified HTTPS links and browser E2E, set `apps/demo-portal/catalogue
 - POS: `https://<approved-commerce-host>/commerce/merchant/pos`
 
 Run the journey: public portal → choose Commerce → browse e-commerce → sign in via shared demo identity → authorize with PKCE and return to Commerce → cashier POS allowed only with the correct roles; buyer without cashier role denied. Test EN/FR, logout, expiring session, tenant isolation, and demo reset. The domain placeholder above is NOT a live link.
+
+### G1. Release acceptance before opening a product (11 November 2026)
+
+On the Contabo host, from the pinned kit checkout, run the read-only check and open nothing that has a `FAIL` line:
+
+    bash deploy/contabo-demo/release-acceptance.sh --plan                       # what will be checked, no docker/network
+    bash deploy/contabo-demo/release-acceptance.sh                              # all six products
+    bash deploy/contabo-demo/release-acceptance.sh --product digital-tontine    # one product
+
+Product ids are the portal/catalogue ids: `commerce`, `education`, `agriculture`, `fleet-guard`, `digital-tontine`, `ventureworks`. Per product it checks the running image against `ads-release-20261111.manifest.json`, Identity client drift and `/authorize`, the demo access switch and grant-check secrets (yes/no only), the seed worker, `ads-identity.js` and static file permissions, health and the issuer. Container names default to each product's reviewed Compose project; confirm with `docker ps` and override with the `ADS_ACC_*` variables documented at the top of the script. Fix client drift with §E3.1.
+
+### G2. Switch a product's portal demo on or off without a rebuild
+
+`compose.portal.yml` mounts the host directory `/etc/ads-demo/portal` read-only at `/etc/ads-portal-operator` (override with `ADS_PORTAL_OPERATOR_DIR`). The portal serves `/etc/ads-demo/portal/demo-activation.json` at `/demo-activation.json` when it exists, and otherwise the bundled file, where every product is `preparing`. No other file in that directory is served.
+
+    install -d -m 0755 /etc/ads-demo/portal
+    install -m 0644 apps/demo-portal/demo-activation.json /etc/ads-demo/portal/demo-activation.json
+    # edit: set only the accepted product to "open"; keys exactly as in catalogue.json:
+    # education, agriculture, digital-tontine, fleet-guard, ventureworks
+    curl -fsS https://demo.africadigitalsynergy.com/demo-activation.json
+
+The first deployment with the mount needs `deploy-portal.sh` (container recreated); after that, edits take effect on the next page load. Rollback: set the product back to `preparing` or `unavailable`, or delete the host file (bundled file applies). Commerce keeps its own link and is not managed by this file.
 
 ## H. Claude/ChatGPT updates later
 

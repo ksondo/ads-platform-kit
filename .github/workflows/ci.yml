@@ -9,6 +9,12 @@ on:
 permissions:
   contents: read
 
+# CI cost (owner rule 11 Nov 2026): a newer push to the same ref cancels the older run. Cheap jobs
+# (identity, mocks, ai-gateway-client, e2e-kit) still run on push to main; the browser job does not.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   identity:
     runs-on: ubuntu-latest
@@ -102,6 +108,8 @@ jobs:
   # BRIEF16: the demo persona picker on the real hosted sign-in page (360/768/1280 px, EN/FR) and
   # the signInAsPersona() Playwright helper.
   e2e-kit-browser:
+    # Browser job: pull requests and manual runs only, never on push to main (CI cost, owner rule 11 Nov 2026).
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04   # pinned: Playwright --with-deps fails on Ubuntu 26
     timeout-minutes: 20
     services:

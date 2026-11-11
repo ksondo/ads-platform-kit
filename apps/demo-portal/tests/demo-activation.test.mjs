@@ -20,9 +20,11 @@ const PRODUCTS = {
   agriculture: { registry: "agriculture", client: "agriculture-web", host: "agriculture.demo.africadigitalsynergy.com" },
   "digital-tontine": { registry: "tontine", client: "tontine-web", host: "tontine.demo.africadigitalsynergy.com" },
   "fleet-guard": { registry: "fleet-guard", client: "fleet-guard-web", host: "fleetguard.demo.africadigitalsynergy.com" },
+  // VentureWorks (owner assignment 11 Nov 2026): same pattern, after PR #102 (main 3744e3c).
+  ventureworks: { registry: "ventureworks", client: "ventureworks-web", host: "ventureworks.demo.africadigitalsynergy.com" },
 };
 
-test("activation is disabled by default for exactly the four published products", () => {
+test("activation is disabled by default for exactly the five activation-managed products", () => {
   assert.equal(activation.schemaVersion, 1);
   assert.deepEqual(Object.keys(activation.products).sort(), Object.keys(PRODUCTS).sort());
   for (const [id, state] of Object.entries(activation.products)) assert.equal(state, "preparing", id + " must stay preparing until the operator confirms it");
@@ -73,5 +75,18 @@ test("portal code fails closed and only links reviewed ADS demo destinations", (
 
 test("activation file ships in the image and is never answered by the SPA fallback", () => {
   assert.match(docker, /COPY apps\/demo-portal\/demo-activation\.json \/usr\/share\/nginx\/html\/demo-activation\.json/);
-  assert.match(nginx, /location = \/demo-activation\.json \{\s*default_type application\/json;\s*try_files \$uri =404;\s*\}/);
+  // Operator copy first, then the bundled file, then 404; never index.html.
+  assert.match(nginx, /location = \/demo-activation\.json \{\s*default_type application\/json;\s*root \/etc\/ads-portal-operator;\s*try_files \$uri @bundled-demo-activation;\s*\}/);
+  assert.match(nginx, /location @bundled-demo-activation \{\s*default_type application\/json;\s*root \/usr\/share\/nginx\/html;\s*try_files \/demo-activation\.json =404;\s*\}/);
+  // The operator directory is used for this one file only: no other location reads it.
+  assert.equal(nginx.split("/etc/ads-portal-operator").length - 1, 2, "operator directory named only in the comment and the activation location");
+});
+
+test("compose mounts the operator activation directory read-only, so a missing host file falls back to the bundled file", () => {
+  const compose = readFileSync(new URL("../../../deploy/contabo-demo/compose.portal.yml", import.meta.url), "utf8");
+  assert.match(compose, /- type: bind\s+source: \$\{ADS_PORTAL_OPERATOR_DIR:-\/etc\/ads-demo\/portal\}\s+target: \/etc\/ads-portal-operator\s+read_only: true\s+bind:\s+create_host_path: true/);
+  // A directory is mounted, never the file itself (a missing host file would otherwise stop the container
+  // or be replaced by an empty directory), and never over the bundled web root.
+  assert.doesNotMatch(compose, /demo-activation\.json:\/usr\/share\/nginx\/html/);
+  assert.doesNotMatch(compose, /target: \/usr\/share\/nginx\/html/);
 });

@@ -71,7 +71,9 @@ export const visitorPersonaKeys = p => p.personas.map(x => x.key);
 // private operator provisioning. Other products need their own integration review.
 // Fleet Guard (7 Nov 2026): explicit addition after its own review (single main organisation,
 // owner_admin without Identity admin authority in visitor organisations, demo colleague persona).
-export const PRIVATE_VISITOR_PLATFORMS = new Set(['commerce', 'education', 'agriculture', 'tontine', 'fleet-guard']);
+// VentureWorks (11 Nov 2026): explicit addition after its own review (single main organisation, five
+// visitor personas; tenant_admin, adviser, investor, partner and employee are not offered to visitors).
+export const PRIVATE_VISITOR_PLATFORMS = new Set(['commerce', 'education', 'agriculture', 'tontine', 'fleet-guard', 'ventureworks']);
 
 export function createDemoAccess({ pool, config, mailer, audit, log = console, platforms }) {
   const settings = config.demoAccess;
