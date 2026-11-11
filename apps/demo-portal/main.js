@@ -199,7 +199,7 @@ function landing(){
 }
 function demoAccessGuide(){
  const steps=[["01",t("demoGuideFirst"),t("demoGuideFirstText")],["02",t(publicRequestsOpen()?"demoGuideSecond":"privateGuideSecond"),t(publicRequestsOpen()?"demoGuideSecondText":"privateGuideSecondText")],["03",t("demoGuideThird"),t(publicRequestsOpen()?"demoGuideThirdText":"privateGuideThirdText")]];
- return '<section class="directory-intro"><div class="container"><span class="eyebrow">'+s(t("demos"))+'</span><h1>'+s(t("demoGuideTitle"))+'</h1><p>'+s(t(publicRequestsOpen()?"demoGuideIntro":"privateGuideIntro"))+'</p>'+accessNotice()+'</div></section>'+
+ return '<section class="directory-intro"><div class="container"><span class="eyebrow">'+s(t("demos"))+'</span><h1>'+s(t("demoGuideTitle"))+'</h1><p>'+s(t(publicRequestsOpen()?"demoGuideIntro":"privateGuideIntro"))+'</p>'+accessNotice()+link("/platforms",s(t("allPlatforms"))+' →',"btn btn-gold")+'</div></section>'+
  priorityDemoSection()+
  '<section class="section"><div class="container"><div class="cloud-grid">'+steps.map(([num,name,explain])=>
  '<article class="cloud-card"><span class="demo-step">'+s(num)+'</span><h2>'+s(name)+'</h2><p>'+s(explain)+'</p></article>').join("")+

@@ -6,7 +6,7 @@ const ux=readFileSync(new URL('../opportunities-v2.js',import.meta.url),'utf8');
 const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 test('ADS homepage visibly links to all sector, local-business and proposed regulator discovery',()=>{
  assert.ok(main.includes('function opportunityDiscoveryPaths(){'));
- assert.ok(main.includes('hero()+opportunityDiscoveryPaths()'));
+ assert.ok(main.includes('hero()+priorityDemoSection()+opportunityDiscoveryPaths()'));
  assert.ok(main.includes('"/opportunities?view=tools"'));
  assert.ok(main.includes('"/opportunities?family=institutional"'));
  for(const label of ['industriesPath','businessesPath','regulatorsPath','discoveryPathsCopy'])
