@@ -203,7 +203,7 @@ function demoAccessGuide(){
  priorityDemoSection()+
  '<section class="section"><div class="container"><div class="cloud-grid">'+steps.map(([num,name,explain])=>
  '<article class="cloud-card"><span class="demo-step">'+s(num)+'</span><h2>'+s(name)+'</h2><p>'+s(explain)+'</p></article>').join("")+
- '</div><p class="detail-note">'+s(t("demoGuideNotLive"))+'</p></div></section>';
+ '</div></div></section>';
 }
 function partnerBanner(){return '<section class="partner-banner"><div class="container"><div><span class="eyebrow">'+s(t("partners"))+'</span><h2>'+s(t("partnerTitle"))+'</h2><p>'+s(t("partnerCopy"))+'</p></div>'+companyAction("/partners",t("becomePartner"),"btn btn-gold")+'</div></section>';}
 function chip(href,text,active){return link(href,s(text),"filter-chip"+(active?" selected":""));}
@@ -251,7 +251,7 @@ function platformDetail(p){
 function toolDetail(x){
  const p=catalogue.platforms.find(p=>p.id===x.platformId);
  return '<section class="detail-hero" data-portal-hero="tool"><img class="detail-hero-photo" src="'+s(photo(x.image,1400))+'" alt="" loading="lazy" width="1300" height="420"/><div class="container">'+link("/opportunities","← "+s(t("returnTools")),"back-link")+'<div class="eyebrow">'+s(p?title(p):t("platforms"))+' / '+s(t("opportunities"))+'</div><h1>'+s(title(x))+'</h1><p>'+s(summary(x))+'</p><div class="detail-actions">'+launch(x.demoUrl,demoLabel(x,"tryDemo"))+link(platformUrl(p),s(t("explore"))+' '+s(title(p))+' →',"btn btn-outline-light")+'</div>'+(onRequest(x)?accessNotice():"")+'</div></section>'+
- '<section class="section"><div class="container detail-content"><div><span class="kicker-dark">'+s(t("opportunities"))+'</span><h2>'+s(t("howWorks"))+'</h2><p>'+s(model(x))+'</p></div><aside class="detail-aside"><h3>'+s(t("audience"))+'</h3><p>'+s(summary(x))+'</p><div class="divider"></div><h3>'+s(t("demos"))+'</h3><p>'+s(t("statusNote"))+'</p></aside></div></section>';
+ '<section class="section"><div class="container detail-content"><div><span class="kicker-dark">'+s(t("opportunities"))+'</span><h2>'+s(t("howWorks"))+'</h2><p>'+s(model(x))+'</p></div><aside class="detail-aside"><h3>'+s(t("audience"))+'</h3><p>'+s(summary(x))+'</p><div class="divider"></div></aside></div></section>';
 }
 function cloud(){
  const parts=[["☁",t("cloudFeature1"),t("cloudFeature1Text")],["⚙",t("cloudFeature2"),t("cloudFeature2Text")],["◇",t("cloudFeature3"),t("cloudFeature3Text")]];
