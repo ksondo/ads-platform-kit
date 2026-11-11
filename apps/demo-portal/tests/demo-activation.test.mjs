@@ -66,7 +66,7 @@ test("portal code fails closed and only links reviewed ADS demo destinations", (
   assert.match(main, /catch \{ return \{\}; \}/, "unreadable activation file means preparing");
   assert.match(main, /if\(!response\.ok\)return \{\};/);
   assert.match(main, /DEMO_DESTINATION=\/\^https:\\\/\\\/\[a-z0-9-\]\+\\\.demo\\\.africadigitalsynergy\\\.com\\\//, "only https://<x>.demo.africadigitalsynergy.com/");
-  assert.match(main, /if\(state==="unavailable"\)return '<span class="pill pill-warn"/, "unavailable is a status, never a link");
+  assert.match(main, /if\(state==="unavailable"\)return "";/, "unavailable never renders a public demo link or internal status");
   assert.match(main, /if\(safeDemo\(p\.demoUrl\)\)return "live";/, "existing verified links are evaluated first and unchanged");
   assert.match(main, /u\.searchParams\.set\("lang",lang\)/, "language is handed to the product overview");
   for (const lang of ["en", "fr"]) for (const key of ["demoOpen", "demoAvailable", "demoUnavailable", "demoUnavailableNote", "demoPreparingNote", "demoOpenNote"])
