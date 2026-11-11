@@ -1172,10 +1172,7 @@
         "extension_officer",
         "agronomist",
         "lender_officer",
-        "input_supplier",
-        "org_member_admin",
-        "helpdesk_demo",
-        "ads_operator"
+        "input_supplier"
       ],
       "ads_only_roles": [],
       "needs_client_secret": true,
@@ -1194,8 +1191,7 @@
             "lender_officer",
             "input_supplier",
             "reviewer",
-            "helpdesk_demo",
-            "org_member_admin"
+            "support"
           ]
         },
         {
@@ -1204,9 +1200,7 @@
           "staff": true,
           "roles": [
             "reviewer",
-            "support",
-            "agronomist",
-            "ads_operator"
+            "support"
           ]
         }
       ],
@@ -1214,6 +1208,7 @@
       "operator_setup": [
         "npm run admin -- add-staff-tenant <staff tenant id> \"ADS Staff – Agriculture\""
       ],
+      "notes": "Secret setting name not found on main (tests use AGRI_ADMIN_CLIENT_SECRET). tokenExchange (Agriculture wave 2, 11 Nov 2026): the Agriculture server exchanges a signed-in user's token for a short-lived Commerce token to read sector offers; it takes effect once Identity token-exchange support is merged and the client is re-registered (ignored before). Demo roles follow the same pattern as the other demos (one role per persona; the organisation admin persona holds the product admin role tenant_admin); actual Agriculture roles are settled at MVP.",
       "tokenExchange": [
         {
           "audience": "ads-commerce-api",
@@ -1221,8 +1216,7 @@
             "commerce.sector_offers"
           ]
         }
-      ],
-      "notes": "Secret setting name not found on main (tests use AGRI_ADMIN_CLIENT_SECRET). org_member_admin (Agriculture organisation admin: manages members, never role definitions) is deliberately NOT in admin_roles: Identity grants admin_scopes per client, not per role, so listing it would also give it roles:write. Follow-up: per-role admin scopes in Identity, then add org_member_admin to admin_roles with members:read, members:write and invitations:write only. ads_operator is held only in the ADS staff organisation. tokenExchange takes effect only once Identity token-exchange support is merged (ignored until then); the matching service clients are in config/clients.service.pending.json."
+      ]
     },
     {
       "slug": "investment",
@@ -1570,6 +1564,32 @@
         }
       ],
       "tenant_settings": {}
+    }
+  ],
+  "service_clients": [
+    {
+      "client_id": "agriculture-sector-service",
+      "kind": "service",
+      "display_name": "ADS Agriculture – sector service",
+      "allowedServiceScopes": [
+        "commerce.sector_outcomes.read"
+      ],
+      "allowedAudiences": [
+        "ads-commerce-api"
+      ],
+      "notes": "Agriculture wave 2 (11 Nov 2026): Agriculture background job reading the Commerce sector outcomes feed (client_credentials: no user, no tenant). Agriculture settings: COMMERCE_SECTOR_SERVICE_CLIENT_ID, COMMERCE_SECTOR_SERVICE_CLIENT_SECRET. The operator provisions the secret on the server only."
+    },
+    {
+      "client_id": "commerce-sector-service",
+      "kind": "service",
+      "display_name": "ADS Commerce – sector service",
+      "allowedServiceScopes": [
+        "agri.input_vouchers"
+      ],
+      "allowedAudiences": [
+        "ads-agriculture-api"
+      ],
+      "notes": "Agriculture wave 2 (11 Nov 2026): Commerce verifying and redeeming Agriculture input vouchers (client_credentials: no user, no tenant). Agriculture accepts the audience ads-agriculture-api (AGRI_SECTOR_SERVICE_AUDIENCE). The operator provisions the secret on the server only."
     }
   ],
   "no_client": [

@@ -64,14 +64,12 @@ describe('demo personas file (config/demo-personas.json)', () => {
       'fleet-owner': 'main:owner_admin', 'fleet-manager': 'main:fleet_manager', approver: 'main:workshop_manager', driver: 'main:driver', mechanic: 'main:technician', partner: 'main:partner',
       'approver-colleague': 'main:workshop_manager',
     });
-    // Agriculture release 2 (7 Nov 2026): 9 visitor personas, the wave-2 agronomist (11 Nov 2026) and the demo colleague, all in the main
-    // organisation; the ADS staff reviewer/support personas stay in the staff organisation for the internal demo set. Wave-2 kit follow-up
-    // (11 Nov 2026): help-desk holds helpdesk_demo, org-admin holds org_member_admin (no Identity admin role), and the demo colleague holds
-    // the four approver roles it acts with.
+    // Agriculture release 2 (7 Nov 2026): 9 visitor personas, the wave-2 agronomist (11 Nov 2026) and the demo colleague, one role each, all in the main
+    // organisation; the ADS staff reviewer/support personas stay in the staff organisation for the internal demo set.
     assert.deepEqual(roles('agriculture'), {
       farmer: 'main:farmer', buyer: 'main:buyer', reviewer: 'staff:reviewer', support: 'staff:support',
       'coop-manager': 'main:coop_manager', 'extension-officer': 'main:extension_officer', agronomist: 'main:agronomist', 'lender-officer': 'main:lender_officer', 'input-supplier': 'main:input_supplier',
-      'farm-reviewer': 'main:reviewer', 'help-desk': 'main:helpdesk_demo', 'org-admin': 'main:org_member_admin', 'demo-colleague': 'main:reviewer+coop_manager+lender_officer+agronomist',
+      'farm-reviewer': 'main:reviewer', 'help-desk': 'main:support', 'org-admin': 'main:tenant_admin', 'demo-colleague': 'main:reviewer',
     });
     for (const k of ['school-admin', 'teacher', 'parent', 'student', 'partner']) assert.ok(roles('education')[k], `education ${k}`);
     assert.equal(roles('education').partner, 'partner:partner_admin');
