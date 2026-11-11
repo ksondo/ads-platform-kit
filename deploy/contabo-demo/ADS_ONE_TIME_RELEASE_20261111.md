@@ -1,5 +1,7 @@
 # ADS — one coordinated Contabo demo release (11 November 2026)
 
+> **Superseded for the Agriculture wave 2 / Commerce sector link deployment** by [`ADS_RELEASE_20261111B.md`](ADS_RELEASE_20261111B.md) and `ads-release-20261111b.manifest.json` (new Identity, Commerce and Agriculture pins; other pins unchanged).
+
 **Status: release package prepared; deployment NOT executed or authorized.** This file and `ads-release-20261111.manifest.json` supersede the 10 November revision ([`ADS_ONE_TIME_RELEASE_20261110.md`](ADS_ONE_TIME_RELEASE_20261110.md)). The pins of that revision are unchanged; Digital Tontine moves from "excluded until certified" into the pinned sources and VentureWorks is added. **One-time** means a single coordinated maintenance window, not that GitHub CI deploys, migrates or creates accounts.
 
 ## Exact source snapshot

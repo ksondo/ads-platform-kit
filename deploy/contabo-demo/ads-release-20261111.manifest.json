@@ -6,7 +6,7 @@
     "environment": "demo",
     "ingress": "https://demo.africadigitalsynergy.com"
   },
-  "status": "SOURCE_PINNED__NOT_APPROVED_FOR_DEPLOY",
+  "status": "SUPERSEDED_BY_ads-release-20261111b__NOT_APPROVED_FOR_DEPLOY",
   "summary": "One coordinated maintenance-window release: the 10 November pins plus Digital Tontine and VentureWorks. No CI, deployment, migration, seed reset, account creation, or portal activation happens when this manifest is committed.",
   "immutable_sources": [
     {
@@ -153,5 +153,6 @@
   "operator_runbook": "deploy/contabo-demo/ADS_ONE_TIME_RELEASE_20261111.md",
   "supersedes": "ads-contabo-consolidated-2026-11-10 (deploy/contabo-demo/ads-release-20261110.manifest.json)",
   "kit_repin_note": "ads-identity and ads-portal stay pinned at 119eb340 as in the 10 November package. VentureWorks private visitors, the ventureworks-web and tontine-web no-access return and the VentureWorks portal destination ship in the kit PR that adds this file; re-pin both kit entries to that PR's merge commit in a reviewed revision before relying on them live.",
-  "acceptance_check": "deploy/contabo-demo/release-acceptance.sh (read-only; run on the host before opening each product)"
+  "acceptance_check": "deploy/contabo-demo/release-acceptance.sh (read-only; run on the host before opening each product)",
+  "superseded_by": "deploy/contabo-demo/ads-release-20261111b.manifest.json"
 }
