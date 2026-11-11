@@ -85,6 +85,36 @@ describe('client registration list (config/clients.demo.json)', () => {
     assert.ok(bySlug.africover.operator_setup[0].includes('platform_operators(tenant_id,name)'));
   });
 
+  it('Agriculture wave-2 roles: org_member_admin is not an Identity admin role (no roles:write), ads_operator only in the staff organisation', () => {
+    const agri = bySlug.agriculture;
+    const main = agri.demo_orgs.find(o => o.key === 'main');
+    const staff = agri.demo_orgs.find(o => o.key === 'staff');
+    for (const r of ['org_member_admin', 'helpdesk_demo', 'ads_operator']) assert.ok(agri.assignable_roles.includes(r), r);
+    // admin_scopes apply per client to every admin role, so org_member_admin stays out of admin_roles until Identity has per-role scopes.
+    assert.deepEqual(agri.admin_roles, ['tenant_admin']);
+    assert.ok(!agri.admin_roles.includes('org_member_admin'));
+    assert.deepEqual(main.roles.filter(r => ['support', 'tenant_admin', 'ads_operator'].includes(r)), []);
+    for (const r of ['helpdesk_demo', 'org_member_admin']) assert.ok(main.roles.includes(r), r);
+    assert.equal(staff.staff, true);
+    for (const r of ['reviewer', 'support', 'agronomist', 'ads_operator']) assert.ok(staff.roles.includes(r), r);
+    assert.deepEqual(agri.tokenExchange, [{ audience: 'ads-commerce-api', scopes: ['commerce.sector_offers'] }]);
+  });
+
+  it('keeps the pending service clients out of the sign-in client list and free of secrets', () => {
+    const pending = JSON.parse(readFileSync(path.resolve(here, '../../../config/clients.service.pending.json'), 'utf8'));
+    const byId = Object.fromEntries(pending.clients.map(c => [c.client_id, c]));
+    assert.deepEqual(Object.keys(byId).sort(), ['agriculture-sector-service', 'commerce-sector-service']);
+    assert.deepEqual(byId['agriculture-sector-service'].allowedServiceScopes, ['commerce.sector_outcomes.read']);
+    assert.deepEqual(byId['agriculture-sector-service'].allowedAudiences, ['ads-commerce-api']);
+    assert.deepEqual(byId['commerce-sector-service'].allowedServiceScopes, ['agri.input_vouchers']);
+    assert.deepEqual(byId['commerce-sector-service'].allowedAudiences, ['ads-agriculture-api']);
+    for (const c of pending.clients) {
+      assert.equal(c.kind, 'service');
+      assert.ok(!doc.products.some(p => p.client_id === c.client_id), `${c.client_id} must not be applied as a sign-in client yet`);
+    }
+    assert.ok(!JSON.stringify(pending).match(/"(secret|client_secret)"\s*:/), 'no secret values in the pending list');
+  });
+
   it('refuses a list that makes an ADS-only role assignable', () => {
     const bad = structuredClone(doc);
     bad.products.find(p => p.slug === 'commerce').assignable_roles.push('commerce_reviewer');

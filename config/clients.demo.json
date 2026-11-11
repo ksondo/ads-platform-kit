@@ -1172,7 +1172,10 @@
         "extension_officer",
         "agronomist",
         "lender_officer",
-        "input_supplier"
+        "input_supplier",
+        "org_member_admin",
+        "helpdesk_demo",
+        "ads_operator"
       ],
       "ads_only_roles": [],
       "needs_client_secret": true,
@@ -1191,7 +1194,8 @@
             "lender_officer",
             "input_supplier",
             "reviewer",
-            "support"
+            "helpdesk_demo",
+            "org_member_admin"
           ]
         },
         {
@@ -1200,7 +1204,9 @@
           "staff": true,
           "roles": [
             "reviewer",
-            "support"
+            "support",
+            "agronomist",
+            "ads_operator"
           ]
         }
       ],
@@ -1208,7 +1214,15 @@
       "operator_setup": [
         "npm run admin -- add-staff-tenant <staff tenant id> \"ADS Staff – Agriculture\""
       ],
-      "notes": "Secret setting name not found on main (tests use AGRI_ADMIN_CLIENT_SECRET)."
+      "tokenExchange": [
+        {
+          "audience": "ads-commerce-api",
+          "scopes": [
+            "commerce.sector_offers"
+          ]
+        }
+      ],
+      "notes": "Secret setting name not found on main (tests use AGRI_ADMIN_CLIENT_SECRET). org_member_admin (Agriculture organisation admin: manages members, never role definitions) is deliberately NOT in admin_roles: Identity grants admin_scopes per client, not per role, so listing it would also give it roles:write. Follow-up: per-role admin scopes in Identity, then add org_member_admin to admin_roles with members:read, members:write and invitations:write only. ads_operator is held only in the ADS staff organisation. tokenExchange takes effect only once Identity token-exchange support is merged (ignored until then); the matching service clients are in config/clients.service.pending.json."
     },
     {
       "slug": "investment",
