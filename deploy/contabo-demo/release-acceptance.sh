@@ -9,6 +9,9 @@
 # from /app/config/clients.demo.json and /authorize accepts the demo callback; (c) demo access switch and
 # grant-check secrets present (yes/no only); (d) seed worker healthy where demo access is on; (e) the kit
 # ads-identity.js is served as JavaScript and every static file is world-readable; (f) health and issuer.
+# When the manifest has "sector_link": {"enabled": true, "service_clients": [...]}, each listed service client
+# must be in the reviewed service_clients, registered as an active kind=service client with the reviewed
+# scopes and audiences, and have a secret set (yes/no only; the secret hash is never selected).
 #
 # Never changes containers, files, Nginx or databases, and never prints a secret value: secrets are tested
 # for presence inside the container and reported as yes/no. The /authorize probe records one short-lived,
@@ -45,7 +48,7 @@ ventureworks|ventureworks|ventureworks-web|ventureworks.demo.africadigitalsynerg
 # ---------------------------------------------------------------------------------------------------------
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-MANIFEST="$here/ads-release-20261111.manifest.json"
+MANIFEST="$here/ads-release-20261111b.manifest.json"
 ONLY=""
 ALL_CLIENTS=0
 PLAN=0
@@ -105,11 +108,26 @@ for s in m.get("immutable_sources", []):
 PY
 }
 
+# Service clients the sector link needs, one per line; nothing when the manifest has no enabled sector_link.
+sector_clients() {
+  python3 - "$MANIFEST" <<'PY'
+import json, re, sys
+link = json.load(open(sys.argv[1], encoding="utf-8")).get("sector_link") or {}
+if link.get("enabled") is True:
+    for cid in link.get("service_clients", []):
+        if not isinstance(cid, str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,62}", cid):
+            sys.exit("invalid sector_link service client")
+        print(cid)
+PY
+}
+SECTOR_CLIENTS="$(sector_clients)" || { echo "Invalid sector_link in $MANIFEST" >&2; exit 2; }
+
 if [[ "$PLAN" == 1 ]]; then
   echo "ADS_RELEASE_ACCEPTANCE_PLAN manifest=$(basename "$MANIFEST") issuer=$ISSUER identity=$IDENTITY_CONTAINER identity_db=$IDENTITY_DB_CONTAINER"
   for id in "${IDS[@]}"; do
     echo "PLAN $id key=${P_KEY[$id]} client=${P_CLIENT[$id]} host=${P_HOST[$id]} app=${P_APP[$id]} web=${P_WEB[$id]} root=${P_ROOT[$id]} access=${P_ACCESS[$id]} worker=${P_WORKER[$id]} health=${P_HEALTH[$id]} sha=$(manifest_sha "$id")"
   done
+  echo "SECTOR_LINK_PLAN service_clients=$(printf '%s' "$SECTOR_CLIENTS" | paste -sd, -)"
   echo 'STATUS=PLAN_ONLY (no docker or network call made)'
   exit 0
 fi
@@ -200,6 +218,46 @@ check_client() {  # label client host
     --data-urlencode state=ads-release-acceptance 2>/dev/null || true)"
   if [[ "$code" == 302 || "$code" == 200 ]]; then pass "$label" authorize "$cid -> $code"; else fail "$label" authorize "$cid -> ${code:-no answer} (expected 302/200)"; fi
 }
+
+# ---------- sector link: service clients registered (only when the manifest enables the link) ----------
+service_client_check() {  # client id -> "PASS ..." or "FAIL ..."
+  python3 - "$work/clients.json" "$work/service.tsv" "$1" <<'PY'
+import json, sys
+reviewed = {c["client_id"]: c for c in json.load(open(sys.argv[1], encoding="utf-8")).get("service_clients", [])}
+db = {}
+for line in open(sys.argv[2], encoding="utf-8"):
+    p = line.rstrip("\n").split("\t")
+    if len(p) == 6:
+        db[p[0]] = {"kind": p[1], "status": p[2], "scopes": json.loads(p[3] or "[]") or [],
+                    "aud": json.loads(p[4] or "[]") or [], "secret": p[5]}
+cid = sys.argv[3]
+if cid not in reviewed:
+    print("FAIL not in reviewed clients.demo.json service_clients"); sys.exit()
+if cid not in db:
+    print("FAIL not registered as a service client in platform.oauth_clients"); sys.exit()
+r, d, out = reviewed[cid], db[cid], []
+if d["status"] != "active": out.append("status " + d["status"])
+if sorted(d["scopes"]) != sorted(r.get("allowedServiceScopes", [])): out.append("scopes differ from reviewed")
+if sorted(d["aud"]) != sorted(r.get("allowedAudiences", [])): out.append("audiences differ from reviewed")
+if d["secret"] != "yes": out.append("secret set: no")
+print(("FAIL " + "; ".join(out)) if out else "PASS registered, active, reviewed scopes and audiences, secret set: yes")
+PY
+}
+if [[ -z "$SECTOR_CLIENTS" ]]; then
+  info sector-link service-client 'sector link not enabled in the manifest; not checked'
+elif [[ "$drift_ok" == 1 ]]; then
+  # Selects whether a secret is set (yes/no), never the secret hash itself.
+  if docker exec "$IDENTITY_DB_CONTAINER" psql -X -q -At -F $'\t' -v ON_ERROR_STOP=1 -U "$IDENTITY_DB_USER" -d "$IDENTITY_DB_NAME" \
+       -c "SELECT client_id, kind, status, array_to_json(service_scopes), array_to_json(service_audiences), CASE WHEN client_secret_hash IS NULL THEN 'no' ELSE 'yes' END FROM platform.oauth_clients WHERE kind = 'service' ORDER BY client_id" \
+       >"$work/service.tsv" 2>/dev/null; then
+    while read -r cid; do
+      r="$(service_client_check "$cid")"
+      if [[ "${r%% *}" == PASS ]]; then pass sector-link service-client "$cid: ${r#* }"; else fail sector-link service-client "$cid: ${r#* }"; fi
+    done <<<"$SECTOR_CLIENTS"
+  else
+    fail sector-link service-client "could not read service clients from platform.oauth_clients (read-only psql in $IDENTITY_DB_CONTAINER)"
+  fi
+fi
 
 # ---------- per product ----------
 for id in "${IDS[@]}"; do

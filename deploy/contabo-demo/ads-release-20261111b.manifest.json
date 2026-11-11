@@ -1,0 +1,180 @@
+{
+  "schema_version": 1,
+  "release_id": "ads-release-20261111b",
+  "target": {
+    "host": "vmi3191089",
+    "environment": "demo",
+    "ingress": "https://demo.africadigitalsynergy.com"
+  },
+  "status": "SOURCE_PINNED__NOT_APPROVED_FOR_DEPLOY",
+  "summary": "Agriculture wave 2 and the Commerce Sector Offer link, on top of ads-release-20261111: Identity at kit main (migration 008, service clients, agriculture-web token exchange), Commerce main (migration 126, Sector Offer API) and Agriculture main (migrations 009-011). Education, Fleet Guard, Digital Tontine, VentureWorks and the portal keep their ads-release-20261111 pins. No CI, deployment, migration, seed reset, account creation or portal activation happens when this manifest is committed.",
+  "immutable_sources": [
+    {
+      "id": "ads-identity",
+      "repo": "ksondo/ads-platform-kit",
+      "sha": "b768b47b942dd6d4b97027b753b2c610d3037bc1",
+      "kind": "shared-auth",
+      "deployment_order": 1,
+      "host": "login.demo.africadigitalsynergy.com",
+      "required_gates": [
+        "independent_security_review",
+        "demo_identity_backup_restore",
+        "oidc_callback_check",
+        "identity_migration_008_verified",
+        "sector_service_clients_registered"
+      ],
+      "prs": [
+        79,
+        78
+      ],
+      "migration": "008_service_clients.sql"
+    },
+    {
+      "id": "commerce",
+      "repo": "ksondo/ADS-Commerce-Platform",
+      "sha": "2d3939219f7239305ad9b9be9c9b44c2d5d19aa9",
+      "kind": "product",
+      "deployment_order": 2,
+      "host": "commerce.demo.africadigitalsynergy.com",
+      "migration": "126_sector_offers_v1.sql",
+      "required_gates": [
+        "commerce_database_backup_restore",
+        "migration_126_verified"
+      ],
+      "pr": 286,
+      "pending_repin": "One more pin after the Commerce B1 fix PR (merchant links: a demo persona may sell for its organisation) is merged."
+    },
+    {
+      "id": "education",
+      "repo": "ksondo/Education-and-intelligent-services",
+      "sha": "bf4fb02e4c46ec370ade3cb461666b48ffac2135",
+      "kind": "product",
+      "deployment_order": 3,
+      "host": "education.demo.africadigitalsynergy.com",
+      "required_gates": [
+        "education_schema_085_086_checked",
+        "education_seed_and_login_verified"
+      ]
+    },
+    {
+      "id": "agriculture",
+      "repo": "ksondo/Agriculture",
+      "sha": "d1370cce0180e828f5bb0240fb4c05299b186964",
+      "kind": "product",
+      "deployment_order": 4,
+      "host": "agriculture.demo.africadigitalsynergy.com",
+      "required_gates": [
+        "privileged_seed_worker_isolated",
+        "visitor_grant_test",
+        "agriculture_database_backup_restore",
+        "migrations_009_011_verified"
+      ],
+      "pr": 40,
+      "migration": "009-011",
+      "pending_repin": "One more pin after the Agriculture B2/B3 fix PRs (sector consent, Compose pass-through of the Commerce link settings, seed) are merged."
+    },
+    {
+      "id": "fleet-guard",
+      "repo": "ksondo/Fleet-guard-and-intelligent-services",
+      "sha": "f73bfb3c0659eeeeaf2658225161ab2d9a4c77ec",
+      "kind": "product",
+      "deployment_order": 5,
+      "host": "fleetguard.demo.africadigitalsynergy.com",
+      "depends_on": [
+        "ads-identity"
+      ],
+      "required_gates": [
+        "refusal_return_live_oidc",
+        "visitor_grant_test"
+      ]
+    },
+    {
+      "id": "digital-tontine",
+      "repo": "ksondo/Digital-tontine-and-intelligent-services",
+      "sha": "b2ed5240bb9825265a4d3b1aabb792f850d9f9c9",
+      "pr": 43,
+      "kind": "product",
+      "deployment_order": 6,
+      "host": "tontine.demo.africadigitalsynergy.com",
+      "identity_client": "tontine-web",
+      "demo_access_registry_key": "tontine",
+      "depends_on": [
+        "ads-identity"
+      ],
+      "required_gates": [
+        "tontine_database_backup_restore",
+        "financial_mock_mode_only",
+        "refusal_return_live_oidc",
+        "visitor_grant_test"
+      ]
+    },
+    {
+      "id": "ventureworks",
+      "repo": "ksondo/africa-digital-synergy-ventureworks",
+      "sha": "3744e3c86fccb9ce3a570be1634e23506dcc6726",
+      "pr": 102,
+      "kind": "product",
+      "deployment_order": 7,
+      "host": "ventureworks.demo.africadigitalsynergy.com",
+      "identity_client": "ventureworks-web",
+      "demo_access_registry_key": "ventureworks",
+      "depends_on": [
+        "ads-identity"
+      ],
+      "required_gates": [
+        "ventureworks_database_backup_restore",
+        "migrations_and_runtime_login_verified",
+        "refusal_return_live_oidc",
+        "visitor_grant_test"
+      ]
+    },
+    {
+      "id": "ads-portal",
+      "repo": "ksondo/ads-platform-kit",
+      "sha": "119eb34017029817eb237230649735a3395c5864",
+      "kind": "public-portal",
+      "deployment_order": 8,
+      "host": "demo.africadigitalsynergy.com",
+      "depends_on": [
+        "ads-identity",
+        "commerce",
+        "education",
+        "agriculture",
+        "fleet-guard",
+        "digital-tontine",
+        "ventureworks"
+      ],
+      "required_gates": [
+        "portal_owner_controller_coordinated",
+        "no_public_activation_before_acceptance"
+      ],
+      "not_redeployed": true
+    }
+  ],
+  "excluded_until_certified": [],
+  "hard_gates": {
+    "preflight": "Not run on Contabo; verify live compose project labels/ports/network, SSH credentials, disk capacity, HTTPS issuer and current container/image digests.",
+    "source_ci": "Exact merged SHAs must be on origin/main; Identity and Commerce images carry sha-<pinned SHA> tags (publish check success); the Agriculture image is built on the host from the pinned SHA and must carry the SHA tag or the OCI revision label.",
+    "security": "Independent Identity, tenant isolation, grant expiry/revocation, privileged worker and financial mock-mode review required before change window.",
+    "backups": "Protected pre-change snapshots AND independently verified isolated restores of shared demo Identity, Commerce and Agriculture before their migrations; retain current images.",
+    "migration": "Only new migrations: Identity 008_service_clients.sql, Commerce 126_sector_offers_v1.sql, Agriculture 009-011, each with its approved migrator after backup and before the new service. Validate RLS and retained rows. Never auto-rollback SQL.",
+    "reset": "No Commerce --reset and no seed reset in this release.",
+    "accounts": "QA/partner accounts require confirmed recipient identities and operator-only credential storage; do not commit or print passwords.",
+    "activation": "Test local health then live HTTPS, OIDC, EN/FR, persona switching, no-access, role/tenant separation, fake-money and rollback; publish portal links last.",
+    "approval": "Release owner and authorized host operator must approve exact SHA/digests and evidence before any deploy."
+  },
+  "existing_workflow_constraint": "The contabo-five-demo-release workflow, batch-release.manifest.json and build-staged-demo-images.sh are superseded and refuse to run; they pin stale SHAs. Do not dispatch them for this release.",
+  "operator_runbook": "deploy/contabo-demo/ADS_RELEASE_20261111B.md",
+  "supersedes": "ads-release-20261111 (deploy/contabo-demo/ads-release-20261111.manifest.json)",
+  "sector_link": {
+    "enabled": true,
+    "service_clients": [
+      "agriculture-sector-service",
+      "commerce-sector-service"
+    ],
+    "note": "When enabled, release-acceptance.sh checks that each listed service client is in the reviewed clients.demo.json service_clients, registered in Identity as an active kind=service client with the reviewed scopes and audiences, and has a secret set (reported yes/no only; no secret or hash is read out). Set enabled to false to skip these checks for a release without the sector link."
+  },
+  "kit_repin_note": "ads-identity is pinned at kit main b768b47 (PRs #79 and #78; image ghcr.io/ksondo/ads-platform-kit-identity:sha-b768b47b942dd6d4b97027b753b2c610d3037bc1). ads-portal keeps 119eb340: the portal is not redeployed in this release.",
+  "repin_instructions": "Commerce and Agriculture get one more pin after the B1-B3 fix PRs merge. Change only the sha (and pr/migration/pending_repin) of the commerce and agriculture entries in this file, update the matching rows of ADS_RELEASE_20261111B.md, then run python3 -m unittest discover -s deploy/contabo-demo -p 'test_release_acceptance.py'. See ADS_RELEASE_20261111B.md, 'Bumping the Commerce and Agriculture pins'.",
+  "acceptance_check": "deploy/contabo-demo/release-acceptance.sh (read-only; run on the host before opening each product)"
+}
