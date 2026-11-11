@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { DEMO_ACCOUNTS } from './config.mjs';
 import { withTransaction } from './db.mjs';
 import { checkPasswordStrength, hashPassword } from './security.mjs';
+import { validateServiceClient, validateWebClientServiceFields } from './service-clients.mjs';
 
 // DE-03/DE-04: the shared demo accounts and demo organisations of the ADS demo environment.
 // Operator-only (cli.mjs demo-bootstrap, demo-orgs, demo-reset). Every entry point refuses to run
@@ -212,14 +213,27 @@ export function demoAccessDeniedRedirect(client) {
   return value;
 }
 
-// Checks the reviewed client list (config/clients.demo.json) enough to use it safely.
+// Checks the reviewed client list (config/clients.demo.json) enough to use it safely: sign-in clients in
+// `products` (optionally with a `tokenExchange` allow list) and service clients in `service_clients`
+// (src/service-clients.mjs). Service clients stay out of `products`, which lists the sign-in products only.
 export function validateClientList(doc) {
   if (!doc || !Array.isArray(doc.products) || !doc.products.length) refuse('client list has no products');
+  if (doc.service_clients !== undefined && !Array.isArray(doc.service_clients)) refuse('service_clients must be a list');
+  const services = doc.service_clients ?? [];
+  // Every client id (sign-in and service): exchange and service audiences may not name one.
+  const allIds = new Set([...doc.products, ...services].map(p => p?.client_id));
+  const guard = fn => { try { return fn(); } catch (error) { return refuse(error.message); } };
   const seen = new Set();
+  for (const p of services) {
+    guard(() => validateServiceClient(p, allIds));
+    if (seen.has(p.client_id)) refuse(`duplicate client_id ${p.client_id}`);
+    seen.add(p.client_id);
+  }
   for (const p of doc.products) {
     if (!/^[a-z0-9][a-z0-9-]{1,62}$/.test(String(p.client_id))) refuse(`bad client_id ${p.client_id}`);
     if (seen.has(p.client_id)) refuse(`duplicate client_id ${p.client_id}`);
     seen.add(p.client_id);
+    guard(() => validateWebClientServiceFields(p, allIds));
     demoAccessDeniedRedirect(p);
     const adsOnly = new Set(p.ads_only_roles ?? []);
     for (const r of p.assignable_roles ?? []) if (adsOnly.has(r)) refuse(`${p.client_id}: ADS-only role ${r} must not be assignable`);

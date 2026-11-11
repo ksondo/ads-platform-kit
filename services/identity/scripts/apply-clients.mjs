@@ -1,5 +1,8 @@
 // Applies the reviewed client registration list (ACC-02) with the operator CLI's register-client,
 // and creates client secrets (ACC-09) for the products that need one, with set-client-secret.
+// Sign-in clients come from `products` (with their `tokenExchange` allow list), service clients
+// (client_credentials) from `service_clients`; every service client gets a secret. The list is checked
+// first (validateClientList): a bad entry stops the run before anything is registered.
 //
 //   node scripts/apply-clients.mjs [--file ../../config/clients.demo.json] --secrets-out /path/outside/git/client-secrets.json
 //        [--rotate-secrets] [--overwrite] [--dry-run]
@@ -35,17 +38,25 @@ const run = args => {
   return r.stdout;
 };
 const registerArgs = p => {
+  if (p.kind === 'service') {
+    return ['register-client', '--kind', 'service', '--id', p.client_id, '--name', p.display_name,
+      '--service-scopes', p.allowedServiceScopes.join(','), '--service-audiences', p.allowedAudiences.join(',')];
+  }
   const a = ['register-client', '--id', p.client_id, '--name', p.display_name ?? p.product, '--redirect', p.redirect_uris.join(','),
     '--logout', (p.post_logout_redirect_uris ?? []).join(','), '--self-roles', (p.self_service_roles ?? []).join(','),
     '--personal', p.allow_personal_workspace ? 'true' : 'false', '--admin-scopes', (p.admin_scopes ?? []).join(','),
-    '--admin-roles', (p.admin_roles ?? []).join(','), '--assignable-roles', (p.assignable_roles ?? []).join(',')];
+    '--admin-roles', (p.admin_roles ?? []).join(','), '--assignable-roles', (p.assignable_roles ?? []).join(','),
+    '--token-exchange', JSON.stringify(p.tokenExchange ?? [])];
   if (p.accent) a.push('--accent', p.accent);
   return a;
 };
 
 // Where secrets go: outside any git work tree, new file (or --overwrite), owner-only.
 const secretsOut = opt('secrets-out');
-const needSecrets = doc.products.filter(p => p.needs_client_secret);
+// Every service client authenticates with a secret; sign-in clients only when needs_client_secret is true.
+const clients = [...(doc.service_clients ?? []), ...doc.products];
+const needsSecret = p => p.kind === 'service' || p.needs_client_secret === true;
+const needSecrets = clients.filter(needsSecret);
 if (needSecrets.length && !secretsOut && !flag('dry-run')) die(`--secrets-out is required: ${needSecrets.length} products need a client secret`);
 if (secretsOut) {
   const dir = path.dirname(path.resolve(secretsOut));
@@ -55,21 +66,21 @@ if (secretsOut) {
 }
 
 if (flag('dry-run')) {
-  for (const p of doc.products) console.log(`would register ${p.client_id}${p.needs_client_secret ? ' (+ client secret)' : ''}`);
+  for (const p of clients) console.log(`would register ${p.client_id}${p.kind === 'service' ? ' (service client)' : ''}${needsSecret(p) ? ' (+ client secret)' : ''}`);
   process.exit(0);
 }
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 1 });
 const secrets = {};
 try {
-  for (const p of doc.products) {
+  for (const p of clients) {
     run(registerArgs(p));
     let note = '';
-    if (p.needs_client_secret) {
+    if (needsSecret(p)) {
       const has = (await pool.query('SELECT client_secret_hash IS NOT NULL AS has FROM platform.oauth_clients WHERE client_id=$1', [p.client_id])).rows[0]?.has;
       if (!has || flag('rotate-secrets')) {
         const out = run(['set-client-secret', '--id', p.client_id]).trim().split('\n');
-        secrets[p.client_id] = { product: p.slug, setting: p.client_secret_setting ?? null, secret: out[out.length - 1].trim() };
+        secrets[p.client_id] = { product: p.slug ?? p.client_id, setting: p.client_secret_setting ?? null, secret: out[out.length - 1].trim() };
         note = ' + new client secret';
       } else {
         note = ' (client secret kept)';

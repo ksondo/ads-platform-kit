@@ -14,7 +14,8 @@ export function createOAuth({ pool, config, keys, audit, demoAccess = null }) {
   const deniesToClient = client => Boolean(client && demoAccess?.registry && [...demoAccess.registry.values()].some(p => p.clientId === client.client_id && p.deniedRedirect === true));
   async function getClient(clientId) {
     if (typeof clientId !== 'string' || !/^[a-z0-9][a-z0-9-]{1,62}$/.test(clientId)) return null;
-    return (await pool.query("SELECT * FROM platform.oauth_clients WHERE client_id=$1 AND status='active'", [clientId])).rows[0] ?? null;
+    // Sign-in products only: a service client (kind 'service') never signs anyone in.
+    return (await pool.query("SELECT * FROM platform.oauth_clients WHERE client_id=$1 AND status='active' AND kind='web'", [clientId])).rows[0] ?? null;
   }
 
   async function createAuthRequest(query, locale) {

@@ -76,11 +76,14 @@ if a[0] == "exec":
     if cmd[:3] == ["node", "src/cli.mjs", "register-client"]:
         it = iter(cmd[3:]); args = dict(zip(it, it))
         lst = lambda v: [x for x in (v or "").split(",") if x]
+        service = args.get("--kind") == "service"
         st["db_clients"][args["--id"]] = {"client_id": args["--id"], "display_name": args["--name"], "accent_color": args.get("--accent"),
-            "redirect_uris": lst(args["--redirect"]), "post_logout_redirect_uris": lst(args.get("--logout")),
-            "self_service_roles": lst(args.get("--self-roles")), "allow_personal_workspace": args.get("--personal") != "false",
+            "redirect_uris": lst(args.get("--redirect")), "post_logout_redirect_uris": lst(args.get("--logout")),
+            "self_service_roles": lst(args.get("--self-roles")), "allow_personal_workspace": False if service else args.get("--personal") != "false",
             "admin_scopes": lst(args.get("--admin-scopes")), "admin_roles": lst(args.get("--admin-roles")),
-            "assignable_roles": lst(args.get("--assignable-roles"))}
+            "assignable_roles": lst(args.get("--assignable-roles")), "kind": "service" if service else "web",
+            "service_scopes": lst(args.get("--service-scopes")), "service_audiences": lst(args.get("--service-audiences")),
+            "token_exchange": json.loads(args.get("--token-exchange") or "[]")}
         save(); print("client " + args["--id"] + " saved"); sys.exit(0)
     sys.exit(4)
 sys.exit(5)
@@ -309,7 +312,7 @@ class RegisterClientDryRunTest(unittest.TestCase):
         st["db_clients"] = {"ventureworks-web": {"client_id": "ventureworks-web", "display_name": c["display_name"], "accent_color": c.get("accent"),
             "redirect_uris": ["https://ventureworks.test.africadigitalsynergy.com/"], "post_logout_redirect_uris": c["post_logout_redirect_uris"],
             "self_service_roles": [], "allow_personal_workspace": False, "admin_scopes": c["admin_scopes"], "admin_roles": c["admin_roles"],
-            "assignable_roles": c["assignable_roles"]}}
+            "assignable_roles": c["assignable_roles"], "kind": "web", "service_scopes": [], "service_audiences": [], "token_exchange": []}}
         self.host = FakeHost(st)
         self.backup = self.host.dir / "identity-backup.marker"
         self.backup.write_text("pg_dump ads_demo_identity 2026-11-11T03:00Z sha256=...\n")
@@ -368,6 +371,68 @@ class RegisterClientDryRunTest(unittest.TestCase):
         self.host.state_file.write_text(json.dumps(st))
         r = self.host.run(REGISTER, "not-a-client", "--backup-confirmed", str(self.backup), "--apply")
         self.assertEqual(r.returncode, 2)
+
+    def with_clients(self, mutate):
+        doc = json.loads(CLIENTS_TEXT)
+        mutate(doc)
+        st = self.host.state()
+        st["containers"]["ads-demo-identity"]["files"]["/app/config/clients.demo.json"] = json.dumps(doc)
+        self.host.state_file.write_text(json.dumps(st))
+
+    SERVICE = {"client_id": "test-sector-service", "kind": "service", "display_name": "Test sector service",
+               "allowedServiceScopes": ["commerce.sector_outcomes.read"], "allowedAudiences": ["ads-commerce-api"]}
+
+    def test_apply_registers_a_service_client_without_sign_in_fields(self):
+        self.with_clients(lambda d: d.setdefault("service_clients", []).append(dict(self.SERVICE)))
+        r = self.host.run(REGISTER, "test-sector-service", "--backup-confirmed", str(self.backup), "--apply")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("NOT registered", r.stdout)
+        regs = [c for c in self.host.calls() if "register-client" in c]
+        args = regs[0][regs[0].index("register-client") + 1:]
+        opts = dict(zip(args[::2], args[1::2]))
+        self.assertEqual(opts["--kind"], "service")
+        self.assertEqual(opts["--service-scopes"], "commerce.sector_outcomes.read")
+        self.assertEqual(opts["--service-audiences"], "ads-commerce-api")
+        for k in ("--redirect", "--self-roles", "--admin-scopes", "--token-exchange"):
+            self.assertNotIn(k, opts)
+        row = self.host.state()["db_clients"]["test-sector-service"]
+        self.assertEqual((row["kind"], row["redirect_uris"]), ("service", []))
+        r2 = self.host.run(REGISTER, "test-sector-service", "--backup-confirmed", str(self.backup), "--apply")
+        self.assertIn("STATUS=NO_CHANGE", r2.stdout)
+
+    def test_apply_carries_the_token_exchange_allow_list(self):
+        rule = [{"audience": "ads-commerce-api", "scopes": ["commerce.sector_offers"]}]
+        def add(d):
+            for c in d["products"]:
+                if c["client_id"] == "ventureworks-web":
+                    c["tokenExchange"] = rule; c["needs_client_secret"] = True
+        self.with_clients(add)
+        r = self.host.run(REGISTER, "ventureworks-web", "--backup-confirmed", str(self.backup))
+        self.assertIn("~ token_exchange:", r.stdout)
+        r = self.host.run(REGISTER, "ventureworks-web", "--backup-confirmed", str(self.backup), "--apply")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertEqual(self.host.state()["db_clients"]["ventureworks-web"]["token_exchange"], rule)
+
+    def test_refuses_malformed_service_and_exchange_entries_before_writing(self):
+        bad_entries = [
+            lambda d: d.setdefault("service_clients", []).append({**self.SERVICE, "redirect_uris": ["https://x.example/"]}),
+            lambda d: d.setdefault("service_clients", []).append({**self.SERVICE, "allowedServiceScopes": ["members:read"]}),
+            lambda d: d.setdefault("service_clients", []).append({**self.SERVICE, "allowedAudiences": ["commerce-web"]}),
+            lambda d: d.setdefault("service_clients", []).append({**self.SERVICE, "kind": "web"}),
+        ]
+        for i, mutate in enumerate(bad_entries):
+            self.with_clients(mutate)
+            r = self.host.run(REGISTER, "test-sector-service", "--backup-confirmed", str(self.backup), "--apply")
+            self.assertEqual(r.returncode, 2, (i, r.stdout, r.stderr))
+            self.assertIn("REFUSED", r.stderr)
+        def bad_exchange(d):
+            for c in d["products"]:
+                if c["client_id"] == "ventureworks-web":
+                    c["tokenExchange"] = [{"audience": "commerce-web", "scopes": ["commerce.sector_offers"]}]; c["needs_client_secret"] = True
+        self.with_clients(bad_exchange)
+        r = self.host.run(REGISTER, "ventureworks-web", "--backup-confirmed", str(self.backup), "--apply")
+        self.assertEqual(r.returncode, 2, r.stdout + r.stderr)
+        self.assertFalse(any("register-client" in c for c in self.host.calls()))
 
     def test_source_never_reads_or_prints_secrets(self):
         src = REGISTER.read_text()

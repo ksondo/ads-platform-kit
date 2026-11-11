@@ -9,6 +9,7 @@ import { renderDemoAdmin } from './demo-admin-page.mjs';
 import { createDemoAccess } from './demo-access.mjs';
 import { createLegacyApi } from './legacy.mjs';
 import { createOAuth } from './oauth.mjs';
+import { createServiceTokens } from './service-tokens.mjs';
 import { langOf, pickLocale, renderPage } from './pages.mjs';
 import { HttpError, RateLimiter, cookie, fail, isEmail, normalizeEmail, parseCookies, randomToken, sha256, signValue, unsignValue } from './security.mjs';
 
@@ -41,6 +42,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
   const legacy = createLegacyApi({ pool, config, accounts, audit });
   const localJwks = createLocalJWKSet(keys.jwks);
   const admin = createAdmin({ pool, config, keys, jwks: localJwks, audit, mailer, log });
+  const serviceTokens = createServiceTokens({ pool, config, keys, jwks: localJwks, audit });
   // Runtime is demo-only; public approval and private operator modes are exclusive.
   if (demoAccess) admin.setAcceptHook(demoAccess.onInvitationAccepted);
 
@@ -252,7 +254,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     const csrf = csrfToken(req, res);
     let ctx = { locale, nonce, csrf, user: sso.user, workspaces, products: [], done: q.done, error: q.error };
     if (ws) {
-      const all = (await pool.query("SELECT client_id, display_name, assignable_roles, admin_roles FROM platform.oauth_clients WHERE status='active' ORDER BY display_name")).rows;
+      const all = (await pool.query("SELECT client_id, display_name, assignable_roles, admin_roles FROM platform.oauth_clients WHERE status='active' AND kind='web' ORDER BY display_name")).rows;
       const products = ws.orgAdmin ? all : all.filter(p => ws.productAdmin.includes(p.client_id));
       const client = products.find(p => p.client_id === q.product) ?? products[0];
       ctx = { ...ctx, products, client, current: { tenantId: ws.tenantId, clientId: client?.client_id ?? '', orgAdmin: ws.orgAdmin } };
@@ -290,7 +292,7 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       return json(res, 200, {
         issuer: config.issuer, authorization_endpoint: `${config.publicUrl}/authorize`, token_endpoint: `${config.publicUrl}/token`,
         jwks_uri: `${config.publicUrl}/.well-known/jwks.json`, userinfo_endpoint: `${config.publicUrl}/userinfo`, revocation_endpoint: `${config.publicUrl}/revoke`,
-        end_session_endpoint: `${config.publicUrl}/logout`, response_types_supported: ['code'], grant_types_supported: ['authorization_code', 'refresh_token', TOKEN_EXCHANGE],
+        end_session_endpoint: `${config.publicUrl}/logout`, response_types_supported: ['code'], grant_types_supported: ['authorization_code', 'refresh_token', TOKEN_EXCHANGE, 'client_credentials'],
         code_challenge_methods_supported: ['S256'], token_endpoint_auth_methods_supported: ['none', 'client_secret_basic', 'client_secret_post'],
         access_token_signing_alg_values_supported: ['RS256'], claims_supported: ['sub', 'tenant_id', 'roles', 'email', 'email_verified', 'name', 'locale', 'demo', 'ads_staff'],
         ui_locales_supported: ['en', 'fr'],
@@ -542,11 +544,18 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
       try {
         if (body.grant_type === 'authorization_code') return json(res, 200, await oauth.exchangeCode(body, ip), { 'cache-control': 'no-store', pragma: 'no-cache' });
         if (body.grant_type === 'refresh_token') return json(res, 200, await oauth.refresh(body, ip), { 'cache-control': 'no-store', pragma: 'no-cache' });
-        // Product SERVER only (needs the client secret): an org admin's product token -> admin API token.
-        if (body.grant_type === TOKEN_EXCHANGE) return json(res, 200, await admin.exchange(req, body, ip), { 'cache-control': 'no-store', pragma: 'no-cache' });
+        // Product SERVER only (needs the client secret), RFC 8693. With `audience`: a signed-in user's product token ->
+        // a token for another ADS API the client is allowed to call for that user (token_exchange allow list).
+        // Without it: an org admin's product token -> admin API token, as before.
+        if (body.grant_type === TOKEN_EXCHANGE) {
+          const delegated = body.audience !== undefined && body.audience !== `${config.issuer}/admin`;
+          return json(res, 200, await (delegated ? serviceTokens.exchange(req, body, ip) : admin.exchange(req, body, ip)), { 'cache-control': 'no-store', pragma: 'no-cache' });
+        }
+        // Service clients only (RFC 6749 §4.4): a product server's own short-lived token; no user, no tenant, no refresh token.
+        if (body.grant_type === 'client_credentials') return json(res, 200, await serviceTokens.clientCredentials(req, body, ip), { 'cache-control': 'no-store', pragma: 'no-cache' });
         fail(400, 'unsupported_grant_type');
       } catch (error) {
-        if (error instanceof HttpError && error.code === 'invalid_client' && body.grant_type === TOKEN_EXCHANGE) {
+        if (error instanceof HttpError && error.code === 'invalid_client' && [TOKEN_EXCHANGE, 'client_credentials'].includes(body.grant_type)) {
           return json(res, 401, { error: 'invalid_client' }, { 'cache-control': 'no-store', 'www-authenticate': 'Basic realm="ads-identity"' });
         }
         if (error instanceof HttpError) return json(res, 400, { error: error.code }, { 'cache-control': 'no-store' });
