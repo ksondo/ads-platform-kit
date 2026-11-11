@@ -65,3 +65,12 @@ The `.github/workflows/demo-portal.yml` Docker smoke verifies `image-library.js`
 ## 7 November 2026 — per-product demo activation
 
 Education, Agriculture, Digital Tontine, Fleet Guard and (11 Nov 2026) VentureWorks have a reviewed `demoDestination` (their `/demo` overview page) in `catalogue.json`, while `demoUrl` stays `null`. `demo-activation.json` switches each of them between `preparing` (shipped default), `open` and `unavailable`; a missing or invalid file keeps all of them `preparing`. Commerce keeps its existing link. The operator can override the bundled file without a rebuild through `/etc/ads-demo/portal/demo-activation.json` (directory mounted read-only by `deploy/contabo-demo/compose.portal.yml`; missing file = bundled file). Operator steps and rollback: [`docs/demo-access/DEMO_PUBLICATION_CONTRACT.md`](../../docs/demo-access/DEMO_PUBLICATION_CONTRACT.md).
+
+
+## Five priority private demonstrations (11 November 2026)
+
+The home page, full platform directory and /demo-access guide put Commerce, Education, Agriculture (AfriNourish), Fleet Guard and Digital Tontine first. Catalogue metadata sets their ordered demoPriority to 1–5; the other 20 platform entries remain findable. VentureWorks remains in the catalogue but is not part of this release wave.
+
+**Priority is not publication:** the portal shows the actual number of demos with verified links or operator activation (initially Commerce only). The other four remain "preparing" until their live HTTPS, ADS Identity callback, grant, persona selection, demo data, EN/FR checks and tenant isolation pass. Do not change the source defaults to "open". The release operator can activate each approved demo through the mounted, owner-controlled /etc/ads-demo/portal/demo-activation.json after testing. Approved individual ADS accounts are used across supported platforms; no demo password is displayed or a public request form offered on the portal.
+
+The release checklist for these five platforms, isolated Identity and the portal is deploy/contabo-demo/ADS_FIVE_PRIORITY_RELEASE_20261111.md. Do not run the separate VentureWorks-inclusive release manifest in this five-platform wave.
