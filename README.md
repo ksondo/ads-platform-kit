@@ -46,6 +46,15 @@ A standalone app (one that is not part of a larger ADS product) uses the kit the
 - Reviewed by an independent security review (18 Oct 2026); every finding is fixed and has a regression test in `services/identity/test/security.test.mjs`.
 - The JSON API Software Factory already uses (`/v1/identity/*`, `/internal/*`) is kept unchanged, so Software Factory can switch to this service by changing one address. See [docs/SOFTWARE_FACTORY_SWITCH_OVER.md](docs/SOFTWARE_FACTORY_SWITCH_OVER.md).
 
+### Service clients and token exchange (server to server)
+
+Two ways for one ADS product's **server** to call another ADS API, both at `POST /token`, both with the calling server's own client secret (`client_secret_basic`, or `client_secret_post`):
+
+- **Background jobs: `client_credentials`** (RFC 6749 §4.4), for service clients only (`kind: "service"`). The token is about the server, not a person: `sub` = client id, no `tenant_id`, no roles, no refresh token, about 5 minutes (`IDENTITY_SERVICE_TOKEN_TTL_SECONDS`, default 300), RS256 like every other token. Only the client's `allowedServiceScopes` and `allowedAudiences` can be requested (`invalid_scope` / `invalid_target` otherwise); sign-in clients get `unauthorized_client`.
+- **On behalf of a signed-in person: token exchange** (RFC 8693) with an `audience`. A sign-in client's server swaps the person's access token for its own product for a short-lived token for another ADS API. It keeps `sub` and `tenant_id` and adds `act: { sub: <client id> }`. Only the audiences and scopes in that client's `tokenExchange` list are allowed; everything else is refused. Without `audience`, the exchange is the admin API exchange, unchanged.
+
+Every issuance and every refusal is written to `platform.identity_audit` (`service_token`, `token_exchange`). Both share the token endpoint's rate limit per address. Configuration lives in `config/clients.demo.json` (`service_clients`, and `tokenExchange` on a product) and is checked by `apply-clients.mjs` and `register-identity-client.sh`, which refuse a bad entry. **Client secrets are created by the operator at apply time (`apply-clients.mjs --secrets-out`, or `cli.mjs set-client-secret`), go only into the calling server's secret settings and are never committed.** Details: [docs/INTEGRATING_A_PRODUCT.md](docs/INTEGRATING_A_PRODUCT.md#service-clients-and-delegated-token-exchange).
+
 Moved from `ksondo/RAG-Intelligence-AI-Platform` `services/identity-service` (main, 18 Oct 2026), which can be archived once Software Factory has switched over.
 
 ## Run it

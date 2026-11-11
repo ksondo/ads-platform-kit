@@ -113,7 +113,14 @@ describe('apply-clients', () => {
     const r = apply(['--secrets-out', out]);
     assert.equal(r.status, 0, r.stderr);
     const rows = (await svc.pool.query('SELECT * FROM platform.oauth_clients ORDER BY client_id')).rows;
-    assert.equal(rows.length, 25);
+    const services = doc.service_clients ?? [];
+    assert.equal(rows.length, 25 + services.length);
+    for (const p of services) {
+      const row = rows.find(x => x.client_id === p.client_id);
+      assert.equal(row.kind, 'service', p.client_id);
+      assert.deepEqual([row.service_scopes, row.service_audiences, row.redirect_uris], [p.allowedServiceScopes, p.allowedAudiences, []], p.client_id);
+      assert.ok(row.client_secret_hash, `${p.client_id} gets a client secret`);
+    }
     for (const p of doc.products) {
       const row = rows.find(x => x.client_id === p.client_id);
       assert.deepEqual(row.redirect_uris, p.redirect_uris);
@@ -122,11 +129,13 @@ describe('apply-clients', () => {
       assert.deepEqual(row.assignable_roles, p.assignable_roles);
       assert.deepEqual(row.admin_roles, p.admin_roles);
       assert.deepEqual(row.admin_scopes, p.admin_scopes);
+      assert.equal(row.kind, 'web', p.client_id);
+      assert.deepEqual(row.token_exchange, p.tokenExchange ?? [], p.client_id);
       assert.equal(Boolean(row.client_secret_hash), p.needs_client_secret, p.client_id);
     }
     assert.equal((statSync(out).mode & 0o777).toString(8), '600');
     const secrets = JSON.parse(readFileSync(out, 'utf8')).clients;
-    assert.equal(Object.keys(secrets).length, doc.products.filter(p => p.needs_client_secret).length);
+    assert.equal(Object.keys(secrets).length, doc.products.filter(p => p.needs_client_secret).length + services.length);
     for (const [id, s] of Object.entries(secrets)) {
       assert.ok(!r.stdout.includes(s.secret) && !r.stderr.includes(s.secret), 'secret printed');
       assert.equal(rows.find(x => x.client_id === id).client_secret_hash, crypto.createHash('sha256').update(s.secret).digest('hex'));

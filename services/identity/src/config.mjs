@@ -194,6 +194,8 @@ export function loadConfig(env = process.env) {
     refreshReuseGrace: Math.min(120, Math.max(0, num(env.IDENTITY_REFRESH_REUSE_GRACE_SECONDS, 30))),
     // Short-lived admin tokens a product server gets for an organisation admin (token exchange).
     adminTokenTtl: num(env.IDENTITY_ADMIN_TOKEN_TTL_SECONDS, 300),
+    // Service tokens (client_credentials) and delegated exchange tokens: short-lived, never refreshed (60 to 900 s).
+    serviceTokenTtl: Math.min(900, Math.max(60, num(env.IDENTITY_SERVICE_TOKEN_TTL_SECONDS, 300))),
     invitationTtl: num(env.IDENTITY_INVITATION_TTL_SECONDS, 7 * 86400),
     // Optional SMS hook for invitations: POST {to, text} (the shared mocks' /sms/v1/messages in tests).
     smsUrl: env.IDENTITY_SMS_URL ?? '',

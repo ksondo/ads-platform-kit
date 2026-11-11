@@ -10,6 +10,7 @@ import { DEMO_ACCOUNTS, demoSettings, isProductionEnv, readSecret, redirectAllow
 import { privateVisitorService, provisionPrivateVisitor } from './private-demo-visitor.mjs';
 import { migrate } from './db.mjs';
 import { bootstrapDemoAccounts, demoAccountSubs, ensureDemoOrgs, personaAccounts, resetDemo, tenantsDocument } from './demo.mjs';
+import { CLIENT_ID, CLIENT_KINDS, validateServiceClient, validateTokenExchange } from './service-clients.mjs';
 
 const [command, ...rest] = process.argv.slice(2);
 const args = {};
@@ -22,7 +23,11 @@ const usage = `Commands:
   generate-key                         print a new RS256 private key for IDENTITY_SIGNING_KEY_PEM
   register-client --id health-web --name "ADS Health" --redirect https://health.example/,https://... [--logout https://...] [--logo https://...] [--accent #146D91] [--self-roles patient] [--personal true|false]
                   [--admin-scopes members:read,roles:write,members:write,invitations:write] [--admin-roles facility_admin] [--assignable-roles nurse,receptionist]
-  set-client-secret --id health-web    print a new client secret for the product SERVER (admin API token exchange); shown once
+                  [--token-exchange '[{"audience":"ads-commerce-api","scopes":["commerce.sector_offers"]}]']
+  register-client --kind service --id agriculture-sector-service --name "ADS Agriculture sector service"
+                  --service-scopes commerce.sector_outcomes.read --service-audiences ads-commerce-api
+                                       a product SERVER client for client_credentials (no users, no tenant); then set-client-secret
+  set-client-secret --id health-web    print a new client secret for the product SERVER (token exchange, client_credentials); shown once
   create-organization --name "Ecole Les Pins" --owner owner@example.com
   grant-role --email user@example.com --client health-web --tenant <tenant uuid> --roles facility_admin,reviewer
   make-org-admin --email user@example.com --tenant <tenant uuid>
@@ -128,24 +133,56 @@ try {
       console.log((await migrate(pool, { info: () => {} })).join('\n') || 'up to date');
       break;
     case 'register-client': {
-      need('id', 'name', 'redirect');
-      for (const u of [...list(args.redirect), ...list(args.logout)]) {
-        const parsed = new URL(u);
-        if (!redirectAllowed(parsed, { production: isProductionEnv() })) throw new Error(`redirect must be https: ${u}`);
+      const kind = args.kind ?? 'web';
+      if (!CLIENT_KINDS.includes(kind)) throw new Error(`unknown client kind ${kind} (known: ${CLIENT_KINDS.join(', ')})`);
+      if (!CLIENT_ID.test(String(args.id ?? ''))) throw new Error(`bad client id ${args.id}`);
+      // Every other client id: service and exchange audiences may not name one, and this id may not be anyone's audience.
+      const others = (await pool.query('SELECT client_id, service_audiences, token_exchange FROM platform.oauth_clients WHERE client_id<>$1', [args.id])).rows;
+      const otherIds = new Set([...others.map(r => r.client_id), args.id]);
+      if (others.some(r => r.service_audiences.includes(args.id) || r.token_exchange.some(e => e.audience === args.id))) {
+        throw new Error(`${args.id} is used as an audience by another client; pick another client id`);
       }
-      const scopes = list(args['admin-scopes']);
-      const known = ['members:read', 'roles:write', 'members:write', 'invitations:write'];
-      for (const sc of scopes) if (!known.includes(sc)) throw new Error(`unknown admin scope ${sc} (known: ${known.join(', ')})`);
-      await pool.query(`INSERT INTO platform.oauth_clients(client_id,display_name,logo_url,accent_color,redirect_uris,post_logout_redirect_uris,self_service_roles,allow_personal_workspace,admin_scopes,admin_roles,assignable_roles)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      let row;
+      if (kind === 'service') {
+        need('id', 'name');
+        for (const k of ['redirect', 'logout', 'self-roles', 'admin-scopes', 'admin-roles', 'assignable-roles', 'token-exchange']) {
+          if (list(args[k]).length && !(k === 'token-exchange' && args[k] === '[]')) throw new Error(`--${k} is not allowed for a service client`);
+        }
+        if (args.personal === 'true') throw new Error('--personal is not allowed for a service client');
+        const { scopes, audiences } = validateServiceClient({ client_id: args.id, kind, display_name: args.name,
+          allowedServiceScopes: list(args['service-scopes']), allowedAudiences: list(args['service-audiences']) }, otherIds);
+        row = { redirect: [], logout: [], selfRoles: [], personal: false, adminScopes: [], adminRoles: [], assignable: [], scopes, audiences, exchange: [] };
+      } else {
+        need('id', 'name', 'redirect');
+        for (const u of [...list(args.redirect), ...list(args.logout)]) {
+          const parsed = new URL(u);
+          if (!redirectAllowed(parsed, { production: isProductionEnv() })) throw new Error(`redirect must be https: ${u}`);
+        }
+        if (list(args['service-scopes']).length || list(args['service-audiences']).length) throw new Error('--service-scopes/--service-audiences are only for --kind service');
+        const scopes = list(args['admin-scopes']);
+        const known = ['members:read', 'roles:write', 'members:write', 'invitations:write'];
+        for (const sc of scopes) if (!known.includes(sc)) throw new Error(`unknown admin scope ${sc} (known: ${known.join(', ')})`);
+        let exchange = [];
+        if (args['token-exchange'] !== undefined) {
+          let parsed;
+          try { parsed = JSON.parse(args['token-exchange']); } catch { throw new Error('--token-exchange must be JSON: [{"audience":"...","scopes":["..."]}]'); }
+          exchange = validateTokenExchange(parsed, args.id, otherIds);
+        }
+        row = { redirect: list(args.redirect), logout: list(args.logout), selfRoles: list(args['self-roles']), personal: args.personal !== 'false',
+          adminScopes: scopes, adminRoles: list(args['admin-roles']), assignable: list(args['assignable-roles']), scopes: [], audiences: [], exchange };
+      }
+      await pool.query(`INSERT INTO platform.oauth_clients(client_id,display_name,logo_url,accent_color,redirect_uris,post_logout_redirect_uris,self_service_roles,allow_personal_workspace,admin_scopes,admin_roles,assignable_roles,
+          kind,service_scopes,service_audiences,token_exchange)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15::jsonb)
         ON CONFLICT (client_id) DO UPDATE SET display_name=EXCLUDED.display_name, logo_url=EXCLUDED.logo_url, accent_color=EXCLUDED.accent_color,
           redirect_uris=EXCLUDED.redirect_uris, post_logout_redirect_uris=EXCLUDED.post_logout_redirect_uris,
           self_service_roles=EXCLUDED.self_service_roles, allow_personal_workspace=EXCLUDED.allow_personal_workspace,
-          admin_scopes=EXCLUDED.admin_scopes, admin_roles=EXCLUDED.admin_roles, assignable_roles=EXCLUDED.assignable_roles`,
-      [args.id, args.name, args.logo ?? null, args.accent ?? null, list(args.redirect), list(args.logout), list(args['self-roles']), args.personal !== 'false',
-        scopes, list(args['admin-roles']), list(args['assignable-roles'])]);
+          admin_scopes=EXCLUDED.admin_scopes, admin_roles=EXCLUDED.admin_roles, assignable_roles=EXCLUDED.assignable_roles,
+          kind=EXCLUDED.kind, service_scopes=EXCLUDED.service_scopes, service_audiences=EXCLUDED.service_audiences, token_exchange=EXCLUDED.token_exchange`,
+      [args.id, args.name, args.logo ?? null, args.accent ?? null, row.redirect, row.logout, row.selfRoles, row.personal,
+        row.adminScopes, row.adminRoles, row.assignable, kind, row.scopes, row.audiences, JSON.stringify(row.exchange)]);
       await audit('client_registered', { clientId: args.id });
-      console.log(`client ${args.id} saved`);
+      console.log(`client ${args.id} saved${kind === 'service' ? ' (service client)' : ''}`);
       break;
     }
     case 'create-organization': {

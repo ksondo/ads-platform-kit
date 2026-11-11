@@ -29,6 +29,26 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 const ROLE = /^[a-z][a-z0-9_.:-]{0,79}$/;
 const ORG_ADMIN_ROLES = ['owner', 'admin'];
 
+// Confidential client authentication at the token endpoint (RFC 6749 §2.3.1): client_secret_basic, or
+// client_secret_post. lookup(clientId) returns the active client row or null. Fails 401 invalid_client.
+export async function authenticateClientSecret(req, body, lookup) {
+  let id = body.client_id;
+  let secret = body.client_secret;
+  const header = String(req.headers.authorization ?? '');
+  if (header.startsWith('Basic ')) {
+    const decoded = Buffer.from(header.slice(6), 'base64').toString('utf8');
+    const i = decoded.indexOf(':');
+    if (i > 0) {
+      try { id = decodeURIComponent(decoded.slice(0, i)); secret = decodeURIComponent(decoded.slice(i + 1)); } catch { fail(401, 'invalid_client'); }
+    }
+  }
+  const client = await lookup(id);
+  // Always hash, so timing does not reveal which client ids exist.
+  const presented = sha256(String(secret ?? ''));
+  if (!client || !client.client_secret_hash || typeof secret !== 'string' || !safeEqual(presented, client.client_secret_hash)) fail(401, 'invalid_client');
+  return client;
+}
+
 export function createAdmin({ pool, config, keys, jwks, audit, mailer, log = console }) {
   // ADS Demo Access: a demo invitation, when accepted, also activates the visitor's grant (demo-access.mjs).
   // Visitor demo organisations ('visit-…' demo sets) never give anyone organisation-admin authority.
@@ -37,9 +57,10 @@ export function createAdmin({ pool, config, keys, jwks, audit, mailer, log = con
   // Audience of admin tokens: never accepted by products (their audience is their client id).
   const adminAudience = () => `${config.issuer}/admin`;
 
+  // Sign-in products only: service clients (kind 'service') have no users, roles or admin API.
   const getClient = async clientId => {
     if (typeof clientId !== 'string' || !/^[a-z0-9][a-z0-9-]{1,62}$/.test(clientId)) return null;
-    return (await pool.query("SELECT * FROM platform.oauth_clients WHERE client_id=$1 AND status='active'", [clientId])).rows[0] ?? null;
+    return (await pool.query("SELECT * FROM platform.oauth_clients WHERE client_id=$1 AND status='active' AND kind='web'", [clientId])).rows[0] ?? null;
   };
 
   // ---------- authority ----------
@@ -110,21 +131,7 @@ export function createAdmin({ pool, config, keys, jwks, audit, mailer, log = con
   };
 
   // ---------- token exchange (product server -> short-lived admin token) ----------
-  async function authenticateClient(req, body) {
-    let id = body.client_id;
-    let secret = body.client_secret;
-    const header = String(req.headers.authorization ?? '');
-    if (header.startsWith('Basic ')) {
-      const decoded = Buffer.from(header.slice(6), 'base64').toString('utf8');
-      const i = decoded.indexOf(':');
-      if (i > 0) { id = decodeURIComponent(decoded.slice(0, i)); secret = decodeURIComponent(decoded.slice(i + 1)); }
-    }
-    const client = await getClient(id);
-    // Always hash, so timing does not reveal which client ids exist.
-    const presented = sha256(String(secret ?? ''));
-    if (!client || !client.client_secret_hash || typeof secret !== 'string' || !safeEqual(presented, client.client_secret_hash)) fail(401, 'invalid_client');
-    return client;
-  }
+  const authenticateClient = (req, body) => authenticateClientSecret(req, body, getClient);
 
   async function exchange(req, body, ip) {
     const client = await authenticateClient(req, body);

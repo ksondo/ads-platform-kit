@@ -136,6 +136,53 @@ Errors: `401 UNAUTHENTICATED`, `403 FORBIDDEN`, `404 MEMBER_NOT_FOUND|USER_NOT_F
 - The link opens `/invite` on the login domain, showing the organisation, product and roles. The invitee signs in, or creates an ADS account (email prefilled; the normal activation email, whose link brings them back to the invitation), then clicks **Accept**. They get the membership and roles, and a button back to the product.
 - It can only be accepted by the ADS account with the **invited email address**: a forwarded link is refused (audited as `EMAIL_MISMATCH`).
 
+## Service clients and delegated token exchange
+
+For one ADS product's server calling another ADS API (for example the Sector Offer API v1: Agriculture to Commerce). Never from a browser: both need the calling server's client secret.
+
+### Background calls: `client_credentials` (service clients)
+
+Register a **service client** (no sign-in pages, no users, no roles). In the reviewed list, `config/clients.demo.json`:
+
+```json
+"service_clients": [
+  { "client_id": "agriculture-sector-service", "kind": "service", "display_name": "ADS Agriculture sector service",
+    "allowedServiceScopes": ["commerce.sector_outcomes.read"], "allowedAudiences": ["ads-commerce-api"],
+    "client_secret_setting": "<the calling server's secret setting name>" }
+]
+```
+
+Service clients go in `service_clients`, never in `products` (which lists sign-in products). They may not carry sign-in fields (`redirect_uris`, roles, `demo_orgs`, `tokenExchange`...). Scopes are namespaced (`<area>.<name>`, e.g. `agri.input_vouchers`); audiences look like client ids but may not be the id of any client, so these tokens never pass as a product's sign-in token. `apply-clients.mjs` registers them with a secret; by hand: `node src/cli.mjs register-client --kind service --id ... --name ... --service-scopes a.b --service-audiences ads-x`, then `set-client-secret`.
+
+```
+POST /token   Authorization: Basic base64(agriculture-sector-service:<client secret>)
+grant_type=client_credentials  scope=commerce.sector_outcomes.read  audience=ads-commerce-api
+```
+
+Response: `{ access_token, token_type: "Bearer", expires_in: 300, scope }`, no refresh token. Claims: `iss`, `aud` (the audience), `sub` = `client_id` = the service client, `scope`, `token_use: "service"`; no `tenant_id`, no `roles`. `scope` defaults to all allowed scopes; `audience` may be left out only when exactly one is allowed. Errors: `401 invalid_client`, `400 unauthorized_client` (not a service client), `invalid_scope`, `invalid_target`, `invalid_request`.
+
+### Calls a person starts: token exchange with `audience`
+
+A sign-in client lists, per audience, the scopes its server may obtain for its signed-in users (`needs_client_secret: true` is required):
+
+```json
+{ "client_id": "agriculture-web", "...": "...", "needs_client_secret": true,
+  "tokenExchange": [ { "audience": "ads-commerce-api", "scopes": ["commerce.sector_offers"] } ] }
+```
+
+```
+POST /token   Authorization: Basic base64(agriculture-web:<client secret>)
+grant_type=urn:ietf:params:oauth:grant-type:token-exchange
+subject_token=<the person's access token for agriculture-web>  subject_token_type=urn:ietf:params:oauth:token-type:access_token
+audience=ads-commerce-api  scope=commerce.sector_offers
+```
+
+Response: `{ access_token, issued_token_type, token_type: "Bearer", expires_in (≤ 300 s), scope }`, no refresh token. The token keeps the person's `sub` and `tenant_id`, adds `act: { "sub": "agriculture-web" }`, `client_id`, `scope` and `token_use: "exchange"`, and carries no roles. It is refused unless the audience and scopes are listed for that client (`invalid_target`, `invalid_scope`), the subject token is a person's sign-in token issued for that client (not an admin, service or exchanged token), its sign-in is still active and the person is still an active member of that workspace (`invalid_grant`). Without `audience`, the request is the admin API exchange above, unchanged.
+
+The receiving API checks `iss`, `aud`, `exp`, the RS256 signature (`/.well-known/jwks.json`) and the scope, and decides tenant access itself (for Commerce: `merchantRef` must map to `tenant_id`).
+
+All issuances and refusals are audited (`service_token`, `token_exchange` in `platform.identity_audit`, with client, audience and scope; never the token). **Secrets are provisioned by the operator** (`apply-clients.mjs --secrets-out` writes them to a 0600 file outside any repository) into the calling server's secret settings; they are never committed, printed or put in the client list.
+
 ## Repos that need more than these steps
 
 | Repo | Extra work |
