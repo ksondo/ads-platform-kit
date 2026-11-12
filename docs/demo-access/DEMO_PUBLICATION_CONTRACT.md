@@ -30,7 +30,7 @@ Reviewed destinations are in `apps/demo-portal/catalogue.json` (`demoDestination
 | State | Card and detail page |
 |---|---|
 | `preparing` (shipped default) | "Demo being prepared" / "Démo en préparation"; card stays inside the portal; no link to the product |
-| `open` | "Demo available" and "Open demo" / "Ouvrir la démo"; opens the destination in a new tab |
+| `open` | "Active demo" and "Open Demo" / "Démo active" and "Ouvrir la démo"; opens the destination in a new tab |
 | `unavailable` | "Temporarily unavailable" / "Momentanément indisponible" with an explanatory alert; no link to the product |
 
 The file never contains URLs. A missing file, invalid JSON, an unknown product or an unknown value all mean `preparing`. Only `https://<name>.demo.africadigitalsynergy.com/...` destinations can be linked.
