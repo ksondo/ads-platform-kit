@@ -25,7 +25,7 @@ const applyScript = path.resolve(here, '../scripts/apply-clients.mjs');
 const SEVEN = ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'bank-agent', 'bank-officer'];
 const INTERNAL_ONLY = ['investor', 'auditor', 'bank-loan-officer'];
 const INTERNAL_ONLY_ROLES = ['commerce_investor', 'commerce_auditor'];
-// The ten Commerce personas of the internal demo set, each with exactly its intended organisation and roles.
+// The eleven Commerce personas of the internal demo set, each with exactly its intended organisation and roles.
 const INTERNAL = {
   shopper: { org: 'personal', roles: ['commerce_buyer'] },
   'shop-owner': { org: 'main', roles: ['merchant_owner'] },
@@ -37,6 +37,8 @@ const INTERNAL = {
   'bank-agent': { org: 'bank', roles: ['bank_agent'] },
   'bank-officer': { org: 'bank', roles: ['bank_officer'] },
   'bank-loan-officer': { org: 'bank', roles: ['bank_officer'] },
+  // Commerce #292 (12 Nov 2026): internal demo set only until the owner adds it to the visitors' list.
+  processor: { org: 'main', roles: ['commerce_business_buyer'] },
 };
 // What a visitor's own organisations hold: exactly the roles of the seven personas.
 const VISITOR_MAIN_ROLES = ['commerce_accountant', 'commerce_cashier', 'commerce_manager', 'merchant_owner'];
@@ -47,7 +49,7 @@ const ORIGIN = 'https://commerce.demo.africadigitalsynergy.com';
 const COMMERCE = { id: 'commerce-web', redirect: 'https://commerce.demo.africadigitalsynergy.com/' };
 const SECRET = 'visitor-personas-check-secret-0123456789abcdef';
 const ADMIN = 'persona.admin@ads.test';
-const ALL_COMMERCE_ROLES = ['merchant_owner', 'commerce_manager', 'commerce_cashier', 'commerce_accountant', 'commerce_investor', 'commerce_auditor', 'bank_officer', 'bank_agent'];
+const ALL_COMMERCE_ROLES = ['merchant_owner', 'commerce_manager', 'commerce_cashier', 'commerce_accountant', 'commerce_investor', 'commerce_auditor', 'bank_officer', 'bank_agent', 'commerce_business_buyer'];
 const decode = jwt => JSON.parse(Buffer.from(jwt.split('.')[1], 'base64url').toString('utf8'));
 const sorted = list => [...list].sort();
 
@@ -272,7 +274,7 @@ describe('private (operator-provisioned) Commerce visitor', () => {
   });
 });
 
-describe('internal Commerce demo accounts keep all ten personas', () => {
+describe('internal Commerce demo accounts keep all eleven personas', () => {
   let svc, dir, tenants;
   const hex = () => crypto.randomBytes(6).toString('hex');
   const PW = { user: `Demo-User-${hex()}`, user2: `Demo-Two-${hex()}`, admin: `Demo-Admin-${hex()}`, persona: `Demo-Persona-${hex()}` };
@@ -291,9 +293,9 @@ describe('internal Commerce demo accounts keep all ten personas', () => {
   });
   after(async () => { await svc?.stop(); rmSync(dir, { recursive: true, force: true }); });
 
-  it('the internal demo set has exactly the ten Commerce personas (plus the ADS staff reviewer and support)', () => {
+  it('the internal demo set has exactly the eleven Commerce personas (plus the ADS staff reviewer and support)', () => {
     assert.deepEqual(Object.keys(tenants.personas).filter(k => !['reviewer', 'support'].includes(k)), Object.keys(INTERNAL));
-    assert.deepEqual(Object.keys(tenants.personas).length, 12);
+    assert.deepEqual(Object.keys(tenants.personas).length, 13);
   });
 
   for (const [key, intended] of Object.entries(INTERNAL)) {

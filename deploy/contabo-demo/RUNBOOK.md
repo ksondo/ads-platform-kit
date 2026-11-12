@@ -211,7 +211,7 @@ After Commerce HTTPS and application callback endpoint exist, and before testing
       --logout https://commerce.demo.africadigitalsynergy.com/ \
       --self-roles commerce_buyer --personal true \
       --admin-roles merchant_owner \
-      --assignable-roles merchant_owner,commerce_manager,commerce_cashier,commerce_accountant,commerce_investor,commerce_auditor,bank_officer,bank_agent
+      --assignable-roles merchant_owner,commerce_manager,commerce_cashier,commerce_accountant,commerce_investor,commerce_auditor,bank_officer,bank_agent,commerce_business_buyer
 
 The CLI update keeps the existing demo identities, memberships, product-role grants, signing key, database volume and client secret state unchanged. It updates only the approved registration and records an identity audit event. It does replace the former test callback URI, so do this only when Commerce is actually deployed and ready for the new hostname.
 
@@ -246,6 +246,25 @@ Demo personas for Agriculture and Fleet Guard (11 November 2026): `config/client
     bash deploy/contabo-demo/register-identity-client.sh fleet-guard-web --backup-confirmed /var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker --apply
 
 The dry run must show only the added `assignable_roles` entry (`processor`, `lien_holder_viewer`). Visitor grants keep the persona list they were provisioned with: a visitor provisioned before this change sees the new personas only after a new private provisioning (`demo-visitor-provision`). Then rerun `release-acceptance.sh --product agriculture` and `--product fleet-guard`. The products show the new personas only once their own code knows them (Agriculture ignores unknown persona keys; Fleet Guard lists them).
+
+Commerce business buyer (12 November 2026, Commerce #292, AG-W3-5 N1): `config/clients.demo.json` adds the role `commerce_business_buyer` to `commerce-web` (assignable roles and the `main` demo organisation). `config/demo-personas.json` adds the Commerce persona `processor` ("Processor (business buyer)" / "Transformateur (acheteur professionnel)") in `main` with that role. It is in the internal demo set only: `config/demo-access-platforms.json` is unchanged, so visitors keep the same seven Commerce personas until the owner adds it. **After the Identity image that carries this change is deployed, the operator (GPT) must:**
+
+1. Take the protected Identity database backup and record its marker, then re-apply `commerce-web` (the dry run must show only the added `assignable_roles` entry `commerce_business_buyer`):
+
+       bash deploy/contabo-demo/register-identity-client.sh commerce-web --backup-confirmed /var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker
+       bash deploy/contabo-demo/register-identity-client.sh commerce-web --backup-confirmed /var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker --apply
+
+2. Create the new persona account and place it, with the same two commands `bootstrap-demo-accounts.sh` uses (do not rerun the script itself; it refuses once client secrets exist). Both are idempotent: existing accounts, organisations and roles are kept.
+
+       docker exec ads-demo-identity node src/cli.mjs demo-bootstrap
+       docker exec ads-demo-identity node src/cli.mjs demo-orgs --out /tmp/demo-tenants.json
+       docker cp ads-demo-identity:/tmp/demo-tenants.json /var/lib/ads-demo/operator-secrets/demo-tenants.json
+       chmod 600 /var/lib/ads-demo/operator-secrets/demo-tenants.json
+       docker exec -u 0 ads-demo-identity rm -f /tmp/demo-tenants.json
+
+   The new `demo-tenants.json` lists `products.commerce.personas.processor` (its `sub` and the `main` tenant).
+3. The verified demo business profile is Commerce data. It is seeded by Commerce's own demo seed (`scripts/demo-seed.mjs` in the Commerce repository), verified by the Commerce `reviewer` persona (`commerce_reviewer`, ADS staff organisation), never by the processor. Rerun the Commerce demo seed with the new `DEMO_TENANTS_FILE` only once a Commerce release carries that seed step; until then the processor can ask for a profile and the reviewer persona verifies it in the review workspace.
+4. Rerun `release-acceptance.sh --product commerce`.
 
 ## F. Commerce integrated demo THIRD (in Commerce repository)
 
