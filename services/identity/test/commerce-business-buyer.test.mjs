@@ -2,7 +2,7 @@
 // lets a business (a processor such as a miller or feed maker) buy farm lots at any farm shop once the ADS
 // Commerce review team has verified its organisation's business profile. The kit makes the role assignable for
 // commerce-web, gives it to the Commerce processor persona and keeps it apart from the reviewer, so the profile a
-// processor asks for is always verified by another person. The verified demo profile itself is Commerce data and
+// processor asks for is always verified by another person. The processor is a Commerce visitor persona too. The verified demo profile itself is Commerce data and
 // is seeded by Commerce's demo seed (scripts/demo-seed.mjs), not by the kit.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -73,8 +73,9 @@ describe('Commerce business buyer role (commerce_business_buyer)', () => {
     assert.throws(() => validatePersonas(withPersona({ ...base, org: 'bank' }), clients), /role commerce_business_buyer is not a role of commerce\/bank/);
   });
 
-  it('is not offered to Commerce visitors until the owner adds it to their persona list (owner rule of 5 Nov 2026: the same seven)', () => {
-    const visitor = loadPlatforms({}).get('commerce').personas.map(x => x.key);
-    assert.ok(!visitor.includes('processor'));
+  it('is offered to Commerce visitors: the processor is the eighth visitor persona (owner instruction, 12 Nov 2026: show every persona needed to view the projects)', () => {
+    const visitor = loadPlatforms({}).get('commerce').personas;
+    assert.equal(visitor.at(-1).key, 'processor');
+    assert.equal(visitor.length, 8);
   });
 });

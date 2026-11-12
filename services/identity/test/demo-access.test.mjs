@@ -49,7 +49,7 @@ describe('ADS Demo Access (Commerce pilot)', () => {
     } });
     await svc.pool.query(`INSERT INTO platform.oauth_clients(client_id,display_name,redirect_uris,post_logout_redirect_uris,self_service_roles,allow_personal_workspace,admin_roles,assignable_roles)
       VALUES ($1,'ADS Commerce',$2,$2,'{commerce_buyer}',true,'{merchant_owner}',$3)`,
-    [COMMERCE.id, [COMMERCE.redirect], ['merchant_owner', 'commerce_manager', 'commerce_cashier', 'commerce_accountant', 'commerce_investor', 'commerce_auditor', 'bank_officer', 'bank_agent']]);
+    [COMMERCE.id, [COMMERCE.redirect], ['merchant_owner', 'commerce_manager', 'commerce_cashier', 'commerce_accountant', 'commerce_investor', 'commerce_auditor', 'bank_officer', 'bank_agent', 'commerce_business_buyer']]);
     await createActiveUser(svc.pool, ADMIN, PASSWORD);
     adminB = browser(svc.base);
     await signIn(adminB, ADMIN);
@@ -128,7 +128,7 @@ describe('ADS Demo Access (Commerce pilot)', () => {
     assert.equal((await check(active.user_id, 'wrong')).status, 401);
     const granted = await (await check(active.user_id)).json();
     assert.equal(granted.access, 'granted');
-    assert.deepEqual(granted.personas.map(p => p.key), ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'bank-agent', 'bank-officer']);
+    assert.deepEqual(granted.personas.map(p => p.key), ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'bank-agent', 'bank-officer', 'processor']);
     assert.ok(!granted.personas.some(p => ['investor', 'auditor', 'bank-loan-officer'].includes(p.key)), 'internal demo personas are never offered to visitors');
     assert.ok(!granted.personas.some(p => ['reviewer', 'support'].includes(p.key)));
     const main = granted.personas.find(p => p.key === 'shop-owner');
@@ -142,7 +142,7 @@ describe('ADS Demo Access (Commerce pilot)', () => {
     // Signed in once: each persona workspace opens without typing a password again.
     const shop = await commerceToken(vb, main.tenantId);
     assert.equal(shop.tenant_id, main.tenantId);
-    assert.deepEqual([...shop.roles].sort(), ['commerce_accountant', 'commerce_cashier', 'commerce_manager', 'merchant_owner']);
+    assert.deepEqual([...shop.roles].sort(), ['commerce_accountant', 'commerce_business_buyer', 'commerce_cashier', 'commerce_manager', 'merchant_owner']);
     const bankToken = await commerceToken(vb, bank.tenantId);
     assert.deepEqual(bankToken.roles.sort(), ['bank_agent', 'bank_officer']);
     const buyer = await commerceToken(vb, personal.tenantId);

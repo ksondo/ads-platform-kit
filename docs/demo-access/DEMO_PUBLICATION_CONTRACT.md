@@ -65,7 +65,7 @@ Products send the callback above as `redirect_uri` and carry the intended page i
 - Tontine: main — group-admin, treasurer, payout-approver, member, auditor; cooperative — cooperative-admin; partner — partner.
 - Fleet Guard: main — fleet-owner, fleet-manager, approver, driver, mechanic, co-owner, lien-holder, finance, approver-colleague. One role each: co-owner `vehicle_owner` (FG-1, sees only the vehicles they co-own), lien-holder `lien_holder_viewer` (FG-2, reads only its own liens), finance `finance` (costs, payments and money reports, FG-3/FG-5).
 - VentureWorks: main — founder, venture-manager, contributor, evidence-reviewer, regulatory-reviewer. Tenant administrator, adviser, investor, partner and employee are not offered to visitors.
-- Commerce: personal — shopper; main — shop-owner, shop-manager, cashier, accountant; bank — bank-agent, bank-officer.
+- Commerce: personal — shopper; main — shop-owner, shop-manager, cashier, accountant; bank — bank-agent, bank-officer; main — processor (business buyer, since 12 November 2026).
 
 Identity limits every visitor token to the roles of the grant's personas in that workspace (code exchange and each refresh), ignores workspace hints the grant does not cover, and refuses codes, refreshes and new sign-ins after expiry or revocation. Narrowing to the one persona the visitor selected is done by each product server.
 

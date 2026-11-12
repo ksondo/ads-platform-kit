@@ -93,7 +93,7 @@ describe('private visitor uses canonical ADS identity and grant activation', () 
     assert.equal((await check(crypto.randomUUID(), 'incorrect')).status, 401);
   });
 
-  it('creates an ordinary account with unverified mailbox, seven personas and exactly thirty days', async () => {
+  it('creates an ordinary account with unverified mailbox, eight personas and exactly thirty days', async () => {
     first = await provision('private.one@example.test');
     const row = (await svc.pool.query('SELECT * FROM platform.users WHERE id=$1', [first.userId])).rows[0];
     assert.equal(row.is_demo, false); assert.equal(row.email_verified_at, null); assert.equal(row.status, 'active');
@@ -101,8 +101,8 @@ describe('private visitor uses canonical ADS identity and grant activation', () 
     const grant = (await svc.pool.query('SELECT *, expires_at-activated_at AS duration FROM platform.demo_access_grants WHERE id=$1', [first.grantId])).rows[0];
     assert.equal(grant.duration.days, 30); assert.equal(grant.invitation_id, null);
     const { body } = await check(first.userId);
-    assert.equal(body.access, 'granted'); assert.equal(body.personas.length, 7);
-    assert.deepEqual(body.personas.map(p => p.key).sort(), ['shopper','shop-owner','shop-manager','cashier','accountant','bank-agent','bank-officer'].sort());
+    assert.equal(body.access, 'granted'); assert.equal(body.personas.length, 8);
+    assert.deepEqual(body.personas.map(p => p.key).sort(), ['shopper','shop-owner','shop-manager','cashier','accountant','bank-agent','bank-officer','processor'].sort());
     assert.ok(body.personas.every(p => !p.roles.some(r => ['commerce_reviewer','commerce_support'].includes(r))));
     const orgs = (await svc.pool.query('SELECT o.is_demo,o.is_staff,m.role FROM platform.memberships m JOIN platform.tenants t ON t.id=m.tenant_id JOIN platform.organizations o ON o.id=t.organization_id WHERE m.user_id=$1 AND o.kind=\'organization\'', [first.userId])).rows;
     assert.equal(orgs.length, 2); assert.ok(orgs.every(o => o.is_demo && !o.is_staff && o.role === 'member'));
@@ -110,9 +110,9 @@ describe('private visitor uses canonical ADS identity and grant activation', () 
     assert.equal(svc.mailer.outbox.length, 0);
   });
 
-  it('grants the same seven personas as a public visitor (one shared registry list, internal personas refused)', async () => {
+  it('grants the same eight personas as a public visitor (one shared registry list, internal personas refused)', async () => {
     const registry = svc.app.demoAccess.platformOf('commerce');
-    assert.deepEqual(registry.personas.map(p => p.key), ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'bank-agent', 'bank-officer']);
+    assert.deepEqual(registry.personas.map(p => p.key), ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'bank-agent', 'bank-officer', 'processor']);
     const visitor = await provision('private.extended@example.test');
     assert.deepEqual((await check(visitor.userId)).body.personas.map(p => p.key), registry.personas.map(p => p.key));
     const assigned = (await svc.pool.query(
