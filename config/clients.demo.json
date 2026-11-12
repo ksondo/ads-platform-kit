@@ -664,7 +664,8 @@
         "site_coordinator",
         "partner",
         "regulator_viewer",
-        "vehicle_owner"
+        "vehicle_owner",
+        "lien_holder_viewer"
       ],
       "ads_only_roles": [
         "ads_support"
@@ -688,7 +689,8 @@
             "site_coordinator",
             "partner",
             "regulator_viewer",
-            "vehicle_owner"
+            "vehicle_owner",
+            "lien_holder_viewer"
           ]
         },
         {
@@ -701,7 +703,7 @@
         }
       ],
       "tenant_settings": {},
-      "notes": "ads_support sees every fleet (audit 2.3): ADS-only until ACC-05."
+      "notes": "ads_support sees every fleet (audit 2.3): ADS-only until ACC-05. lien_holder_viewer (FG-0, 11 Nov 2026): a lender's staff, reads its own liens only (FG-2); vehicle_owner stands for a co-owner of a vehicle (FG-1)."
     },
     {
       "slug": "tontine",
@@ -1172,7 +1174,8 @@
         "extension_officer",
         "agronomist",
         "lender_officer",
-        "input_supplier"
+        "input_supplier",
+        "processor"
       ],
       "ads_only_roles": [],
       "needs_client_secret": true,
@@ -1190,6 +1193,7 @@
             "agronomist",
             "lender_officer",
             "input_supplier",
+            "processor",
             "reviewer",
             "support"
           ]
@@ -1208,7 +1212,7 @@
       "operator_setup": [
         "npm run admin -- add-staff-tenant <staff tenant id> \"ADS Staff – Agriculture\""
       ],
-      "notes": "Secret setting name not found on main (tests use AGRI_ADMIN_CLIENT_SECRET). tokenExchange (Agriculture wave 2, 11 Nov 2026): the Agriculture server exchanges a signed-in user's token for a short-lived Commerce token to read sector offers; it takes effect once Identity token-exchange support is merged and the client is re-registered (ignored before). Demo roles follow the same pattern as the other demos (one role per persona; the organisation admin persona holds the product admin role tenant_admin); actual Agriculture roles are settled at MVP.",
+      "notes": "Secret setting name not found on main (tests use AGRI_ADMIN_CLIENT_SECRET). tokenExchange (Agriculture wave 2, 11 Nov 2026): the Agriculture server exchanges a signed-in user's token for a short-lived Commerce token to read sector offers; it takes effect once Identity token-exchange support is merged and the client is re-registered (ignored before). Demo roles follow the same pattern as the other demos (one role per persona; the organisation admin persona holds the product admin role tenant_admin), except the demo colleague, which holds every second-approval role a visitor can need (reviewer, coop_manager, lender_officer, agronomist; owner decision 11 Nov 2026, so the projects can be viewed end to end). processor (AG-W3-5, NP-PROC-02, 11 Nov 2026): a business buyer such as a miller or feed maker; Agriculture shows it once AG-W3-5 is merged. Land v1 holders use the farmer role and the Land reviewer uses reviewer, so Land adds no role. Actual Agriculture roles are settled at MVP.",
       "tokenExchange": [
         {
           "audience": "ads-commerce-api",

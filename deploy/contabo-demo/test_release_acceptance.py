@@ -17,9 +17,12 @@ ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parent.parent
 ACCEPT = ROOT / "release-acceptance.sh"
 REGISTER = ROOT / "register-identity-client.sh"
-MANIFEST = json.loads((ROOT / "ads-release-20261111.manifest.json").read_text())
+MANIFEST_FILE = "ads-release-20261111b.manifest.json"
+MANIFEST = json.loads((ROOT / MANIFEST_FILE).read_text())
 CLIENTS_TEXT = (REPO / "config/clients.demo.json").read_text()
 CLIENTS = {c["client_id"]: c for c in json.loads(CLIENTS_TEXT)["products"]}
+SERVICE_CLIENTS = {c["client_id"]: c for c in json.loads(CLIENTS_TEXT).get("service_clients", [])}
+SECTOR_SERVICE_CLIENTS = ["agriculture-sector-service", "commerce-sector-service"]
 ISSUER = "https://login.demo.africadigitalsynergy.com"
 SECRET = "do-not-print-" + "s" * 40
 TONTINE_TEST_SHA = "a" * 40
@@ -62,6 +65,14 @@ if a[0] == "exec":
     if cmd[0] == "psql":
         sql = cmd[-1]
         rows = st["db_clients"]
+        if "CASE WHEN client_secret_hash IS NULL" in sql:  # release-acceptance sector-link query: yes/no only
+            assert sql.startswith("SELECT client_id, kind, status,") and sql.count("client_secret_hash") == 1
+            for cid in sorted(rows):
+                r = rows[cid]
+                if r.get("kind") != "service": continue
+                print("\t".join([cid, "service", r.get("status", "active"), json.dumps(r.get("service_scopes", [])),
+                                 json.dumps(r.get("service_audiences", [])), "yes" if r.get("secret_set") else "no"]))
+            sys.exit(0)
         if "array_to_json" in sql:
             for cid in sorted(rows):
                 r = rows[cid]
@@ -142,6 +153,10 @@ def healthy_state(manifest_sha):
         http["https://%s/ads-identity.js" % row["host"]] = {"code": "200", "headers": "content-type: text/javascript; charset=utf-8"}
         http["https://%s%s" % (row["host"], row["health"])] = {"code": "200"}
         http[ISSUER + "/authorize?" + row["client"] + "|https://" + row["host"] + "/"] = {"code": "302"}
+    for cid in SECTOR_SERVICE_CLIENTS:
+        c = SERVICE_CLIENTS[cid]
+        db[cid] = {"redirect_uris": [], "post_logout_redirect_uris": [], "kind": "service", "status": "active",
+                   "service_scopes": c["allowedServiceScopes"], "service_audiences": c["allowedAudiences"], "secret_set": True}
     return {"containers": containers, "http": http, "db_clients": db}
 
 
@@ -253,6 +268,8 @@ class AcceptanceDryRunTest(unittest.TestCase):
                 self.assertRegex(r.stdout, r"(?m)^PASS %s +%s " % (pid, check))
         self.assertRegex(r.stdout, r"(?m)^PASS agriculture +seed-worker ")
         self.assertRegex(r.stdout, r"(?m)^INFO ventureworks +seed-worker ")
+        for cid in SECTOR_SERVICE_CLIENTS:
+            self.assertRegex(r.stdout, r"(?m)^PASS sector-link +service-client +%s: registered, active" % cid)
         self.assertIn("DEMO_ACCESS_CHECK_SECRET_TONTINE present: yes", r.stdout)
         self.assertIn("DEMO_ACCESS_CHECK_SECRET_VENTUREWORKS present: yes", r.stdout)
         self.assertNotIn(SECRET, r.stdout + r.stderr + self.host.log.read_text())
@@ -289,6 +306,33 @@ class AcceptanceDryRunTest(unittest.TestCase):
         self.assertRegex(r.stdout, r"(?m)^PASS commerce +image ")
         self.assertIn("ADS_RELEASE_ACCEPTANCE=FAIL", r.stdout)
         self.assertNotIn(SECRET, r.stdout + r.stderr)
+
+    def test_sector_link_service_clients_missing_or_wrong_fail_without_printing_secrets(self):
+        def broken(st):
+            del st["db_clients"]["commerce-sector-service"]
+            st["db_clients"]["agriculture-sector-service"]["secret_set"] = False
+            st["db_clients"]["agriculture-sector-service"]["service_scopes"] = ["commerce.sector_offers"]
+        self.mutate(broken)
+        r = self.run_acc("--product", "agriculture")
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertRegex(r.stdout, r"FAIL sector-link +service-client +commerce-sector-service: not registered as a service client")
+        self.assertRegex(r.stdout, r"FAIL sector-link +service-client +agriculture-sector-service: scopes differ from reviewed; secret set: no")
+        self.assertNotIn(SECRET, r.stdout + r.stderr)
+
+    def test_sector_link_disabled_skips_the_service_client_check(self):
+        self.manifest["sector_link"]["enabled"] = False
+        self.mfile.write_text(json.dumps(self.manifest))
+        self.mutate(lambda st: st["db_clients"].pop("commerce-sector-service"))
+        r = self.run_acc("--product", "agriculture")
+        self.assertEqual(r.returncode, 0, r.stdout)
+        self.assertRegex(r.stdout, r"(?m)^INFO sector-link +service-client +sector link not enabled")
+        self.assertFalse(any(c[0] == "docker" and "client_secret_hash" in c[-1] for c in self.host.calls()))
+
+    def test_invalid_sector_link_client_is_a_usage_error(self):
+        self.manifest["sector_link"]["service_clients"] = ["x; rm -rf /"]
+        self.mfile.write_text(json.dumps(self.manifest))
+        r = self.run_acc("--plan")
+        self.assertEqual(r.returncode, 2)
 
     def test_unpinned_manifest_sha_fails(self):
         for s in self.manifest["immutable_sources"]:
@@ -441,29 +485,40 @@ class RegisterClientDryRunTest(unittest.TestCase):
 
 
 class ReleaseManifestTest(unittest.TestCase):
-    def test_20261111_revision_pins_every_source_and_keeps_earlier_pins(self):
-        old = json.loads((ROOT / "ads-release-20261110.manifest.json").read_text())
-        self.assertEqual(MANIFEST["release_id"], "ads-release-20261111")
-        self.assertEqual(old["superseded_by"], "deploy/contabo-demo/ads-release-20261111.manifest.json")
+    # Commerce and Agriculture are re-pinned once more after the B1-B3 fix PRs merge (ADS_RELEASE_20261111B.md);
+    # they must move off the 20261111 pins and be documented, but are not hard-coded here so the bump is one edit.
+    NEW_PINS = {"ads-identity": "b768b47b942dd6d4b97027b753b2c610d3037bc1"}
+    REPINNABLE = ("commerce", "agriculture")
+
+    def test_20261111b_pins_identity_commerce_agriculture_and_keeps_the_rest(self):
+        prev = json.loads((ROOT / "ads-release-20261111.manifest.json").read_text())
+        self.assertEqual(MANIFEST["release_id"], "ads-release-20261111b")
+        self.assertEqual(prev["superseded_by"], "deploy/contabo-demo/" + MANIFEST_FILE)
+        self.assertIn(MANIFEST_FILE, (ROOT / "release-acceptance.sh").read_text(), "default manifest of the acceptance check")
         srcs = MANIFEST["immutable_sources"]
-        self.assertEqual([s["id"] for s in srcs], ["ads-identity", "commerce", "education", "agriculture", "fleet-guard",
-                                                   "digital-tontine", "ventureworks", "ads-portal"])
+        self.assertEqual([s["id"] for s in srcs], [s["id"] for s in prev["immutable_sources"]])
         self.assertEqual([s["deployment_order"] for s in srcs], list(range(1, 9)))
         for s in srcs:
             self.assertRegex(s["sha"], r"^[0-9a-f]{40}$", s["id"] + " must be a full merged SHA (no placeholder)")
         by_id = {s["id"]: s for s in srcs}
-        for s in old["immutable_sources"]:
-            self.assertEqual(by_id[s["id"]]["sha"], s["sha"], "unchanged pin " + s["id"])
-        self.assertEqual(by_id["ventureworks"]["sha"], "3744e3c86fccb9ce3a570be1634e23506dcc6726")
-        self.assertEqual(by_id["ventureworks"]["repo"], "ksondo/africa-digital-synergy-ventureworks")
-        self.assertEqual(by_id["digital-tontine"]["repo"], "ksondo/Digital-tontine-and-intelligent-services")
-        self.assertEqual(by_id["digital-tontine"]["pr"], 43)
-        self.assertEqual(by_id["digital-tontine"]["sha"], "b2ed5240bb9825265a4d3b1aabb792f850d9f9c9")
+        for s in prev["immutable_sources"]:
+            if s["id"] in self.REPINNABLE:
+                self.assertNotEqual(by_id[s["id"]]["sha"], s["sha"], "new pin " + s["id"])
+            else:
+                self.assertEqual(by_id[s["id"]]["sha"], self.NEW_PINS.get(s["id"], s["sha"]), "pin " + s["id"])
+            self.assertEqual(by_id[s["id"]]["repo"], s["repo"])
         self.assertEqual(MANIFEST["excluded_until_certified"], [])
         self.assertEqual(set(by_id["ads-portal"]["depends_on"]), set(by_id) - {"ads-portal"})
-        doc = (ROOT / "ADS_ONE_TIME_RELEASE_20261111.md").read_text()
+        link = MANIFEST["sector_link"]
+        self.assertIs(link["enabled"], True)
+        self.assertEqual(link["service_clients"], SECTOR_SERVICE_CLIENTS)
+        for cid in link["service_clients"]:
+            self.assertEqual(SERVICE_CLIENTS[cid]["kind"], "service")
+        doc = (ROOT / "ADS_RELEASE_20261111B.md").read_text()
+        self.assertEqual(MANIFEST["operator_runbook"], "deploy/contabo-demo/ADS_RELEASE_20261111B.md")
         for s in srcs:
             self.assertIn(s["sha"], doc, s["id"] + " pin documented")
+        self.assertIn("Bumping the Commerce and Agriculture pins", doc)
         self.assertNotIn("PENDING", doc)
 
 

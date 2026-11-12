@@ -54,7 +54,7 @@ describe('demo personas file (config/demo-personas.json)', () => {
     assert.equal(new Set(accounts.map(a => a.email)).size, accounts.length);
   });
 
-  it('covers the jobs the Commerce, Fleet Guard, Education and Tontine journeys need, one role each', () => {
+  it('covers the jobs the Commerce, Fleet Guard, Education and Tontine journeys need, one role each (Agriculture demo colleague: every second-approval role)', () => {
     const roles = slug => Object.fromEntries(personasOf(slug).map(p => [p.key, `${p.org}:${p.roles.join('+')}`]));
     assert.deepEqual(roles('commerce'), {
       shopper: 'personal:commerce_buyer', 'shop-owner': 'main:merchant_owner', 'shop-manager': 'main:commerce_manager', cashier: 'main:commerce_cashier',
@@ -62,14 +62,19 @@ describe('demo personas file (config/demo-personas.json)', () => {
     });
     assert.deepEqual(roles('fleetguard'), {
       'fleet-owner': 'main:owner_admin', 'fleet-manager': 'main:fleet_manager', approver: 'main:workshop_manager', driver: 'main:driver', mechanic: 'main:technician', partner: 'main:partner',
+      // FG-0 (11 Nov 2026): co-owner, lien holder and finance, so ownership, liens and money screens can be viewed.
+      'co-owner': 'main:vehicle_owner', 'lien-holder': 'main:lien_holder_viewer', finance: 'main:finance',
       'approver-colleague': 'main:workshop_manager',
     });
     // Agriculture release 2 (7 Nov 2026): 9 visitor personas, the wave-2 agronomist (11 Nov 2026) and the demo colleague, one role each, all in the main
-    // organisation; the ADS staff reviewer/support personas stay in the staff organisation for the internal demo set.
+    // organisation; the ADS staff reviewer/support personas stay in the staff organisation for the internal demo set. Owner decision (11 Nov 2026,
+    // "make the projects viewable"): processor (AG-W3-5), land holder (Land v1 holders hold the farmer role) and a demo colleague that can give
+    // every second approval a visitor starts (reviewer, coop_manager, lender_officer, agronomist).
     assert.deepEqual(roles('agriculture'), {
       farmer: 'main:farmer', buyer: 'main:buyer', reviewer: 'staff:reviewer', support: 'staff:support',
       'coop-manager': 'main:coop_manager', 'extension-officer': 'main:extension_officer', agronomist: 'main:agronomist', 'lender-officer': 'main:lender_officer', 'input-supplier': 'main:input_supplier',
-      'farm-reviewer': 'main:reviewer', 'help-desk': 'main:support', 'org-admin': 'main:tenant_admin', 'demo-colleague': 'main:reviewer',
+      'farm-reviewer': 'main:reviewer', 'help-desk': 'main:support', 'org-admin': 'main:tenant_admin',
+      processor: 'main:processor', landowner: 'main:farmer', 'demo-colleague': 'main:reviewer+coop_manager+lender_officer+agronomist',
     });
     for (const k of ['school-admin', 'teacher', 'parent', 'student', 'partner']) assert.ok(roles('education')[k], `education ${k}`);
     assert.equal(roles('education').partner, 'partner:partner_admin');
