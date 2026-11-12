@@ -1,6 +1,7 @@
 // ADS Demo Access (Commerce pilot): the portal sends visitors to the platform's introduction and request
-// page, labels the button "Request demo access" / "Demander un accès de démonstration", and never shows
-// demo passwords or links to any administration page.
+// page and never shows demo passwords or links to any administration page. The activated Commerce
+// platform uses the same "Open Demo" / "Ouvrir la démo" action as every activated platform; its tool
+// pages keep the request label "Request demo access" / "Demander un accès de démonstration".
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -61,15 +62,17 @@ test("availability labels stay accurate: only Commerce is a verified demo, every
   }
 });
 
-for (const [lang, button, pill] of [["en", "Request demo access", "Demo on request"], ["fr", "Demander un accès de démonstration", "Démo sur demande"]]) {
-  test(`${lang.toUpperCase()}: Commerce buttons read "${button}" and open the request page in a new tab`, () => {
+for (const [lang, button, pill, openDemo, activeBadge] of [["en", "Request demo access", "Demo on request", "Open Demo", "Active demo"], ["fr", "Demander un accès de démonstration", "Démo sur demande", "Ouvrir la démo", "Démo active"]]) {
+  test(`${lang.toUpperCase()}: Commerce reads "${openDemo}", its tools read "${button}", all open the request page in a new tab`, () => {
     const r = renderer(lang,true);
     const commerce = catalogue.platforms.find(p => p.id === "commerce");
     const detail = r.platformDetail(commerce);
-    assert.ok(detail.includes(button), "platform detail button");
+    assert.ok(detail.includes(openDemo), "platform detail button");
     assert.ok(detail.includes('href="' + REQUEST_PAGE + '?lang=' + lang + '"'));
     assert.match(detail, /target="_blank" rel="noopener noreferrer"/);
-    assert.ok(r.platformCard(commerce).includes(button), "platform card label");
+    const card = r.platformCard(commerce);
+    assert.ok(card.includes(openDemo), "platform card label");
+    assert.ok(card.includes(activeBadge), "platform card badge");
     for (const id of ["ecommerce", "pos"]) {
       const tool = catalogue.tools.find(x => x.id === id);
       assert.ok(r.toolDetail(tool).includes(button), id + " detail button");
@@ -78,6 +81,7 @@ for (const [lang, button, pill] of [["en", "Request demo access", "Demo on reque
     // A platform without a verified demo keeps its "being prepared" label.
     const education = catalogue.platforms.find(p => p.id === "education");
     assert.ok(!r.platformDetail(education).includes(button));
+    assert.ok(!r.platformDetail(education).includes(openDemo));
   });
 
   test(`${lang.toUpperCase()}: no rendered page shows demo passwords or links to administration pages`, () => {
@@ -93,14 +97,15 @@ for (const [lang, button, pill] of [["en", "Request demo access", "Demo on reque
   });
 }
 
-for(const [lang,button,pill,notice] of [
- ["en","Open private demo","By prior approval","Public demo requests are temporarily unavailable."],
- ["fr","Ouvrir la démo privée","Sur autorisation","Les demandes publiques de démonstration sont temporairement indisponibles."]
+for(const [lang,button,pill,notice,openDemo] of [
+ ["en","Open private demo","By prior approval","Public demo requests are temporarily unavailable.","Open Demo"],
+ ["fr","Ouvrir la démo privée","Sur autorisation","Les demandes publiques de démonstration sont temporairement indisponibles.","Ouvrir la démo"]
 ]){
  test(`${lang}: private-first mode retains introduction links without an invitation promise`,()=>{
   const r=renderer(lang),commerce=catalogue.platforms.find(p=>p.id==='commerce');
-  for(const html of [r.platformDetail(commerce),...commerceEntries().filter(x=>x.id!=='commerce').map(r.toolDetail)]){
-   assert.ok(html.includes(button));assert.ok(html.includes(notice));
+  const pages=[[r.platformDetail(commerce),openDemo],...commerceEntries().filter(x=>x.id!=='commerce').map(x=>[r.toolDetail(x),button])];
+  for(const [html,label] of pages){
+   assert.ok(html.includes(label));assert.ok(html.includes(notice));
    assert.ok(html.includes('href="'+REQUEST_PAGE+'?lang='+lang+'"'));
    assert.match(html,/target="_blank" rel="noopener noreferrer"/);
    assert.doesNotMatch(html,/<form|<input/i);
