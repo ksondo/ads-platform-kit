@@ -160,7 +160,7 @@ describe('VentureWorks private operator visitors', () => {
 
   it('keeps Commerce private visitors unchanged alongside VentureWorks', async () => {
     const c = await provision('commerce.next-to-vw@example.test', 'commerce');
-    assert.deepEqual(c.personas, ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'bank-agent', 'bank-officer']);
+    assert.deepEqual(c.personas, ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'bank-agent', 'bank-officer', 'processor']);
     assert.equal((await svc.app.demoAccess.checkGrant('ventureworks', c.userId)).access, 'none');
     assert.equal((await svc.app.demoAccess.checkGrant('commerce', c.userId)).access, 'granted');
     const denied = assertAccessDenied((await code(await signIn(c.email))).r, REDIRECT, 'vw-private', 'NO_DEMO_ACCESS');

@@ -155,7 +155,7 @@ describe('Fleet Guard private operator visitors', () => {
   it('keeps Commerce private visitors unchanged alongside Fleet Guard', async () => {
     const c = await provision('commerce.next-to-fleet@example.test', 'commerce');
     assert.equal(c.platform, 'commerce');
-    assert.deepEqual(c.personas, ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'bank-agent', 'bank-officer']);
+    assert.deepEqual(c.personas, ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'bank-agent', 'bank-officer', 'processor']);
     assert.equal((await svc.app.demoAccess.checkGrant('fleet-guard', c.userId)).access, 'none');
     assert.equal((await svc.app.demoAccess.checkGrant('commerce', c.userId)).access, 'granted');
     // No Fleet Guard grant: by default access_denied back to Fleet Guard with state and iss, never a code.

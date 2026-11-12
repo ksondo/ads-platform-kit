@@ -22,7 +22,8 @@
         "cashier",
         "accountant",
         "bank-agent",
-        "bank-officer"
+        "bank-officer",
+        "processor"
       ]
     },
     {

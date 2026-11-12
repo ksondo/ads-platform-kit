@@ -1,6 +1,6 @@
 // Commerce demo personas: what an approved (public) or privately provisioned visitor gets, and what the
 // internal demo accounts get. Owner rule (5 Nov 2026): every visitor, public or private, gets the SAME
-// seven personas; investor, auditor and bank-loan-officer are internal demo personas only (ADS staff and
+// personas (eight since 12 Nov 2026: the processor, a business buyer, Commerce #292); investor, auditor and bank-loan-officer are internal demo personas only (ADS staff and
 // the shared demo set) and no visitor route yields them: persona switch, invitation, token refresh or a
 // role request.
 import assert from 'node:assert/strict';
@@ -22,10 +22,10 @@ const readConfig = name => JSON.parse(readFileSync(path.join(configDir, name), '
 const cli = path.resolve(here, '../src/cli.mjs');
 const applyScript = path.resolve(here, '../scripts/apply-clients.mjs');
 
-const SEVEN = ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'bank-agent', 'bank-officer'];
+const EIGHT = ['shopper', 'shop-owner', 'shop-manager', 'cashier', 'accountant', 'bank-agent', 'bank-officer', 'processor'];
 const INTERNAL_ONLY = ['investor', 'auditor', 'bank-loan-officer'];
 const INTERNAL_ONLY_ROLES = ['commerce_investor', 'commerce_auditor'];
-// The ten Commerce personas of the internal demo set, each with exactly its intended organisation and roles.
+// The eleven Commerce personas of the internal demo set, each with exactly its intended organisation and roles.
 const INTERNAL = {
   shopper: { org: 'personal', roles: ['commerce_buyer'] },
   'shop-owner': { org: 'main', roles: ['merchant_owner'] },
@@ -37,9 +37,11 @@ const INTERNAL = {
   'bank-agent': { org: 'bank', roles: ['bank_agent'] },
   'bank-officer': { org: 'bank', roles: ['bank_officer'] },
   'bank-loan-officer': { org: 'bank', roles: ['bank_officer'] },
+  // Commerce #292 (12 Nov 2026): a business buyer; also a visitor persona.
+  processor: { org: 'main', roles: ['commerce_business_buyer'] },
 };
-// What a visitor's own organisations hold: exactly the roles of the seven personas.
-const VISITOR_MAIN_ROLES = ['commerce_accountant', 'commerce_cashier', 'commerce_manager', 'merchant_owner'];
+// What a visitor's own organisations hold: exactly the roles of the eight personas.
+const VISITOR_MAIN_ROLES = ['commerce_accountant', 'commerce_business_buyer', 'commerce_cashier', 'commerce_manager', 'merchant_owner'];
 const VISITOR_BANK_ROLES = ['bank_agent', 'bank_officer'];
 
 const PASSWORD = 'Correct-Horse-42';
@@ -47,7 +49,7 @@ const ORIGIN = 'https://commerce.demo.africadigitalsynergy.com';
 const COMMERCE = { id: 'commerce-web', redirect: 'https://commerce.demo.africadigitalsynergy.com/' };
 const SECRET = 'visitor-personas-check-secret-0123456789abcdef';
 const ADMIN = 'persona.admin@ads.test';
-const ALL_COMMERCE_ROLES = ['merchant_owner', 'commerce_manager', 'commerce_cashier', 'commerce_accountant', 'commerce_investor', 'commerce_auditor', 'bank_officer', 'bank_agent'];
+const ALL_COMMERCE_ROLES = ['merchant_owner', 'commerce_manager', 'commerce_cashier', 'commerce_accountant', 'commerce_investor', 'commerce_auditor', 'bank_officer', 'bank_agent', 'commerce_business_buyer'];
 const decode = jwt => JSON.parse(Buffer.from(jwt.split('.')[1], 'base64url').toString('utf8'));
 const sorted = list => [...list].sort();
 
@@ -75,11 +77,11 @@ async function commerceTokens(svc, b, tenantHint) {
 const noInternalRoles = (roles, label) => assert.ok(!roles.some(r => INTERNAL_ONLY_ROLES.includes(r)), `${label}: ${roles.join(',')}`);
 
 describe('Commerce visitor persona registry: one list for public and private visitors', () => {
-  it('lists exactly the seven visitor personas, in order, from the single shared source', () => {
+  it('lists exactly the eight visitor personas, in order, from the single shared source', () => {
     const p = loadPlatforms({}).get('commerce');
-    assert.deepEqual(p.personas.map(x => x.key), SEVEN);
-    assert.deepEqual(visitorPersonaKeys(p), SEVEN);
-    assert.deepEqual(readConfig('demo-access-platforms.json').platforms.find(x => x.key === 'commerce').personas, SEVEN);
+    assert.deepEqual(p.personas.map(x => x.key), EIGHT);
+    assert.deepEqual(visitorPersonaKeys(p), EIGHT);
+    assert.deepEqual(readConfig('demo-access-platforms.json').platforms.find(x => x.key === 'commerce').personas, EIGHT);
   });
 
   it('marks exactly investor, auditor and bank-loan-officer as internal demo personas', () => {
@@ -93,11 +95,11 @@ describe('Commerce visitor persona registry: one list for public and private vis
       const doc = readConfig('demo-access-platforms.json');
       for (const key of INTERNAL_ONLY) {
         const file = path.join(dir, `${key}.json`);
-        writeFileSync(file, JSON.stringify({ ...doc, platforms: doc.platforms.map(x => (x.key === 'commerce' ? { ...x, personas: [...SEVEN, key] } : x)) }));
+        writeFileSync(file, JSON.stringify({ ...doc, platforms: doc.platforms.map(x => (x.key === 'commerce' ? { ...x, personas: [...EIGHT, key] } : x)) }));
         assert.throws(() => loadPlatforms({ platformsFile: file }), new RegExp(`DEMO_ACCESS_PERSONA_INTERNAL_ONLY:commerce:${key}`));
       }
       const duplicate = path.join(dir, 'duplicate.json');
-      writeFileSync(duplicate, JSON.stringify({ ...doc, platforms: doc.platforms.map(x => (x.key === 'commerce' ? { ...x, personas: [...SEVEN, 'cashier'] } : x)) }));
+      writeFileSync(duplicate, JSON.stringify({ ...doc, platforms: doc.platforms.map(x => (x.key === 'commerce' ? { ...x, personas: [...EIGHT, 'cashier'] } : x)) }));
       assert.throws(() => loadPlatforms({ platformsFile: duplicate }), /DEMO_ACCESS_PERSONA_DUPLICATE:commerce/);
     } finally { rmSync(dir, { recursive: true, force: true }); }
   });
@@ -142,25 +144,25 @@ describe('public (administrator-approved) Commerce visitor', () => {
   });
   after(async () => { await svc?.stop(); });
 
-  it('grants exactly the seven personas, in order, whatever the request asked for', async () => {
+  it('grants exactly the eight personas, in order, whatever the request asked for', async () => {
     const { req, grant, account } = await approvedVisitor('public.seven@example.com');
-    assert.deepEqual(grant.personas, SEVEN, 'grant row');
+    assert.deepEqual(grant.personas, EIGHT, 'grant row');
     const granted = await check(account.id);
     assert.equal(granted.access, 'granted');
-    assert.deepEqual(granted.personas.map(p => p.key), SEVEN, 'grant check (the persona page list)');
+    assert.deepEqual(granted.personas.map(p => p.key), EIGHT, 'grant check (the persona page list)');
     for (const p of granted.personas) {
       const intended = INTERNAL[p.key];
       assert.equal(p.org, intended.org, p.key);
       assert.deepEqual(p.roles, intended.roles, p.key);
       assert.equal(p.tenantId, p.org === 'personal' ? p.tenantId : grant.tenants[p.org], p.key);
     }
-    // Invitation route: the emailed invitation carries only the seven personas' shop roles.
+    // Invitation route: the emailed invitation carries only the eight personas' shop roles.
     const inv = (await svc.pool.query('SELECT roles FROM platform.invitations WHERE id=$1', [grant.invitation_id])).rows[0];
     assert.deepEqual(sorted(inv.roles), VISITOR_MAIN_ROLES);
-    // Assigned roles in the visitor's own organisations: exactly the seven personas' roles.
+    // Assigned roles in the visitor's own organisations: exactly the eight personas' roles.
     const assigned = Object.fromEntries((await svc.pool.query('SELECT tenant_id, roles FROM platform.product_roles WHERE user_id=$1 AND client_id=$2', [account.id, COMMERCE.id])).rows.map(r => [r.tenant_id, sorted(r.roles)]));
     assert.deepEqual(assigned, { [grant.tenants.main]: VISITOR_MAIN_ROLES, [grant.tenants.bank]: VISITOR_BANK_ROLES });
-    assert.deepEqual((await svc.app.demoAccess.detail(req.id)).grant.personas.map(p => p.key), SEVEN, 'administrator view');
+    assert.deepEqual((await svc.app.demoAccess.detail(req.id)).grant.personas.map(p => p.key), EIGHT, 'administrator view');
   });
 
   it('a resent invitation carries no internal persona role either', async () => {
@@ -171,7 +173,7 @@ describe('public (administrator-approved) Commerce visitor', () => {
     await svc.pool.query("UPDATE platform.invitations SET created_at=now()-interval '5 minutes' WHERE id=(SELECT invitation_id FROM platform.demo_access_grants WHERE request_id=$1)", [req.id]);
     await svc.app.demoAccess.resend(adminUser, req.id);
     const grant = await grantOf(req.id);
-    assert.deepEqual(grant.personas, SEVEN);
+    assert.deepEqual(grant.personas, EIGHT);
     const inv = (await svc.pool.query('SELECT roles FROM platform.invitations WHERE id=$1', [grant.invitation_id])).rows[0];
     assert.deepEqual(sorted(inv.roles), VISITOR_MAIN_ROLES);
   });
@@ -208,7 +210,7 @@ describe('public (administrator-approved) Commerce visitor', () => {
     await svc.pool.query("UPDATE platform.demo_access_grants SET personas=personas || '{investor,auditor,bank-loan-officer}' WHERE id=$1", [grant.id]);
     await svc.pool.query("UPDATE platform.product_roles SET roles=roles || '{commerce_investor,commerce_auditor}' WHERE user_id=$1 AND tenant_id=$2", [account.id, main]);
     const listed = (await check(account.id)).personas.map(p => p.key);
-    assert.deepEqual(listed, SEVEN, 'the persona page still lists only the seven');
+    assert.deepEqual(listed, EIGHT, 'the persona page still lists only the eight');
     const refreshed = await refreshWith(svc, COMMERCE.id, first.refresh_token);
     assert.equal(refreshed.status, 200);
     const claims = decode(refreshed.body.access_token);
@@ -241,7 +243,7 @@ describe('public (administrator-approved) Commerce visitor', () => {
     // A second access request while the grant is live adds nothing.
     assert.equal((await request({ email: account.email, personas: INTERNAL_ONLY })).status, 202);
     assert.equal((await svc.pool.query("SELECT count(*)::int AS n FROM platform.demo_access_grants WHERE email=$1", [account.email])).rows[0].n, 1);
-    assert.deepEqual((await check(account.id)).personas.map(p => p.key), SEVEN);
+    assert.deepEqual((await check(account.id)).personas.map(p => p.key), EIGHT);
   });
 });
 
@@ -254,14 +256,14 @@ describe('private (operator-provisioned) Commerce visitor', () => {
   });
   after(async () => { await svc?.stop(); });
 
-  it('grants exactly the seven personas, in order: the same list as a public visitor', async () => {
+  it('grants exactly the eight personas, in order: the same list as a public visitor', async () => {
     const visitor = await svc.app.demoAccess.provisionPrivate({ email: 'private.seven@example.test', passwordHash: await hashPassword(PASSWORD), operatorRef: 'test-operator-ADS' });
-    assert.deepEqual(visitor.personas, SEVEN);
+    assert.deepEqual(visitor.personas, EIGHT);
     assert.deepEqual(visitor.personas, visitorPersonaKeys(loadPlatforms({}).get('commerce')), 'one source with public mode');
     const grant = (await svc.pool.query('SELECT * FROM platform.demo_access_grants WHERE id=$1', [visitor.grantId])).rows[0];
-    assert.deepEqual(grant.personas, SEVEN);
+    assert.deepEqual(grant.personas, EIGHT);
     const granted = await check(visitor.userId);
-    assert.deepEqual(granted.personas.map(p => p.key), SEVEN);
+    assert.deepEqual(granted.personas.map(p => p.key), EIGHT);
     for (const p of granted.personas) assert.deepEqual({ org: p.org, roles: p.roles }, INTERNAL[p.key], p.key);
     const assigned = Object.fromEntries((await svc.pool.query('SELECT tenant_id, roles FROM platform.product_roles WHERE user_id=$1', [visitor.userId])).rows.map(r => [r.tenant_id, sorted(r.roles)]));
     assert.deepEqual(assigned, { [grant.tenants.main]: VISITOR_MAIN_ROLES, [grant.tenants.bank]: VISITOR_BANK_ROLES });
@@ -272,7 +274,7 @@ describe('private (operator-provisioned) Commerce visitor', () => {
   });
 });
 
-describe('internal Commerce demo accounts keep all ten personas', () => {
+describe('internal Commerce demo accounts keep all eleven personas', () => {
   let svc, dir, tenants;
   const hex = () => crypto.randomBytes(6).toString('hex');
   const PW = { user: `Demo-User-${hex()}`, user2: `Demo-Two-${hex()}`, admin: `Demo-Admin-${hex()}`, persona: `Demo-Persona-${hex()}` };
@@ -291,9 +293,9 @@ describe('internal Commerce demo accounts keep all ten personas', () => {
   });
   after(async () => { await svc?.stop(); rmSync(dir, { recursive: true, force: true }); });
 
-  it('the internal demo set has exactly the ten Commerce personas (plus the ADS staff reviewer and support)', () => {
+  it('the internal demo set has exactly the eleven Commerce personas (plus the ADS staff reviewer and support)', () => {
     assert.deepEqual(Object.keys(tenants.personas).filter(k => !['reviewer', 'support'].includes(k)), Object.keys(INTERNAL));
-    assert.deepEqual(Object.keys(tenants.personas).length, 12);
+    assert.deepEqual(Object.keys(tenants.personas).length, 13);
   });
 
   for (const [key, intended] of Object.entries(INTERNAL)) {

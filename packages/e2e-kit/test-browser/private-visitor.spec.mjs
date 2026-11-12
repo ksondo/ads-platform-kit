@@ -24,17 +24,17 @@ test.beforeAll(async () => {
   await new Promise(r => callback.listen(0, '127.0.0.1', r));
   redirect = `http://127.0.0.1:${callback.address().port}/`;
   await svc.pool.query(`INSERT INTO platform.oauth_clients(client_id,display_name,redirect_uris,self_service_roles,allow_personal_workspace,admin_roles,assignable_roles)
-    VALUES ('commerce-web','Commerce',$1,'{commerce_buyer}',true,'{merchant_owner}','{merchant_owner,commerce_manager,commerce_cashier,commerce_accountant,bank_officer,bank_agent}')`, [[redirect]]);
+    VALUES ('commerce-web','Commerce',$1,'{commerce_buyer}',true,'{merchant_owner}','{merchant_owner,commerce_manager,commerce_cashier,commerce_accountant,bank_officer,bank_agent,commerce_business_buyer}')`, [[redirect]]);
   jwks = createRemoteJWKSet(new URL(`${svc.url}/.well-known/jwks.json`));
 });
 test.afterAll(async () => { if (callback) await new Promise(r => callback.close(r)); await svc?.stop(); });
 
 for (const lang of ['en', 'fr']) for (const width of [360, 768, 1280]) {
-  test(`${lang} ${width}px individual login and seven authorized persona workspace handoffs`, async ({ browser }) => {
+  test(`${lang} ${width}px individual login and eight authorized persona workspace handoffs`, async ({ browser }) => {
     const email = `private-${lang}-${width}@example.test`;
     const grant = await svc.app.demoAccess.provisionPrivate({ email, passwordHash: await hashPassword(password), operatorRef: 'browser-test-operator', locale: lang });
     const permitted = await svc.app.demoAccess.checkGrant('commerce', grant.userId);
-    expect(permitted.personas).toHaveLength(7);
+    expect(permitted.personas).toHaveLength(8);
     const context = await browser.newContext({ viewport: { width, height: 900 }, locale: lang === 'fr' ? 'fr-CM' : 'en-GB' });
     const page = await context.newPage();
     try {

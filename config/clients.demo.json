@@ -458,7 +458,8 @@
         "commerce_investor",
         "commerce_auditor",
         "bank_officer",
-        "bank_agent"
+        "bank_agent",
+        "commerce_business_buyer"
       ],
       "ads_only_roles": [
         "commerce_reviewer",
@@ -478,7 +479,8 @@
             "commerce_cashier",
             "commerce_accountant",
             "commerce_investor",
-            "commerce_auditor"
+            "commerce_auditor",
+            "commerce_business_buyer"
           ]
         },
         {
@@ -505,7 +507,7 @@
         "node scripts/commerce-admin.mjs register-bank --tenant <bank tenant id>",
         "node scripts/commerce-admin.mjs capability --tenant <shop main tenant id> --capability BANK_COLLECTION --enabled true"
       ],
-      "notes": "commerce_reviewer/commerce_support are trusted by name (audit 2.3): ADS-only until ACC-05."
+      "notes": "commerce_reviewer/commerce_support are trusted by name (audit 2.3): ADS-only until ACC-05. commerce_business_buyer (Commerce #292, AG-W3-5 N1, 12 Nov 2026): a business such as a miller or feed maker that buys farm lots at any farm shop once the ADS Commerce review team (commerce_reviewer, staff organisation) has verified its organisation's business profile; nobody verifies a profile they asked for. Held by the processor persona in the main demo organisation; the verified demo profile is seeded by Commerce's demo seed, not by the kit."
     },
     {
       "slug": "logistics",
