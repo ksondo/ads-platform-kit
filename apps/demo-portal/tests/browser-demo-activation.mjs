@@ -64,7 +64,7 @@ test('demo activation: preparing by default, open/unavailable on operator switch
       if(state==='open'){
        assert.equal(href,p.demoDestination+'?lang='+lang);
        assert.equal(await card.getAttribute('target'),'_blank');assert.equal(await card.getAttribute('rel'),'noopener noreferrer');
-       assert.match(await card.innerText(),lang==='fr'?/Ouvrir la démo/:/Open demo/);
+       assert.match(await card.innerText(),lang==='fr'?/Ouvrir la démo/:/Open Demo/);
       }else{
        assert.equal(href,'/platforms/'+id,'not opened: stays inside the portal');
        assert.match(await card.innerText(),state==='unavailable'?(lang==='fr'?/Momentanément indisponible/:/Temporarily unavailable/):(lang==='fr'?/Démo en préparation/:/Demo being prepared/));
