@@ -111,6 +111,9 @@
         {"key": "driver", "label": {"en": "Driver", "fr": "Chauffeur"}, "hint": {"en": "My vehicle, checks, fuel and breakdowns", "fr": "Mon véhicule, contrôles, carburant, pannes"}, "org": "main", "roles": ["driver"]},
         {"key": "mechanic", "label": {"en": "Mechanic", "fr": "Mécanicien"}, "hint": {"en": "Does the work orders", "fr": "Réalise les ordres de travail"}, "org": "main", "roles": ["technician"]},
         {"key": "partner", "label": {"en": "Partner", "fr": "Partenaire"}, "hint": {"en": "Looks after the fleets it manages", "fr": "S'occupe des flottes qu'il gère"}, "org": "main", "roles": ["partner"]},
+        {"key": "co-owner", "label": {"en": "Vehicle co-owner", "fr": "Copropriétaire du véhicule"}, "hint": {"en": "Sees the vehicles they co-own and their shares", "fr": "Voit les véhicules dont il est copropriétaire et ses parts"}, "org": "main", "roles": ["vehicle_owner"]},
+        {"key": "lien-holder", "label": {"en": "Lender (lien holder)", "fr": "Prêteur (créancier gagiste)"}, "hint": {"en": "Reads only its own liens on vehicles", "fr": "Consulte uniquement ses propres gages sur les véhicules"}, "org": "main", "roles": ["lien_holder_viewer"]},
+        {"key": "finance", "label": {"en": "Finance", "fr": "Finances"}, "hint": {"en": "Costs, payments received and money reports", "fr": "Coûts, versements reçus et rapports financiers"}, "org": "main", "roles": ["finance"]},
         {"key": "approver-colleague", "label": {"en": "Workshop manager (demo colleague)", "fr": "Chef d'atelier (collègue de démo)"}, "hint": {"en": "Another person: approves the work you did as the mechanic", "fr": "Une autre personne : approuve le travail que vous avez fait comme mécanicien"}, "org": "main", "roles": ["workshop_manager"]}
       ]
     },
@@ -200,7 +203,9 @@
         {"key": "farm-reviewer", "label": {"en": "Farm reviewer (this demo)", "fr": "Vérificateur (cette démo)"}, "hint": {"en": "Reviews farms and suppliers in this demo only", "fr": "Vérifie les exploitations et les fournisseurs de cette démo uniquement"}, "org": "main", "roles": ["reviewer"]},
         {"key": "help-desk", "label": {"en": "Help desk (this demo)", "fr": "Assistance (cette démo)"}, "hint": {"en": "Help cases in this demo only", "fr": "Demandes d'aide de cette démo uniquement"}, "org": "main", "roles": ["support"]},
         {"key": "org-admin", "label": {"en": "Organisation admin", "fr": "Administrateur"}, "hint": {"en": "Manages the team of this demo organisation", "fr": "Gère l'équipe de cette organisation de démo"}, "org": "main", "roles": ["tenant_admin"]},
-        {"key": "demo-colleague", "label": {"en": "Demo colleague (Thérèse Abessolo)", "fr": "Collègue de démo (Thérèse Abessolo)"}, "hint": {"en": "Another person: approves the farm you prepared", "fr": "Une autre personne : approuve l'exploitation que vous avez préparée"}, "org": "main", "roles": ["reviewer"]}
+        {"key": "processor", "label": {"en": "Processor", "fr": "Transformateur"}, "hint": {"en": "Sources produce from farms and posts demand notes", "fr": "S'approvisionne auprès des exploitations et publie ses besoins"}, "org": "main", "roles": ["processor"]},
+        {"key": "landowner", "label": {"en": "Land holder", "fr": "Détenteur de terre"}, "hint": {"en": "Lists land to rent or sharecrop and answers enquiries", "fr": "Propose une terre en location ou en métayage et répond aux demandes"}, "org": "main", "roles": ["farmer"]},
+        {"key": "demo-colleague", "label": {"en": "Demo colleague (Thérèse Abessolo)", "fr": "Collègue de démo (Thérèse Abessolo)"}, "hint": {"en": "Another person: gives the second approval for what you prepared", "fr": "Une autre personne : donne la seconde approbation de ce que vous avez préparé"}, "org": "main", "roles": ["reviewer", "coop_manager", "lender_officer", "agronomist"]}
       ]
     },
     "investment": {

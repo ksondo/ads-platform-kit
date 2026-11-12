@@ -44,6 +44,9 @@
         "approver",
         "driver",
         "mechanic",
+        "co-owner",
+        "lien-holder",
+        "finance",
         "approver-colleague"
       ]
     },
@@ -140,6 +143,8 @@
         "farm-reviewer",
         "help-desk",
         "org-admin",
+        "processor",
+        "landowner",
         "demo-colleague"
       ]
     }

@@ -63,7 +63,8 @@ describe('operator private visitors for Education, Agriculture and Tontine', () 
         assert.ok(check.personas.every(p=>!p.roles.some(r=>['platform_admin','tenant_admin','support','reviewer'].includes(r))));
       }
       if(platform==='agriculture') {
-        // Release 2: 9 personas, the wave-2 agronomist (11 Nov 2026) and the demo colleague, each with only its own role, all in the visitor's own organisation.
+        // Release 2: 9 personas, the wave-2 agronomist (11 Nov 2026), processor and land holder (11 Nov 2026) and the demo colleague, all in the visitor's
+        // own organisation; each holds only its own role, except the demo colleague, which holds every second-approval role (owner decision 11 Nov 2026).
         const expected=[
           {key:'farmer',org:'main',roles:['farmer']},
           {key:'buyer',org:'main',roles:['buyer']},
@@ -75,14 +76,16 @@ describe('operator private visitors for Education, Agriculture and Tontine', () 
           {key:'farm-reviewer',org:'main',roles:['reviewer']},
           {key:'help-desk',org:'main',roles:['support']},
           {key:'org-admin',org:'main',roles:['tenant_admin']},
-          {key:'demo-colleague',org:'main',roles:['reviewer']},
+          {key:'processor',org:'main',roles:['processor']},
+          {key:'landowner',org:'main',roles:['farmer']},
+          {key:'demo-colleague',org:'main',roles:['reviewer','coop_manager','lender_officer','agronomist']},
         ];
         assert.deepEqual(check.personas.map(({key,org,roles})=>({key,org,roles})),expected);
         assert.equal(new Set(check.personas.map(p=>p.tenantId)).size,1,'one visitor organisation');
         // Narrowing a token to one persona (intersection, as the product server does) leaves exactly that persona's role.
         const held=(await svc.pool.query('SELECT roles FROM platform.product_roles WHERE user_id=$1 AND tenant_id=$2 AND client_id=$3',[first.userId,check.personas[0].tenantId,'agriculture-web'])).rows[0].roles;
-        for(const persona of check.personas) assert.deepEqual(held.filter(r=>persona.roles.includes(r)),persona.roles,persona.key);
-        assert.deepEqual([...held].sort(),['agronomist','buyer','coop_manager','extension_officer','farmer','input_supplier','lender_officer','reviewer','support','tenant_admin']);
+        for(const persona of check.personas) assert.deepEqual(held.filter(r=>persona.roles.includes(r)).sort(),[...persona.roles].sort(),persona.key);
+        assert.deepEqual([...held].sort(),['agronomist','buyer','coop_manager','extension_officer','farmer','input_supplier','lender_officer','processor','reviewer','support','tenant_admin']);
         // Never ADS staff: the visitor belongs to no staff organisation, and its own organisation is a non-staff visit-* copy.
         const orgs=(await svc.pool.query(`SELECT o.is_staff,o.demo_key,m.role FROM platform.memberships m JOIN platform.tenants t ON t.id=m.tenant_id
           JOIN platform.organizations o ON o.id=t.organization_id WHERE m.user_id=$1`,[first.userId])).rows;

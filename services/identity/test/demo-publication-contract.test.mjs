@@ -21,11 +21,11 @@ const PRODUCTS = {
     personas: { 'school-admin': 'main', 'academic-admin': 'main', admissions: 'main', bursar: 'main', teacher: 'main', parent: 'main', student: 'main', applicant: 'main', partner: 'partner' } },
   agriculture: { client: 'agriculture-web', slug: 'agriculture', host: 'agriculture.demo.africadigitalsynergy.com', entry: '/demo/personas', env: 'DEMO_ACCESS_CHECK_SECRET_AGRICULTURE',
     personas: { farmer: 'main', buyer: 'main', 'coop-manager': 'main', 'extension-officer': 'main', agronomist: 'main', 'lender-officer': 'main', 'input-supplier': 'main',
-      'farm-reviewer': 'main', 'help-desk': 'main', 'org-admin': 'main', 'demo-colleague': 'main' } },
+      'farm-reviewer': 'main', 'help-desk': 'main', 'org-admin': 'main', processor: 'main', landowner: 'main', 'demo-colleague': 'main' } },
   tontine: { client: 'tontine-web', slug: 'tontine', host: 'tontine.demo.africadigitalsynergy.com', entry: '/demo/personas', env: 'DEMO_ACCESS_CHECK_SECRET_TONTINE',
     personas: { 'group-admin': 'main', treasurer: 'main', 'payout-approver': 'main', member: 'main', auditor: 'main', 'cooperative-admin': 'cooperative', partner: 'partner' } },
   'fleet-guard': { client: 'fleet-guard-web', slug: 'fleetguard', host: 'fleetguard.demo.africadigitalsynergy.com', entry: '/demo/personas', env: 'DEMO_ACCESS_CHECK_SECRET_FLEET_GUARD',
-    personas: { 'fleet-owner': 'main', 'fleet-manager': 'main', approver: 'main', driver: 'main', mechanic: 'main', 'approver-colleague': 'main' } },
+    personas: { 'fleet-owner': 'main', 'fleet-manager': 'main', approver: 'main', driver: 'main', mechanic: 'main', 'co-owner': 'main', 'lien-holder': 'main', finance: 'main', 'approver-colleague': 'main' } },
   ventureworks: { client: 'ventureworks-web', slug: 'ventureworks', host: 'ventureworks.demo.africadigitalsynergy.com', entry: '/demo/personas', env: 'DEMO_ACCESS_CHECK_SECRET_VENTUREWORKS',
     personas: { founder: 'main', 'venture-manager': 'main', contributor: 'main', 'evidence-reviewer': 'main', 'regulatory-reviewer': 'main' } },
 };

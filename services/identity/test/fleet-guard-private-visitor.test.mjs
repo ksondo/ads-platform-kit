@@ -17,6 +17,9 @@ const EXPECTED = [
   { key: 'approver', org: 'main', roles: ['workshop_manager'] },
   { key: 'driver', org: 'main', roles: ['driver'] },
   { key: 'mechanic', org: 'main', roles: ['technician'] },
+  { key: 'co-owner', org: 'main', roles: ['vehicle_owner'] },
+  { key: 'lien-holder', org: 'main', roles: ['lien_holder_viewer'] },
+  { key: 'finance', org: 'main', roles: ['finance'] },
   { key: 'approver-colleague', org: 'main', roles: ['workshop_manager'] },
 ];
 const claimsOf = token => JSON.parse(Buffer.from(token.split('.')[1], 'base64url'));
