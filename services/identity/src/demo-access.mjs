@@ -73,7 +73,7 @@ export const visitorPersonaKeys = p => p.personas.map(x => x.key);
 // owner_admin without Identity admin authority in visitor organisations, demo colleague persona).
 // VentureWorks (11 Nov 2026): explicit addition after its own review (single main organisation, five
 // visitor personas; tenant_admin, adviser, investor, partner and employee are not offered to visitors).
-export const PRIVATE_VISITOR_PLATFORMS = new Set(['commerce', 'education', 'agriculture', 'tontine', 'fleet-guard', 'ventureworks']);
+export const PRIVATE_VISITOR_PLATFORMS = new Set(['commerce', 'education', 'agriculture', 'tontine', 'fleet-guard', 'ventureworks', 'tourism']);
 
 export function createDemoAccess({ pool, config, mailer, audit, log = console, platforms }) {
   const settings = config.demoAccess;
@@ -370,13 +370,13 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
   }
 
   // Operator-only service method, deliberately absent from every HTTP router.
-  // Existing users are NEVER reset, merged or granted additional access by this command.
-  async function provisionPrivate({ email, passwordHash, operatorRef, locale = 'en', beforeCommit, platform = 'commerce' }) {
+  // The separate existing-account command requires an exact account ID as well as its email.
+  async function provisionPrivate({ email, passwordHash, operatorRef, locale = 'en', beforeCommit, platform = 'commerce' }, existingUserId = null) {
     if (!config.demo.enabled || !settings.privateEnabled || settings.publicEnabled) fail(403, 'PRIVATE_VISITOR_MODE_REQUIRED');
     const normalized = normalizeEmail(email);
     if (!isEmail(normalized) || isDemoDomain(normalized, config.demo.domain)) fail(400, 'EMAIL_INVALID');
     if (typeof operatorRef !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9 ._:@/-]{2,119}$/.test(operatorRef)) fail(400, 'OPERATOR_REFERENCE_REQUIRED');
-    if (!/^scrypt\$[a-f0-9]{32}\$[a-f0-9]{128}$/.test(String(passwordHash))) fail(400, 'PASSWORD_HASH_REQUIRED');
+    if (!existingUserId && !/^scrypt\$[a-f0-9]{32}\$[a-f0-9]{128}$/.test(String(passwordHash))) fail(400, 'PASSWORD_HASH_REQUIRED');
     if (!PRIVATE_VISITOR_PLATFORMS.has(platform)) fail(400, 'PRIVATE_VISITOR_PLATFORM_NOT_SUPPORTED');
     const p = platformOf(platform);
     if (!p) fail(409, 'PRIVATE_VISITOR_PERSONA_REGISTRY_INVALID');
@@ -385,7 +385,10 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
     const required = visitorPersonaKeys(p);
     return withTransaction(pool, async c => {
       await c.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`demo-request:${p.key}:${normalized}`]);
-      if ((await c.query('SELECT 1 FROM platform.users WHERE email=$1', [normalized])).rowCount) fail(409, 'PRIVATE_VISITOR_ACCOUNT_EXISTS');
+      const account = (await c.query('SELECT id,status,is_demo FROM platform.users WHERE email=$1 FOR UPDATE', [normalized])).rows[0];
+      if (existingUserId) {
+        if (account?.id !== existingUserId || account.status !== 'active' || account.is_demo) fail(409, 'PRIVATE_VISITOR_ACCOUNT_NOT_ELIGIBLE');
+      } else if (account) fail(409, 'PRIVATE_VISITOR_ACCOUNT_EXISTS');
       if ((await c.query("SELECT 1 FROM platform.demo_access_grants WHERE platform=$1 AND email=$2 AND status IN ('active','awaiting_activation')", [p.key, normalized])).rowCount) fail(409, 'PRIVATE_VISITOR_GRANT_EXISTS');
       const client = (await c.query("SELECT * FROM platform.oauth_clients WHERE client_id=$1 AND status='active'", [p.clientId])).rows[0];
       const personalRoles = p.personas.filter(x => x.org === 'personal').flatMap(x => x.roles);
@@ -394,9 +397,9 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
       // delegated staff-invitation roles (Education's partner_admin, for example).
       if (!client || (personalRoles.length && (!client.allow_personal_workspace ||
         personalRoles.some(role => !client.self_service_roles.includes(role))))) fail(409, 'PRIVATE_VISITOR_CLIENT_NOT_READY');
-      const userId = crypto.randomUUID(), requestId = crypto.randomUUID(), grantId = crypto.randomUUID();
+      const userId = existingUserId ?? crypto.randomUUID(), requestId = crypto.randomUUID(), grantId = crypto.randomUUID();
       // The operator confirms the private test contact, NOT ownership of its mailbox.
-      await c.query("INSERT INTO platform.users(id,email,password_hash,status,locale,is_demo) VALUES ($1,$2,$3,'active',$4,false)", [userId, normalized, passwordHash, locale === 'fr' ? 'fr' : 'en']);
+      if (!existingUserId) await c.query("INSERT INTO platform.users(id,email,password_hash,status,locale,is_demo) VALUES ($1,$2,$3,'active',$4,false)", [userId, normalized, passwordHash, locale === 'fr' ? 'fr' : 'en']);
       const ref = reference(p), set = `${VISITOR_SET_PREFIX}${grantId.replace(/-/g, '').slice(0, 12)}`;
       await c.query(`INSERT INTO platform.demo_access_requests(id,reference,platform,email,locale,status,expires_at,decided_at,internal_note)
         VALUES ($1,$2,$3,$4,$5,'approved',now()+interval '30 days',now(),$6)`,
@@ -406,13 +409,20 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb) RETURNING *`, [grantId, requestId, p.key, normalized, p.clientId, set, required, JSON.stringify(tenants)])).rows[0];
       await activateGrant(c, grant, p, { id: userId, email: normalized }, { days: 30 });
       await audit('demo_access_private_provisioned', { userId, outcome: 'allowed', reason: 'operator_cli', clientId: p.clientId,
-        metadata: { request_id: requestId, grant_id: grantId, reference: ref, platform: p.key, operator_ref: operatorRef, contact_confirmation: 'operator_private_contact', mailbox_verified: false } }, c);
+        metadata: { request_id: requestId, grant_id: grantId, reference: ref, platform: p.key, operator_ref: operatorRef, contact_confirmation: 'operator_private_contact', ...(existingUserId ? { existing_account: true } : { mailbox_verified: false }) } }, c);
       const active = (await c.query('SELECT expires_at FROM platform.demo_access_grants WHERE id=$1', [grantId])).rows[0];
       const result = { userId, grantId, reference: ref, email: normalized, expiresAt: new Date(active.expires_at).toISOString(), personas: required, platform: p.key };
       // The operator persists the generated credential before COMMIT. Failure rolls back provisioning.
       if (beforeCommit) await beforeCommit(result);
       return result;
     });
+  }
+
+  async function assignPrivate({ userId, email, operatorRef, platform, apply }) {
+    if (apply !== 'yes') fail(400, 'PRIVATE_VISITOR_EXPLICIT_APPLY_REQUIRED');
+    if (!UUID.test(String(userId))) fail(400, 'PRIVATE_VISITOR_INPUT_INVALID');
+    if (platform !== 'tourism') fail(400, 'PRIVATE_VISITOR_PLATFORM_NOT_SUPPORTED');
+    return provisionPrivate({ email, operatorRef, platform }, userId);
   }
 
   async function revokePrivate({ grantId, operatorRef }) {
@@ -556,7 +566,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
 
   return {
     enabled: settings.enabled, isDemoInvitation, registry, platformOf, submitRequest, adminOf, approve, reject, resend, revoke, onInvitationAccepted,
-    checkSecret, checkGrant, housekeeping, processOutbox, overview, detail, auditLog, allowedOrigin, provisionPrivate, revokePrivate,
+    checkSecret, checkGrant, housekeeping, processOutbox, overview, detail, auditLog, allowedOrigin, provisionPrivate, assignPrivate, revokePrivate,
   };
 }
 
