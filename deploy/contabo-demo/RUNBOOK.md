@@ -263,22 +263,40 @@ Gate before any step: GitHub Actions is unavailable (billing) since 13 November 
 Steps (operator, GPT), in this order, on the Contabo host:
 
 1. **Back up Identity** (before anything else). Take the protected Identity database backup and record it in a root-only marker file outside any repository (backup path, time and checksum; no passwords), as in §E3.1: `/var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker`. Keep a copy of the current tenants file: `cp -p /var/lib/ads-demo/operator-secrets/demo-tenants.json /var/lib/ads-demo/operator-secrets/demo-tenants.json.before-tou0`.
-2. **Build and deploy the Identity image on the server from the exact merged kit commit.** `<KIT_SHA>` is the full 40-character merge commit of the TOU-0 PR on `main`. `deploy-identity.sh` is **not** used here: it accepts only a GHCR tag and pulls it. The image is built with the kit's own `services/identity/Dockerfile` and started with the kit's `compose.identity.yml`, recreating only the `identity` service (database container, volume `ads-demo-identity-postgres`, signing key, accounts and client secrets unchanged).
+2. **Build and deploy the Identity image on the server from the exact merged kit commit.** `<KIT_SHA>` is `399ee5bde63625f7206d0b2a636c6252e3a85735`, the merge commit of the TOU-0 PR (#87) on `main`, pinned as `ads-identity` in `ads-release-20261113-tourism.manifest.json`. `deploy-identity.sh` is **not** used here: it accepts only a GHCR tag and pulls it. The image is built with the kit's own `services/identity/Dockerfile` from a `git archive` export of exactly that commit, so no uncommitted, untracked or ignored file in the host checkout can enter the image. It is then started with the kit's `compose.identity.yml`, recreating only the `identity` service; the database container, volume `ads-demo-identity-postgres`, signing key, accounts and client secrets do not change. Run the block in its own `bash` (for example paste it after typing `bash`), so that an `exit 1` after a `STOP_…` line ends only that shell, not the SSH session.
 
        cd /opt/ads/demo-platform-kit
-       git fetch origin main && git checkout --detach <KIT_SHA>
-       test "$(git rev-parse HEAD)" = <KIT_SHA> && git status --porcelain | wc -l          # prints 0: clean checkout of exactly that commit
-       docker inspect -f '{{.Config.Image}}' ads-demo-identity | tee /var/lib/ads-demo/operator-secrets/identity-image-before-tou0.txt   # previous image, kept for rollback (never prune it)
-       docker build -f services/identity/Dockerfile --label org.opencontainers.image.revision=<KIT_SHA> -t ads-platform-kit-identity:sha-<KIT_SHA> .
-       docker run --rm --entrypoint grep ads-platform-kit-identity:sha-<KIT_SHA> -q '"https://tourism.demo.africadigitalsynergy.com/"' /app/config/clients.demo.json && echo IMAGE_HAS_TOURISM_DEMO
+       KIT_SHA=399ee5bde63625f7206d0b2a636c6252e3a85735
+       git fetch origin main && git checkout --detach "$KIT_SHA"
+       # Hard stop: the commit is on origin/main and is what is checked out (the scripts and compose file below run from this checkout).
+       git merge-base --is-ancestor "$KIT_SHA" origin/main && test "$(git rev-parse HEAD)" = "$KIT_SHA" || { echo STOP_WRONG_COMMIT; exit 1; }
+       # No changed, untracked or ignored file where the image comes from; no changed or untracked file in the operator scripts.
+       test -z "$(git status --porcelain --ignored -- services/identity config packages/identity-client)" || { echo STOP_CHECKOUT_NOT_CLEAN; exit 1; }
+       test -z "$(git status --porcelain -- deploy/contabo-demo)" || { echo STOP_SCRIPTS_NOT_CLEAN; exit 1; }
+       # Previous image, kept for rollback (never prune it): tag and image ID.
+       docker inspect -f '{{.Config.Image}} {{.Image}}' ads-demo-identity | tee /var/lib/ads-demo/operator-secrets/identity-image-before-tou0.txt
+       # Build from the committed tree only.
+       build="$(mktemp -d)" && git archive "$KIT_SHA" | tar -x -C "$build"
+       docker build -f "$build/services/identity/Dockerfile" --label org.opencontainers.image.revision="$KIT_SHA" -t "ads-platform-kit-identity:sha-$KIT_SHA" "$build"
+       rm -rf "$build"
+       docker image inspect -f '{{index .Config.Labels "org.opencontainers.image.revision"}} {{.Id}}' "ads-platform-kit-identity:sha-$KIT_SHA" | tee /var/lib/ads-demo/operator-secrets/identity-image-tou0.txt   # revision = KIT_SHA, plus the new image ID
+       docker run --rm --entrypoint grep "ads-platform-kit-identity:sha-$KIT_SHA" -q '"https://tourism.demo.africadigitalsynergy.com/"' /app/config/clients.demo.json && echo IMAGE_HAS_TOURISM_DEMO
        cp -p /etc/ads-demo/images.env /etc/ads-demo/images.env.before-tou0
-       # edit /etc/ads-demo/images.env: ADS_DEMO_IDENTITY_IMAGE=ads-platform-kit-identity:sha-<KIT_SHA>   (only this line)
+       # edit /etc/ads-demo/images.env: ADS_DEMO_IDENTITY_IMAGE=ads-platform-kit-identity:sha-399ee5bde63625f7206d0b2a636c6252e3a85735   (only this line)
+       # Only the Identity image line may differ. Other changed lines are shown by NAME only (values such as the DB password are never printed).
+       grep -qx "ADS_DEMO_IDENTITY_IMAGE=ads-platform-kit-identity:sha-$KIT_SHA" /etc/ads-demo/images.env || { echo STOP_IDENTITY_LINE_NOT_SET; exit 1; }
+       other="$(diff /etc/ads-demo/images.env.before-tou0 /etc/ads-demo/images.env | grep '^[<>]' | grep -v '^[<>] ADS_DEMO_IDENTITY_IMAGE=' | sed 's/=.*/=(value hidden)/' || true)"
+       test -z "$other" && echo IMAGES_ENV_ONLY_IDENTITY_LINE_CHANGED || { printf '%s\n' "$other"; echo STOP_OTHER_LINES_CHANGED; exit 1; }
        docker compose --env-file /etc/ads-demo/images.env -f deploy/contabo-demo/compose.identity.yml config -q
        docker compose --env-file /etc/ads-demo/images.env -f deploy/contabo-demo/compose.identity.yml up -d --no-deps identity
+       # Right after up: the running container is the new image, in demo mode, with no placeholder settings (yes/no only; no value printed).
+       test "$(docker inspect -f '{{.Image}}' ads-demo-identity)" = "$(docker image inspect -f '{{.Id}}' "ads-platform-kit-identity:sha-$KIT_SHA")" || { echo STOP_WRONG_IMAGE_RUNNING; exit 1; }
+       docker exec ads-demo-identity node -e 'const e=process.env;if(e.ADS_ENV!=="demo"||e.DEMO_MODE!=="1")process.exit(2);if(Object.values(e).some(v=>/REPLACE_WITH|REPLACE-WITH|change-me/.test(v)))process.exit(3)' && echo IDENTITY_DEMO_MODE_OK || { echo STOP_NOT_DEMO_OR_PLACEHOLDER; exit 1; }
+       ! grep -Eq '(REPLACE_WITH|REPLACE-WITH|change-me)' /etc/ads-demo/images.env /etc/ads-demo/identity.env || { echo STOP_PLACEHOLDER_IN_ENV_FILES; exit 1; }
        curl -fsS http://127.0.0.1:18090/health
        curl -fsS https://login.demo.africadigitalsynergy.com/.well-known/openid-configuration | python3 -c 'import sys,json; print(json.load(sys.stdin)["issuer"])'   # https://login.demo.africadigitalsynergy.com
 
-   The local tag carries `<KIT_SHA>` and the OCI revision label, which is what `release-acceptance.sh` checks. Set `<KIT_SHA>` as `ads-identity` in `ads-release-20261113-tourism.manifest.json` (a one-line follow-up PR); until then the acceptance check reports `FAIL identity image` on purpose. This image also carries PR #85 (Agriculture and Fleet Guard personas); no Identity migration is added since `b768b47`. Re-apply `agriculture-web` and `fleet-guard-web` as described in the addendum just above, in the same window.
+   Any `STOP_…` line means: do not continue; put back `images.env.before-tou0` and recreate `identity` (rollback step 2) if `up` already ran. The local tag carries `<KIT_SHA>` and the OCI revision label, which is what `release-acceptance.sh` checks against the manifest pin. This image also carries PR #85 (Agriculture and Fleet Guard personas); no Identity migration is added since `b768b47`. Re-apply `agriculture-web` and `fleet-guard-web` as described in the addendum just above, in the same window.
 3. **Re-register the Tourism client: dry run, then apply.**
 
        bash deploy/contabo-demo/register-identity-client.sh tourism-web --backup-confirmed /var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker

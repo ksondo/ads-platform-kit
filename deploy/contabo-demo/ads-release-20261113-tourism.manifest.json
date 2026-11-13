@@ -6,14 +6,16 @@
     "environment": "demo",
     "ingress": "https://demo.africadigitalsynergy.com"
   },
-  "status": "SOURCE_PINNED__IDENTITY_REPIN_PENDING__NOT_APPROVED_FOR_DEPLOY",
-  "summary": "TOU-0: first ADS Tourism demo on Contabo, added next to ads-release-20261111b (which stays the release of record for the other products and is not changed). Identity must run an image built from kit main after the TOU-0 PR merges (tourism-web demo address, Tourism visitor persona in its own personal workspace, Tourism in the Demo Access registry). Tourism runs main ca8d390. No CI, deployment, migration, seed, account creation or portal activation happens when this manifest is committed.",
+  "status": "SOURCE_PINNED__SERVER_BUILD_APPROVED_BY_OWNER_20261113",
+  "summary": "TOU-0: first ADS Tourism demo on Contabo, added next to ads-release-20261111b (which stays the release of record for the other products and is not changed). Identity runs an image built on the server from kit main 399ee5b, the TOU-0 PR #87 merge (tourism-web demo address, Tourism visitor persona in its own personal workspace, Tourism in the Demo Access registry). Tourism runs main ca8d390. No CI, deployment, migration, seed, account creation or portal activation happens when this manifest is committed.",
   "immutable_sources": [
     {
       "id": "ads-identity",
       "repo": "ksondo/ads-platform-kit",
-      "sha": "",
-      "pending_repin": "Set to the kit main merge commit of the TOU-0 PR (full 40-character SHA) in a follow-up PR; the image is built on the server from that commit (RUNBOOK.md E3.2 step 2). Until then release-acceptance.sh reports FAIL identity image, on purpose.",
+      "sha": "399ee5bde63625f7206d0b2a636c6252e3a85735",
+      "pr": 87,
+      "image": "ads-platform-kit-identity:sha-399ee5bde63625f7206d0b2a636c6252e3a85735",
+      "image_source": "Built on the Contabo server from git archive of this commit with services/identity/Dockerfile and the OCI revision label (RUNBOOK.md E3.2 step 2); GitHub publishes no images while Actions billing is blocked.",
       "kind": "shared-auth",
       "deployment_order": 1,
       "host": "login.demo.africadigitalsynergy.com",
