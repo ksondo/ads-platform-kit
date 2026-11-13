@@ -243,6 +243,18 @@
         {"key": "tour-admin", "label": {"en": "Tourism admin (ADS)", "fr": "Administrateur tourisme (ADS)"}, "hint": {"en": "Reviews sites and operators", "fr": "Vérifie les sites et les exploitants"}, "org": "staff", "roles": ["tour_admin"]}
       ]
     },
+    "restaurant": {
+      "personas": [
+        {"key":"owner","label":{"en":"Owner","fr":"Propriétaire"},"org":"main","roles":["restaurant_owner"],"internal_only":true},
+        {"key":"manager","label":{"en":"Floor manager","fr":"Responsable de salle"},"org":"main","roles":["restaurant_manager"],"internal_only":true},
+        {"key":"cashier","label":{"en":"Cashier","fr":"Caissier"},"org":"main","roles":["restaurant_cashier"],"internal_only":true},
+        {"key":"waiter","label":{"en":"Waiter","fr":"Serveur"},"org":"main","roles":["restaurant_waiter"],"internal_only":true},
+        {"key":"kitchen","label":{"en":"Kitchen","fr":"Cuisine"},"org":"main","roles":["kitchen_staff"],"internal_only":true},
+        {"key":"bar","label":{"en":"Bar","fr":"Bar"},"org":"main","roles":["bar_staff"],"internal_only":true},
+        {"key":"accountant","label":{"en":"Accountant","fr":"Comptable"},"org":"main","roles":["restaurant_accountant"],"internal_only":true},
+        {"key":"colleague","label":{"en":"Demo colleague","fr":"Collègue de démonstration"},"org":"main","roles":["restaurant_manager"],"internal_only":true}
+      ]
+    },
     "banking": {
       "personas": [
         {"key": "customer", "label": {"en": "Bank customer", "fr": "Client de la banque"}, "hint": {"en": "Accounts, transfers and requests", "fr": "Comptes, virements et demandes"}, "org": "main", "roles": ["banking_customer"]},
