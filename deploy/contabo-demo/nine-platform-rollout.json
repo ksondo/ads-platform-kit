@@ -63,6 +63,15 @@
       "targetUrl": "https://ventureworks.demo.africadigitalsynergy.com",
       "oidcClientId": "ventureworks-web",
       "status": "planned_not_verified"
+    },
+    {
+      "catalogueId": "tourism",
+      "repository": "ksondo/tourism-platform",
+      "sourceSha": "ca8d3901e242125d5b9f6de927854a1444a5927d",
+      "targetUrl": "https://tourism.demo.africadigitalsynergy.com",
+      "oidcClientId": "tourism-web",
+      "loopbackPort": 18130,
+      "status": "planned_not_verified"
     }
   ]
 }

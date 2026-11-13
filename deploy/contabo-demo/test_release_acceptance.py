@@ -26,6 +26,10 @@ SECTOR_SERVICE_CLIENTS = ["agriculture-sector-service", "commerce-sector-service
 ISSUER = "https://login.demo.africadigitalsynergy.com"
 SECRET = "do-not-print-" + "s" * 40
 TONTINE_TEST_SHA = "a" * 40
+TOURISM_MANIFEST_FILE = "ads-release-20261113-tourism.manifest.json"
+TOURISM_MANIFEST = json.loads((ROOT / TOURISM_MANIFEST_FILE).read_text())
+TOURISM_SHA = "ca8d3901e242125d5b9f6de927854a1444a5927d"
+SIX = ["commerce", "education", "agriculture", "fleet-guard", "digital-tontine", "ventureworks"]
 
 FAKE_DOCKER = r'''#!/usr/bin/env python3
 import json, os, subprocess, sys
@@ -207,22 +211,33 @@ class StaticTest(unittest.TestCase):
                           "printenv", "docker exec -i", "Config.Env", " env |"):
             self.assertNotIn(forbidden, src, forbidden)
 
-    def test_plan_lists_the_six_products_with_portal_ids_and_manifest_pins(self):
+    def test_plan_lists_the_products_with_portal_ids_and_manifest_pins(self):
         rows = product_rows()
-        self.assertEqual([r["id"] for r in rows],
-                         ["commerce", "education", "agriculture", "fleet-guard", "digital-tontine", "ventureworks"])
+        self.assertEqual([r["id"] for r in rows], SIX + ["tourism"])
         portal = {p["id"] for p in json.loads((REPO / "apps/demo-portal/catalogue.json").read_text())["platforms"]}
         activation = json.loads((REPO / "apps/demo-portal/demo-activation.json").read_text())["products"]
         for r in rows:
             self.assertIn(r["id"], portal, "acceptance ids are the catalogue ids")
-            if r["id"] != "commerce":
+            # Tourism (TOU-0): the bundled portal file is not changed (no portal redeploy); the portal treats a product with a
+            # reviewed demoDestination and no key as "preparing", and the operator's host file (RUNBOOK §G2) opens it.
+            if r["id"] not in ("commerce", "tourism"):
                 self.assertIn(r["id"], activation, "acceptance ids are the activation keys")
             self.assertIn(r["client"], CLIENTS)
             self.assertIn("https://%s/" % r["host"], CLIENTS[r["client"]]["redirect_uris"])
+        tourism_card = [p for p in json.loads((REPO / "apps/demo-portal/catalogue.json").read_text())["platforms"] if p["id"] == "tourism"][0]
+        self.assertEqual(tourism_card["demoDestination"], "https://tourism.demo.africadigitalsynergy.com/")
+        self.assertIsNone(tourism_card["demoUrl"])
         self.assertEqual({r["id"]: r["key"] for r in rows}["digital-tontine"], "tontine")
         by_id = {s["id"]: s["sha"] for s in MANIFEST["immutable_sources"]}
         for r in rows:
-            self.assertEqual(r["sha"], by_id[r["id"]])
+            self.assertEqual(r["sha"], by_id.get(r["id"], ""))
+        self.assertNotIn("tourism", by_id, "ads-release-20261111b is unchanged; Tourism has its own manifest")
+
+    def test_tourism_row_matches_its_compose_and_has_no_product_side_demo_access(self):
+        r = subprocess.run(["bash", str(ACCEPT), "--plan", "--product", "tourism", "--manifest", str(ROOT / TOURISM_MANIFEST_FILE)],
+                           capture_output=True, text=True, check=True).stdout
+        self.assertIn("PLAN tourism key=tourism client=tourism-web host=tourism.demo.africadigitalsynergy.com "
+                      "app=ads-tourism-demo-tourism-1 web=ads-tourism-demo-tourism-1 root=/app/dist access=- worker=- health=/health sha=" + TOURISM_SHA, r)
 
     def test_container_names_are_configurable(self):
         r = subprocess.run(["bash", str(ACCEPT), "--plan", "--product", "ventureworks"], capture_output=True, text=True,
@@ -241,6 +256,7 @@ class AcceptanceDryRunTest(unittest.TestCase):
     def setUp(self):
         shas = {s["id"]: s["sha"] for s in MANIFEST["immutable_sources"]}
         shas["digital-tontine"] = shas["digital-tontine"] if len(shas["digital-tontine"]) == 40 else TONTINE_TEST_SHA
+        shas["tourism"] = TOURISM_SHA
         self.manifest = copy.deepcopy(MANIFEST)
         for s in self.manifest["immutable_sources"]:
             s["sha"] = shas[s["id"]]
@@ -262,7 +278,9 @@ class AcceptanceDryRunTest(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
         self.assertNotIn("FAIL", r.stdout)
         self.assertIn("ADS_RELEASE_ACCEPTANCE=PASS", r.stdout)
-        for pid in ("commerce", "education", "agriculture", "fleet-guard", "digital-tontine", "ventureworks"):
+        self.assertRegex(r.stdout, r"(?m)^INFO tourism +release +not in manifest.json; skipped")
+        self.assertNotRegex(r.stdout, r"(?m)^(PASS|FAIL) tourism ")
+        for pid in SIX:
             for check in ("image", "client-drift", "authorize", "demo-access", "product-secret", "identity-secret",
                           "ads-identity.js", "static-perms", "health"):
                 self.assertRegex(r.stdout, r"(?m)^PASS %s +%s " % (pid, check))
@@ -342,6 +360,85 @@ class AcceptanceDryRunTest(unittest.TestCase):
         r = self.run_acc("--product", "digital-tontine")
         self.assertEqual(r.returncode, 1)
         self.assertRegex(r.stdout, r"FAIL digital-tontine +image +manifest SHA not pinned")
+
+    def tourism_manifest(self, identity_sha):
+        m = copy.deepcopy(TOURISM_MANIFEST)
+        for s in m["immutable_sources"]:
+            if s["id"] == "ads-identity":
+                s["sha"] = identity_sha
+        f = self.host.dir / "tourism-manifest.json"
+        f.write_text(json.dumps(m))
+        return f
+
+    def test_tourism_passes_with_its_manifest_and_reports_demo_access_as_info(self):
+        f = self.tourism_manifest(next(s["sha"] for s in self.manifest["immutable_sources"] if s["id"] == "ads-identity"))
+        r = self.host.run(ACCEPT, "--manifest", str(f), "--product", "tourism")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertNotIn("FAIL", r.stdout)
+        for check in ("image", "client-drift", "authorize", "ads-identity.js", "static-perms", "health"):
+            self.assertRegex(r.stdout, r"(?m)^PASS tourism +%s " % check)
+        self.assertRegex(r.stdout, r"(?m)^PASS tourism +authorize +tourism-web -> 302")
+        self.assertRegex(r.stdout, r"(?m)^INFO tourism +demo-access +no product-side Demo Access check")
+        self.assertRegex(r.stdout, r"(?m)^INFO tourism +seed-worker ")
+        for check in ("product-secret", "identity-secret"):
+            self.assertNotRegex(r.stdout, r"(?m)^\w+ tourism +%s " % check)
+        self.assertNotIn(SECRET, r.stdout + r.stderr + self.host.log.read_text())
+
+    def test_tourism_fails_until_the_identity_pin_is_set_and_without_the_demo_callback(self):
+        r = self.host.run(ACCEPT, "--manifest", str(ROOT / TOURISM_MANIFEST_FILE), "--product", "tourism")
+        self.assertEqual(r.returncode, 1)
+        self.assertRegex(r.stdout, r"(?m)^FAIL identity +image +.*does not carry manifest ads-identity")
+        def old_registration(st):
+            st["db_clients"]["tourism-web"]["redirect_uris"] = ["https://tourism.test.africadigitalsynergy.com/"]
+            st["db_clients"]["tourism-web"]["post_logout_redirect_uris"] = ["https://tourism.test.africadigitalsynergy.com/"]
+        self.mutate(old_registration)
+        f = self.tourism_manifest(next(s["sha"] for s in self.manifest["immutable_sources"] if s["id"] == "ads-identity"))
+        r = self.host.run(ACCEPT, "--manifest", str(f), "--product", "tourism")
+        self.assertEqual(r.returncode, 1)
+        self.assertRegex(r.stdout, r"(?m)^FAIL tourism +client-drift +tourism-web: redirect_uris missing https://tourism.demo.africadigitalsynergy.com/")
+
+    # Security review of PR #87 (MEDIUM): a full run must not pass with products missing or misspelled.
+    def probe(self, edit):
+        m = copy.deepcopy(self.manifest)
+        edit(m)
+        f = self.host.dir / "probe-manifest.json"
+        f.write_text(json.dumps(m))
+        return self.host.run(ACCEPT, "--manifest", str(f))
+
+    def test_probe_commerce_removed_fails(self):
+        r = self.probe(lambda m: m.update(immutable_sources=[s for s in m["immutable_sources"] if s["id"] != "commerce"]))
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertRegex(r.stdout, r"(?m)^FAIL commerce +image +manifest SHA not pinned \(absent\)")
+        self.assertIn("ADS_RELEASE_ACCEPTANCE=FAIL", r.stdout)
+
+    def test_probe_misspelled_product_id_fails(self):
+        def misspell(m):
+            for s in m["immutable_sources"]:
+                if s["id"] == "fleet-guard":
+                    s["id"] = "fleetguard"
+        r = self.probe(misspell)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertRegex(r.stdout, r'(?m)^FAIL manifest +unknown-product +"fleetguard" \(kind product\)')
+        self.assertRegex(r.stdout, r"(?m)^FAIL fleet-guard +image +manifest SHA not pinned \(absent\)")
+
+    def test_probe_identity_only_manifest_fails(self):
+        r = self.probe(lambda m: m.update(immutable_sources=[s for s in m["immutable_sources"] if s["id"] == "ads-identity"]))
+        self.assertEqual(r.returncode, 1, r.stdout)
+        for pid in SIX:
+            self.assertRegex(r.stdout, r"(?m)^FAIL %s +image +manifest SHA not pinned \(absent\)" % pid)
+        self.assertRegex(r.stdout, r"(?m)^INFO tourism +release +not in ")
+        self.assertNotIn("ADS_RELEASE_ACCEPTANCE=PASS", r.stdout)
+
+    def test_only_listed_products_may_be_absent_and_a_run_with_no_product_fails(self):
+        src = ACCEPT.read_text()
+        self.assertIn('\nSKIP_IF_ABSENT="tourism"\n', src, "fixed in the script, not from the environment")
+        self.assertNotIn("ADS_ACC_SKIP", src)
+        self.assertIn("no product was checked", src)
+
+    def test_tourism_named_with_a_manifest_that_lacks_it_fails_as_not_pinned(self):
+        r = self.run_acc("--product", "tourism")
+        self.assertEqual(r.returncode, 1)
+        self.assertRegex(r.stdout, r"(?m)^FAIL tourism +image +manifest SHA not pinned \(absent\)")
 
     def test_single_product_mode(self):
         r = self.run_acc("--product", "ventureworks")
@@ -522,6 +619,40 @@ class ReleaseManifestTest(unittest.TestCase):
         self.assertNotIn("PENDING", doc)
 
 
+class TourismManifestTest(unittest.TestCase):
+    def test_tourism_manifest_pins_tourism_main_and_waits_for_the_identity_repin(self):
+        m = TOURISM_MANIFEST
+        self.assertEqual(m["release_id"], "ads-release-20261113-tourism")
+        self.assertIn("NOT_APPROVED_FOR_DEPLOY", m["status"])
+        by_id = {s["id"]: s for s in m["immutable_sources"]}
+        self.assertEqual(list(by_id), ["ads-identity", "tourism"])
+        t = by_id["tourism"]
+        self.assertEqual(t["repo"], "ksondo/tourism-platform")
+        self.assertEqual(t["sha"], TOURISM_SHA)
+        self.assertEqual(t["host"], "tourism.demo.africadigitalsynergy.com")
+        self.assertEqual(t["identity_client"], "tourism-web")
+        self.assertEqual(t["loopback_port"], 18130)
+        self.assertIn("https://%s/" % t["host"], CLIENTS["tourism-web"]["redirect_uris"])
+        ident = by_id["ads-identity"]
+        self.assertEqual(ident["repo"], "ksondo/ads-platform-kit")
+        # Either the follow-up repin has happened (full SHA) or the pending note says what to set.
+        self.assertTrue(len(ident["sha"]) == 40 or ("pending_repin" in ident and ident["sha"] == ""))
+        self.assertIn(TOURISM_MANIFEST_FILE, m["acceptance_check"])
+
+    def test_tourism_port_is_free_among_the_documented_demo_ports(self):
+        rollout = json.loads((ROOT / "nine-platform-rollout.json").read_text())
+        tourism = [c for c in rollout["candidates"] if c["catalogueId"] == "tourism"]
+        self.assertEqual(len(tourism), 1)
+        self.assertEqual(tourism[0]["loopbackPort"], 18130)
+        self.assertEqual(tourism[0]["sourceSha"], TOURISM_SHA)
+        documented = {18086, 18089, 18090, 18140, 18481, 18501, 18505}  # Commerce, portal, Identity, Agriculture, VentureWorks, older Education/Tontine
+        self.assertNotIn(18130, documented)
+        for f in list(ROOT.glob("*.yml")) + list(ROOT.glob("*.json")) + list(ROOT.glob("*.sh")):
+            if f.name in (TOURISM_MANIFEST_FILE, "nine-platform-rollout.json"):
+                continue
+            self.assertNotIn("18130", f.read_text(), f.name + " must not use the Tourism port")
+
+
 class RunbookTest(unittest.TestCase):
     def test_runbook_documents_both_scripts_and_the_activation_mount(self):
         rb = (ROOT / "RUNBOOK.md").read_text()
@@ -530,6 +661,38 @@ class RunbookTest(unittest.TestCase):
         self.assertIn("--backup-confirmed", e3)
         self.assertIn("release-acceptance.sh", rb)
         self.assertIn("/etc/ads-demo/portal/demo-activation.json", rb)
+
+    def test_runbook_documents_the_tourism_steps_in_order(self):
+        rb = (ROOT / "RUNBOOK.md").read_text()
+        e32 = rb[rb.index("#### E3.2 ADS Tourism demo"):rb.index("## F.")]
+        order = ["identity-backup-<date>.marker", "register-identity-client.sh tourism-web --backup-confirmed",
+                 "tourism-web --backup-confirmed /var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker --apply",
+                 "src/cli.mjs demo-bootstrap", "src/cli.mjs demo-orgs", "--profile demo-seed run --rm demo-seed",
+                 "release-acceptance.sh --product tourism --manifest deploy/contabo-demo/" + TOURISM_MANIFEST_FILE]
+        at = [e32.index(x) for x in order]
+        self.assertEqual(at, sorted(at), "backup, client dry run, apply, demo-bootstrap, demo-orgs, seed, acceptance")
+        self.assertIn("18130", e32)
+        self.assertIn("Deferred to the next phase", e32)
+
+    def test_runbook_tourism_review_fixes(self):
+        # Security review of PR #87: server-built Identity image, preview before replacing the tenants file,
+        # Tourism backup before --reset, rollback through the previous Identity image, private-visitor follow-up.
+        rb = (ROOT / "RUNBOOK.md").read_text()
+        e32 = rb[rb.index("#### E3.2 ADS Tourism demo"):rb.index("## F.")]
+        build = e32[e32.index("2. **Build and deploy the Identity image"):e32.index("3. **Re-register the Tourism client")]
+        for x in ("git checkout --detach <KIT_SHA>", "docker build -f services/identity/Dockerfile --label org.opencontainers.image.revision=<KIT_SHA> -t ads-platform-kit-identity:sha-<KIT_SHA> .",
+                  "compose.identity.yml up -d --no-deps identity", "identity-image-before-tou0.txt", "images.env.before-tou0"):
+            self.assertIn(x, build)
+        self.assertLess(e32.index("1. **Back up Identity**"), e32.index("2. **Build and deploy the Identity image"))
+        orgs = e32[e32.index("4. **Re-run demo-bootstrap"):e32.index("5. **Tourism demo seed.**")]
+        self.assertLess(orgs.index("demo-tenants.json.new"), orgs.index("CHANGED"))
+        self.assertLess(orgs.index("CHANGED"), orgs.index("cp -p /var/lib/ads-demo/operator-secrets/demo-tenants.json.new /var/lib/ads-demo/operator-secrets/demo-tenants.json"))
+        seed = e32[e32.index("5. **Tourism demo seed.**"):e32.index("6. **HTTPS**")]
+        self.assertLess(seed.index("back up the Tourism database"), seed.index("`--reset`"))
+        rollback = e32[e32.index("Rollback, in this order:"):e32.index("Deferred to the next phase")]
+        self.assertLess(rollback.index("Redeploy the previous Identity image"), rollback.index("`demo-bootstrap` and `demo-orgs`"))
+        self.assertLess(rollback.index("`demo-bootstrap` and `demo-orgs`"), rollback.index("demo-tenants.json.before-tou0"))
+        self.assertIn("PRIVATE_VISITOR_PLATFORMS", e32[e32.index("Deferred to the next phase"):])
 
 
 if __name__ == "__main__":

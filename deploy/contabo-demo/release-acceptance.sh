@@ -4,7 +4,12 @@
 #
 #   bash deploy/contabo-demo/release-acceptance.sh [--product ID] [--manifest FILE] [--all-clients] [--plan]
 #
-# Products (portal/manifest ids): commerce education agriculture fleet-guard digital-tontine ventureworks.
+# Products (portal/manifest ids): commerce education agriculture fleet-guard digital-tontine ventureworks tourism.
+# Every known product must be pinned in the manifest, except the products in SKIP_IF_ABSENT (Tourism, pinned in its
+# own ads-release-20261113-tourism.manifest.json, TOU-0): those are skipped with an INFO line when absent, unless named
+# with --product (then they FAIL as not pinned). A "kind": "product" manifest entry whose id this script does not know
+# FAILs, and so does a run that checked no product at all.
+#   bash deploy/contabo-demo/release-acceptance.sh --product tourism --manifest deploy/contabo-demo/ads-release-20261113-tourism.manifest.json
 # Per product: (a) running image carries the manifest SHA; (b) Identity client registration has not drifted
 # from /app/config/clients.demo.json and /authorize accepts the demo callback; (c) demo access switch and
 # grant-check secrets present (yes/no only); (d) seed worker healthy where demo access is on; (e) the kit
@@ -27,8 +32,12 @@ set -euo pipefail
 #   ADS_ACC_IDENTITY_DB_NAME, ADS_ACC_CURL_TIMEOUT
 #   ADS_ACC_<ID>_<FIELD> with ID upper-cased and '-' as '_' (e.g. ADS_ACC_DIGITAL_TONTINE_APP) and FIELD one of
 #   HOST APP WEB ROOT ACCESS_VAR WORKER HEALTH CLIENT KEY ('-' = not applicable).
+# ACCESS_VAR '-': the product has no product-side Demo Access check (Tourism, TOU-0: public registry only,
+# no private provisioning); the demo access switch and both grant-check secrets are then reported as INFO.
 # ---------------------------------------------------------------------------------------------------------
 ISSUER="${ADS_ACC_ISSUER:-https://login.demo.africadigitalsynergy.com}"
+# Products that may be absent from a manifest (each has its own release manifest). Fixed here, never from the environment.
+SKIP_IF_ABSENT="tourism"
 IDENTITY_CONTAINER="${ADS_ACC_IDENTITY_CONTAINER:-ads-demo-identity}"
 IDENTITY_DB_CONTAINER="${ADS_ACC_IDENTITY_DB_CONTAINER:-ads-demo-identity-db-1}"
 IDENTITY_DB_USER="${ADS_ACC_IDENTITY_DB_USER:-ads_demo_identity}"
@@ -44,6 +53,7 @@ agriculture|agriculture|agriculture-web|agriculture.demo.africadigitalsynergy.co
 fleet-guard|fleet-guard|fleet-guard-web|fleetguard.demo.africadigitalsynergy.com|ads-fleetguard-demo-fleetguard-1|ads-fleetguard-demo-fleetguard-1|/app/dist|FLEETGUARD_DEMO_ACCESS|ads-fleetguard-demo-demo-seed-worker-1|/health
 digital-tontine|tontine|tontine-web|tontine.demo.africadigitalsynergy.com|ads-tontine-demo-tontine-1|ads-tontine-demo-tontine-1|/app/dist|TONTINE_DEMO_ACCESS|ads-tontine-demo-demo-seed-worker-1|/health
 ventureworks|ventureworks|ventureworks-web|ventureworks.demo.africadigitalsynergy.com|ads-ventureworks-demo-ventureworks-1|ads-ventureworks-demo-ventureworks-1|/srv/dist|VENTUREWORKS_DEMO_ACCESS|-|/health
+tourism|tourism|tourism-web|tourism.demo.africadigitalsynergy.com|ads-tourism-demo-tourism-1|ads-tourism-demo-tourism-1|/app/dist|-|-|/health
 '
 # ---------------------------------------------------------------------------------------------------------
 
@@ -83,7 +93,7 @@ while IFS='|' read -r id key client host app web root access worker health; do
     [[ "$f" == - ]] || safe_name "$f" || { echo "Invalid configuration value for $id" >&2; exit 2; }
   done
   if ! safe_path "${P_ROOT[$id]}" || ! safe_path "${P_HEALTH[$id]}"; then echo "Invalid path for $id" >&2; exit 2; fi
-  [[ "${P_ACCESS[$id]}" =~ ^[A-Z][A-Z0-9_]{1,63}$ && "${P_KEY[$id]}" =~ ^[a-z][a-z0-9-]{1,39}$ ]] || { echo "Invalid variable for $id" >&2; exit 2; }
+  [[ ( "${P_ACCESS[$id]}" == - || "${P_ACCESS[$id]}" =~ ^[A-Z][A-Z0-9_]{1,63}$ ) && "${P_KEY[$id]}" =~ ^[a-z][a-z0-9-]{1,39}$ ]] || { echo "Invalid variable for $id" >&2; exit 2; }
   IDS+=("$id")
 done <<<"$PRODUCTS_TABLE"
 for f in "$IDENTITY_CONTAINER" "$IDENTITY_DB_CONTAINER" "$IDENTITY_DB_USER" "$IDENTITY_DB_NAME"; do
@@ -91,6 +101,7 @@ for f in "$IDENTITY_CONTAINER" "$IDENTITY_DB_CONTAINER" "$IDENTITY_DB_USER" "$ID
 done
 [[ "$ISSUER" =~ ^https://[a-z0-9.-]+$ ]] || { echo 'ADS_ACC_ISSUER must be https://<host> without a path' >&2; exit 2; }
 [[ "$CURL_TIMEOUT" =~ ^[0-9]{1,3}$ ]] || { echo 'Invalid ADS_ACC_CURL_TIMEOUT' >&2; exit 2; }
+ALL_IDS=("${IDS[@]}")
 if [[ -n "$ONLY" ]]; then
   [[ -n "${P_HOST[$ONLY]+x}" ]] || { echo "Unknown product '$ONLY' (use: ${IDS[*]})" >&2; exit 2; }
   IDS=("$ONLY")
@@ -105,6 +116,26 @@ m = json.load(open(sys.argv[1], encoding="utf-8"))
 for s in m.get("immutable_sources", []):
     if s.get("id") == sys.argv[2]:
         print(s.get("sha", "")); break
+PY
+}
+
+# Whether the manifest has an entry for this id at all (a present entry with a placeholder SHA still FAILs).
+manifest_has() {
+  python3 - "$MANIFEST" "$1" <<'PY'
+import json, sys
+m = json.load(open(sys.argv[1], encoding="utf-8"))
+sys.exit(0 if any(s.get("id") == sys.argv[2] for s in m.get("immutable_sources", [])) else 1)
+PY
+}
+
+# Ids of the manifest's "kind": "product" entries that this script does not know (one per line).
+unknown_manifest_products() {
+  python3 - "$MANIFEST" "$@" <<'PY'
+import json, sys
+known = set(sys.argv[2:])
+for s in json.load(open(sys.argv[1], encoding="utf-8")).get("immutable_sources", []):
+    if s.get("kind") == "product" and s.get("id") not in known:
+        print(str(s.get("id")))
 PY
 }
 
@@ -259,9 +290,21 @@ elif [[ "$drift_ok" == 1 ]]; then
   fi
 fi
 
+# ---------- manifest products this script does not know (misspelled or unsupported ids) ----------
+while read -r unknown; do
+  [[ -n "$unknown" ]] || continue
+  fail manifest unknown-product "\"$unknown\" (kind product) is not a product this check knows: ${ALL_IDS[*]}"
+done < <(unknown_manifest_products "${ALL_IDS[@]}")
+
 # ---------- per product ----------
+CHECKED=0
 for id in "${IDS[@]}"; do
   app="${P_APP[$id]}"; web="${P_WEB[$id]}"; worker="${P_WORKER[$id]}"; host="${P_HOST[$id]}"
+  if [[ -z "$ONLY" && " $SKIP_IF_ABSENT " == *" $id "* ]] && ! manifest_has "$id"; then
+    info "$id" release "not in $(basename "$MANIFEST"); skipped (check it with --product $id and its manifest)"
+    continue
+  fi
+  CHECKED=$((CHECKED + 1))
   sha="$(manifest_sha "$id")"
   # (a) image carries the manifest SHA (tag, or the OCI revision label)
   if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
@@ -279,15 +322,19 @@ for id in "${IDS[@]}"; do
   check_client "$id" "${P_CLIENT[$id]}" "$host"
   # (c) demo access switch and secrets (yes/no only; values stay inside the containers)
   access=no
-  if running "$app" && docker exec "$app" sh -c "[ \"\${${P_ACCESS[$id]}:-}\" = 1 ]" >/dev/null 2>&1; then access=yes; fi
-  if [[ "$access" == yes ]]; then pass "$id" demo-access "${P_ACCESS[$id]}=1"; else fail "$id" demo-access "${P_ACCESS[$id]} is not 1 in $app"; fi
-  secret=no
-  if running "$app" && docker exec "$app" sh -c '[ -n "${DEMO_ACCESS_CHECK_SECRET:-}" ] || [ -s "${DEMO_ACCESS_CHECK_SECRET_FILE:-/nonexistent}" ]' >/dev/null 2>&1; then secret=yes; fi
-  if [[ "$secret" == yes ]]; then pass "$id" product-secret "DEMO_ACCESS_CHECK_SECRET present: yes"; else fail "$id" product-secret "DEMO_ACCESS_CHECK_SECRET present: no"; fi
-  var="DEMO_ACCESS_CHECK_SECRET_$(upper_key "${P_KEY[$id]}")"
-  isecret=no
-  if docker exec "$IDENTITY_CONTAINER" sh -c "[ -n \"\${$var:-}\" ] || [ -s \"\${${var}_FILE:-/nonexistent}\" ]" >/dev/null 2>&1; then isecret=yes; fi
-  if [[ "$isecret" == yes ]]; then pass "$id" identity-secret "$var present: yes"; else fail "$id" identity-secret "$var present: no"; fi
+  if [[ "${P_ACCESS[$id]}" == - ]]; then
+    info "$id" demo-access 'no product-side Demo Access check (registry only, private provisioning off); switch and secrets not checked'
+  else
+    if running "$app" && docker exec "$app" sh -c "[ \"\${${P_ACCESS[$id]}:-}\" = 1 ]" >/dev/null 2>&1; then access=yes; fi
+    if [[ "$access" == yes ]]; then pass "$id" demo-access "${P_ACCESS[$id]}=1"; else fail "$id" demo-access "${P_ACCESS[$id]} is not 1 in $app"; fi
+    secret=no
+    if running "$app" && docker exec "$app" sh -c '[ -n "${DEMO_ACCESS_CHECK_SECRET:-}" ] || [ -s "${DEMO_ACCESS_CHECK_SECRET_FILE:-/nonexistent}" ]' >/dev/null 2>&1; then secret=yes; fi
+    if [[ "$secret" == yes ]]; then pass "$id" product-secret "DEMO_ACCESS_CHECK_SECRET present: yes"; else fail "$id" product-secret "DEMO_ACCESS_CHECK_SECRET present: no"; fi
+    var="DEMO_ACCESS_CHECK_SECRET_$(upper_key "${P_KEY[$id]}")"
+    isecret=no
+    if docker exec "$IDENTITY_CONTAINER" sh -c "[ -n \"\${$var:-}\" ] || [ -s \"\${${var}_FILE:-/nonexistent}\" ]" >/dev/null 2>&1; then isecret=yes; fi
+    if [[ "$isecret" == yes ]]; then pass "$id" identity-secret "$var present: yes"; else fail "$id" identity-secret "$var present: no"; fi
+  fi
   # (d) seed worker healthy where demo access is on
   if [[ "$worker" == - ]]; then
     info "$id" seed-worker 'none for this product (run-once demo-seed job only)'
@@ -317,6 +364,10 @@ for id in "${IDS[@]}"; do
   code="$("${CURL[@]}" -o /dev/null -w '%{http_code}' "https://$host${P_HEALTH[$id]}" 2>/dev/null || true)"
   if [[ "$code" == 200 ]]; then pass "$id" health "https://$host${P_HEALTH[$id]} 200"; else fail "$id" health "https://$host${P_HEALTH[$id]} -> ${code:-no answer}"; fi
 done
+
+if [[ "$CHECKED" -eq 0 ]]; then
+  fail manifest products 'no product was checked'
+fi
 
 # Every other reviewed client, on request (no /authorize probe: those hosts may not be live yet).
 if [[ "$ALL_CLIENTS" == 1 && "$drift_ok" == 1 ]]; then

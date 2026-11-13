@@ -10,8 +10,8 @@ const NEVER_FOR_VISITORS = ['platform-admin', 'tenant-admin', 'support', 'review
 
 describe('demo access platform registry', () => {
   const registry = loadPlatforms({});
-  it('registers Commerce, Agriculture and the existing demo-access platforms', () => {
-    assert.deepEqual([...registry.keys()].sort(), ['agriculture', 'commerce', 'education', 'fleet-guard', 'tontine', 'ventureworks']);
+  it('registers Commerce, Agriculture, Tourism and the existing demo-access platforms', () => {
+    assert.deepEqual([...registry.keys()].sort(), ['agriculture', 'commerce', 'education', 'fleet-guard', 'tontine', 'tourism', 'ventureworks']);
   });
   it('offers no staff or administrator persona, and no ADS-only role', () => {
     for (const p of registry.values()) {
@@ -33,12 +33,27 @@ describe('demo access platform registry', () => {
       }
     }
   });
-  it('each platform lands visitors on its own https persona page', () => {
+  it('each platform lands visitors on its own https persona page (Tourism: its home page until it has one)', () => {
     for (const p of registry.values()) {
       const origin = new URL(p.entryUrl).origin;
       assert.ok(p.origins.includes(origin), p.key);
-      assert.match(p.entryUrl, /^https:\/\/[a-z-]+\.demo\.africadigitalsynergy\.com\/.*demo\/personas$/);
+      // TOU-0: Tourism has no persona page yet (deferred, RUNBOOK §E3.2); the visitor picks a persona on the shared sign-in.
+      if (p.key === 'tourism') assert.equal(p.entryUrl, 'https://tourism.demo.africadigitalsynergy.com/');
+      else assert.match(p.entryUrl, /^https:\/\/[a-z-]+\.demo\.africadigitalsynergy\.com\/.*demo\/personas$/);
     }
+  });
+  it('TOU-0 Tourism: demo host, visitor in its own workspace, operator staff in the operator organisation, no ADS staff persona', () => {
+    const t = registry.get('tourism');
+    assert.equal(t.clientId, 'tourism-web');
+    assert.equal(t.slug, 'tourism');
+    assert.equal(t.prefix, 'TOU');
+    assert.deepEqual(t.origins, ['https://tourism.demo.africadigitalsynergy.com']);
+    assert.deepEqual(Object.fromEntries(t.personas.map(x => [x.key, x.org])), { visitor: 'personal', 'gate-agent': 'main', 'operator-admin': 'main' });
+    assert.equal(t.inviteOrg, 'main');
+    assert.ok(!t.personas.some(x => x.key === 'tour-admin'), 'the Tourism admin is ADS staff');
+    assert.equal(t.deniedRedirect, false);
+    const client = clients.products.find(c => c.client_id === 'tourism-web');
+    assert.ok(client.redirect_uris.includes('https://tourism.demo.africadigitalsynergy.com/'));
   });
   // Demo parity (10 Nov 2026): Agriculture's ADS staff personas are internal like Commerce's staff-only personas,
   // the visitor list is unchanged, and the product is shown under its owner-chosen name.

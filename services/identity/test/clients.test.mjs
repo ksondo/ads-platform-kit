@@ -31,7 +31,7 @@ describe('client registration list (config/clients.demo.json)', () => {
   it('uses reviewed HTTPS callback origins, including the approved public Commerce demo hostname', () => {
     const newDemoOrigins = {
       agriculture: 'agriculture', education: 'education', fleetguard: 'fleetguard', 'home-services': 'home-services',
-      mamacare: 'mamacare', morphoo: 'morphoo', tontine: 'tontine', ventureworks: 'ventureworks'
+      mamacare: 'mamacare', morphoo: 'morphoo', tontine: 'tontine', ventureworks: 'ventureworks', tourism: 'tourism'
     };
     for (const p of doc.products) {
       const original = p.slug === 'commerce' ? 'https://commerce.demo.africadigitalsynergy.com' : `https://${p.slug}.test.africadigitalsynergy.com`;
@@ -63,6 +63,18 @@ describe('client registration list (config/clients.demo.json)', () => {
     for (const p of doc.products) {
       for (const o of p.demo_orgs) if (!o.staff) for (const r of o.roles) assert.ok(!p.ads_only_roles.includes(r), `${p.slug}: ${r} outside a staff organisation`);
     }
+  });
+
+  it('TOU-0: tourism-web accepts the demo address next to .test, and keeps the access_denied return off', () => {
+    const t = bySlug.tourism;
+    const want = ['https://tourism.test.africadigitalsynergy.com/', 'https://tourism.demo.africadigitalsynergy.com/'];
+    assert.deepEqual(t.redirect_uris, want);
+    assert.deepEqual(t.post_logout_redirect_uris, want);
+    assert.equal(t.demo_access_denied_redirect, false, 'on only once the Tourism app shows its own no-access card');
+    // Same pattern as the other demo products: .test kept, .demo added.
+    for (const slug of ['commerce', 'fleetguard', 'agriculture']) assert.ok(bySlug[slug].redirect_uris.some(u => /^https:\/\/[a-z-]+\.demo\.africadigitalsynergy\.com\/$/.test(u)), slug);
+    assert.deepEqual(t.self_service_roles, ['visitor']);
+    assert.equal(t.allow_personal_workspace, true, 'the demo visitor needs its own personal workspace');
   });
 
   it('marks the products that call the kit admin API as needing a client secret (ACC-09)', () => {

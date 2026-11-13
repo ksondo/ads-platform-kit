@@ -55,6 +55,7 @@ Issuer `https://login.demo.africadigitalsynergy.com`. Redirect URIs are compared
 | `fleet-guard` | `fleet-guard-web` | `https://fleetguard.demo.africadigitalsynergy.com/` | same | `…/demo/personas` |
 | `ventureworks` | `ventureworks-web` | `https://ventureworks.demo.africadigitalsynergy.com/` | same | `…/demo/personas` |
 | `commerce` | `commerce-web` | `https://commerce.demo.africadigitalsynergy.com/` | same | `…/commerce/demo/personas` |
+| `tourism` | `tourism-web` | `https://tourism.demo.africadigitalsynergy.com/` (and the older `.test.` address) | same | `https://tourism.demo.africadigitalsynergy.com/` (home page: no persona page yet) |
 
 Products send the callback above as `redirect_uri` and carry the intended page in `signIn({ returnTo, lang })`.
 
@@ -66,6 +67,7 @@ Products send the callback above as `redirect_uri` and carry the intended page i
 - Fleet Guard: main — fleet-owner, fleet-manager, approver, driver, mechanic, co-owner, lien-holder, finance, approver-colleague. One role each: co-owner `vehicle_owner` (FG-1, sees only the vehicles they co-own), lien-holder `lien_holder_viewer` (FG-2, reads only its own liens), finance `finance` (costs, payments and money reports, FG-3/FG-5).
 - VentureWorks: main — founder, venture-manager, contributor, evidence-reviewer, regulatory-reviewer. Tenant administrator, adviser, investor, partner and employee are not offered to visitors.
 - Commerce: personal — shopper; main — shop-owner, shop-manager, cashier, accountant; bank — bank-agent, bank-officer.
+- Tourism (TOU-0, 13 Nov 2026): personal — visitor; main — gate-agent, operator-admin. The visitor is a customer in its own workspace, like the Commerce shopper, because Tourism refuses a booking on a listing of the booker's own organisation. The Tourism admin (`tour_admin`) is ADS staff and is never offered. Tourism is in the registry only: it has no product-side grant check, no check secret and is not in private provisioning, so with `DEMO_ACCESS_PRIVATE_ENABLED=1` it gets no visitors yet; `release-acceptance.sh` reports its Demo Access lines as INFO. Deferred to the next phase (`deploy/contabo-demo/RUNBOOK.md` §E3.2): persona page, no-access card, grant check and private provisioning (Tourism joins `PRIVATE_VISITOR_PLATFORMS` only once it has its own grant check, so Identity's visitor token limits, expiry and revocation apply), demo data for visitor copies.
 
 Identity limits every visitor token to the roles of the grant's personas in that workspace (code exchange and each refresh), ignores workspace hints the grant does not cover, and refuses codes, refreshes and new sign-ins after expiry or revocation. Narrowing to the one persona the visitor selected is done by each product server.
 
