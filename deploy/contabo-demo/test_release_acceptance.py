@@ -633,9 +633,15 @@ class RepinAndMorphooRunbookTest(unittest.TestCase):
         rb = (ROOT / "RUNBOOK.md").read_text()
         e32 = rb[rb.index("#### E3.2 ADS Tourism demo"):rb.index("#### E3.3")]
         warn = e32[e32.index("BEFORE DEPLOYING TOURISM: update the Tourism pin (TOU-1)"):e32.index("Gate before any step")]
-        for x in ("#13 merge commit", "nine-platform-rollout.json", TOURISM_MANIFEST_FILE, "tour_worker", "X-Forwarded-For $proxy_add_x_forwarded_for",
-                  "TOUR_DEMO_TRUSTED_PROXIES", "subnet"):
+        for x in ("#13 merge commit", "nine-platform-rollout.json", TOURISM_MANIFEST_FILE, "tour_worker", "tour_api_worker", "WORKER_DATABASE_URL",
+                  "TOUR_DEMO_WORKER_DB_PASSWORD", "X-Forwarded-For $proxy_add_x_forwarded_for", "TOUR_DEMO_TRUSTED_PROXIES",
+                  "172.30.130.0/24", "TOUR_DEMO_EDGE_SUBNET", "172.30.0.0/16", 'print("\\n".join(hits) or "FREE")'):
             self.assertIn(x, warn)
+        rollout = json.loads((ROOT / "nine-platform-rollout.json").read_text())
+        subnets = [c["edgeSubnet"] for c in rollout["candidates"] if c.get("edgeSubnet")]
+        self.assertEqual(subnets, ["172.30.130.0/24"], "only Tourism fixes a subnet; no other candidate claims it")
+        for f in list(ROOT.glob("*.yml")) + list((REPO / "deploy").glob("*.yml")):
+            self.assertNotIn("172.30.", f.read_text(), f.name + " must not use the Tourism edge subnet range")
         t = {s["id"]: s for s in TOURISM_MANIFEST["immutable_sources"]}["tourism"]
         if t["sha"] == TOURISM_SHA:
             self.assertIn("#13", t["pending_repin"], "while still on ca8d390 the manifest says it must move to the #13 merge")

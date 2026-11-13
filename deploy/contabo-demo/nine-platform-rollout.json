@@ -71,6 +71,7 @@
       "targetUrl": "https://tourism.demo.africadigitalsynergy.com",
       "oidcClientId": "tourism-web",
       "loopbackPort": 18130,
+      "edgeSubnet": "172.30.130.0/24",
       "status": "planned_not_verified"
     }
   ]
