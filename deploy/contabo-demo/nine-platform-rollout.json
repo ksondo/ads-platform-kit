@@ -67,7 +67,7 @@
     {
       "catalogueId": "tourism",
       "repository": "ksondo/tourism-platform",
-      "sourceSha": "ca8d3901e242125d5b9f6de927854a1444a5927d",
+      "sourceSha": "3b023ac57c8421a82f2d705e8b1065f088adffed",
       "targetUrl": "https://tourism.demo.africadigitalsynergy.com",
       "oidcClientId": "tourism-web",
       "loopbackPort": 18130,
