@@ -171,7 +171,7 @@ describe('operator private visitors for Education, Agriculture and Tontine', () 
   }
 
   it('rejects unapproved platform selection before creating any account',async()=>{
-    await assert.rejects(provision('tourism','not-created@example.test'),/PRIVATE_VISITOR_PLATFORM_NOT_SUPPORTED/);
+    await assert.rejects(provision('transport','not-created@example.test'),/PRIVATE_VISITOR_PLATFORM_NOT_SUPPORTED/);
     assert.equal((await svc.pool.query("SELECT count(*)::int AS n FROM platform.users WHERE email='not-created@example.test'")).rows[0].n,0);
   });
 
