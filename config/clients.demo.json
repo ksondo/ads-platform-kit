@@ -314,7 +314,8 @@
         "https://morphoo.test.africadigitalsynergy.com/auth",
         "https://morphoo.test.africadigitalsynergy.com/",
         "https://morphoo.demo.africadigitalsynergy.com/auth",
-        "https://morphoo.demo.africadigitalsynergy.com/"
+        "https://morphoo.demo.africadigitalsynergy.com/",
+        "https://morphoo.demo.africadigitalsynergy.com/demo/personas"
       ],
       "post_logout_redirect_uris": [
         "https://morphoo.test.africadigitalsynergy.com/",
@@ -324,6 +325,7 @@
         "member"
       ],
       "allow_personal_workspace": true,
+      "demo_access_denied_redirect": false,
       "admin_roles": [],
       "admin_scopes": [],
       "assignable_roles": [
@@ -365,7 +367,7 @@
         }
       ],
       "tenant_settings": {},
-      "notes": "super_admin/pcc_admin/content_steward are trusted by name regardless of organisation (audit 2.3): ADS-only."
+      "notes": "super_admin/pcc_admin/content_steward are trusted by name regardless of organisation (audit 2.3): ADS-only. MOR-9 (Morphoo PR #50, 13 Nov 2026): /demo/personas is the return address after a workspace switch; demo_access_denied_redirect stays false (Morphoo shows its own refusal page; its ads-identity.js has no getLastError yet). The content-steward visitor persona holds member in the main organisation and acts through the church appointment content_steward inside Morphoo."
     },
     {
       "slug": "ventureworks",

@@ -29,6 +29,7 @@
       "id": "tourism",
       "repo": "ksondo/tourism-platform",
       "sha": "ca8d3901e242125d5b9f6de927854a1444a5927d",
+      "pending_repin": "Before deploying Tourism: update to the merge commit of tourism-platform PR #13 (TOU-1 hosting hardening), here and in nine-platform-rollout.json (RUNBOOK.md E3.2, warning at the top).",
       "kind": "product",
       "deployment_order": 2,
       "host": "tourism.demo.africadigitalsynergy.com",

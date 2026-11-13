@@ -51,7 +51,8 @@
         {"key": "ministry-lead", "label": {"en": "Ministry lead", "fr": "Responsable de ministère"}, "hint": {"en": "Leads a ministry team", "fr": "Anime une équipe de ministère"}, "org": "main", "roles": ["ministry_lead"]},
         {"key": "pastoral-care", "label": {"en": "Pastoral care", "fr": "Accompagnement pastoral"}, "hint": {"en": "Follows pastoral care requests", "fr": "Suit les demandes d'accompagnement"}, "org": "main", "roles": ["pastoral_care"]},
         {"key": "church-admin", "label": {"en": "Church administrator", "fr": "Administrateur de l'église"}, "hint": {"en": "Runs the church workspace", "fr": "Gère l'espace de l'église"}, "org": "main", "roles": ["church_admin"]},
-        {"key": "content-steward", "label": {"en": "Content steward (ADS)", "fr": "Responsable des contenus (ADS)"}, "hint": {"en": "Reviews formation content", "fr": "Relit les contenus de formation"}, "org": "staff", "roles": ["content_steward"]}
+        {"key": "content-steward", "label": {"en": "Content steward", "fr": "Responsable des contenus"}, "hint": {"en": "Reviews formation content", "fr": "Relit les contenus de formation"}, "org": "main", "roles": ["member"]},
+        {"key": "platform-admin", "label": {"en": "Platform admin (ADS)", "fr": "Administrateur plateforme (ADS)"}, "hint": {"en": "Verifies churches", "fr": "Vérifie les églises"}, "org": "staff", "roles": ["super_admin", "pcc_admin"], "internal_only": true}
       ]
     },
     "ventureworks": {

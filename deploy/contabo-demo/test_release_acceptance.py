@@ -628,6 +628,34 @@ class ReleaseManifestTest(unittest.TestCase):
         self.assertNotIn("PENDING", doc)
 
 
+class RepinAndMorphooRunbookTest(unittest.TestCase):
+    def test_tourism_repin_warning_before_deploying(self):
+        rb = (ROOT / "RUNBOOK.md").read_text()
+        e32 = rb[rb.index("#### E3.2 ADS Tourism demo"):rb.index("#### E3.3")]
+        warn = e32[e32.index("BEFORE DEPLOYING TOURISM: update the Tourism pin (TOU-1)"):e32.index("Gate before any step")]
+        for x in ("#13 merge commit", "nine-platform-rollout.json", TOURISM_MANIFEST_FILE, "tour_worker", "X-Forwarded-For $proxy_add_x_forwarded_for",
+                  "TOUR_DEMO_TRUSTED_PROXIES", "subnet"):
+            self.assertIn(x, warn)
+        t = {s["id"]: s for s in TOURISM_MANIFEST["immutable_sources"]}["tourism"]
+        if t["sha"] == TOURISM_SHA:
+            self.assertIn("#13", t["pending_repin"], "while still on ca8d390 the manifest says it must move to the #13 merge")
+
+    def test_morphoo_addendum_steps_in_order_and_only_with_mor9(self):
+        rb = (ROOT / "RUNBOOK.md").read_text()
+        e33 = rb[rb.index("#### E3.3 Morphoo demo access"):rb.index("## F.")]
+        self.assertIn("Needed only when Morphoo PR #50 (MOR-9, demo access) is deployed", e33)
+        self.assertIn("does not need any of this", e33)
+        order = ["Back up Identity", "Rebuild the Identity image on the server", "git archive", "register-identity-client.sh morphoo-web --backup-confirmed",
+                 "morphoo-web --backup-confirmed /var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker --apply",
+                 "demo-tenants.json.new", "MORPHOO_DEMO_ACCESS=1", "MORPHOO_DEMO_ACCESS_CHECK_SECRET=", "DEMO_SHOW_CREDENTIALS=0"]
+        at = [e33.index(x) for x in order]
+        self.assertEqual(at, sorted(at))
+        self.assertIn("DEMO_ACCESS_CHECK_SECRET_MORPHOO", e33)
+        self.assertIn("PRIVATE_VISITOR_PLATFORMS", e33[e33.index("Deferred to the next phase"):])
+        example = (ROOT / "identity.env.example").read_text()
+        self.assertIn("# DEMO_ACCESS_CHECK_SECRET_MORPHOO=", example)
+
+
 class TourismManifestTest(unittest.TestCase):
     def test_tourism_manifest_pins_tourism_main_and_waits_for_the_identity_repin(self):
         m = TOURISM_MANIFEST

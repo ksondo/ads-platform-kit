@@ -166,6 +166,28 @@
         "gate-agent",
         "operator-admin"
       ]
+    },
+    {
+      "key": "morphoo",
+      "reference_prefix": "MOR",
+      "name": {
+        "en": "Morphoo",
+        "fr": "Morphoo"
+      },
+      "client_id": "morphoo-web",
+      "product_slug": "morphoo",
+      "origins": [
+        "https://morphoo.demo.africadigitalsynergy.com"
+      ],
+      "entry_url": "https://morphoo.demo.africadigitalsynergy.com/demo/personas",
+      "personas": [
+        "member",
+        "mentor",
+        "ministry-lead",
+        "pastoral-care",
+        "church-admin",
+        "content-steward"
+      ]
     }
   ]
 }
