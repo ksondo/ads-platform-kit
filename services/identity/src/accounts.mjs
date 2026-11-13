@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 import { withTransaction } from './db.mjs';
 import { isDemoDomain } from './config.mjs';
+import { shownCredentialsRefusal } from './demo.mjs';
 import { renderEmail } from './mailer.mjs';
 import { DUMMY_HASH, checkPasswordStrength, fail, hashPassword, isEmail, normalizeEmail, randomToken, sha256, verifyPassword } from './security.mjs';
 
@@ -11,7 +12,7 @@ import { DUMMY_HASH, checkPasswordStrength, fail, hashPassword, isEmail, normali
 // account gets a password only when someone opens the emailed link (proving the mailbox) AND
 // types the password chosen at that registration. Several pending registrations can coexist;
 // only the one whose password the mailbox owner knows can be activated.
-export function createAccounts({ pool, config, mailer, audit, log = console }) {
+export function createAccounts({ pool, config, mailer, audit, log = console, internalPersonas = null }) {
   const link = (pathname, params) => `${config.publicUrl}${pathname}?${new URLSearchParams(params).toString()}`;
 
   async function issueEmailToken(client, userId, purpose, ttlSeconds, passwordHash = null) {
@@ -48,7 +49,7 @@ export function createAccounts({ pool, config, mailer, audit, log = console }) {
   async function findByEmail(email) {
     const normalized = normalizeEmail(email);
     if (!isEmail(normalized)) return null;
-    return (await pool.query('SELECT id,email,password_hash,status,email_verified_at,display_name,locale,is_demo FROM platform.users WHERE email=$1', [normalized])).rows[0] ?? null;
+    return (await pool.query('SELECT id,email,password_hash,status,email_verified_at,display_name,locale,is_demo,demo_key FROM platform.users WHERE email=$1', [normalized])).rows[0] ?? null;
   }
 
   // Returns { user, created }. Existing accounts are never overwritten.
@@ -160,6 +161,12 @@ export function createAccounts({ pool, config, mailer, audit, log = console }) {
     // Safety switch: demo accounts work only where ADS_ENV=demo AND DEMO_MODE=1.
     if (user.is_demo && !config.demo.enabled) {
       await audit('login', { userId: user.id, outcome: 'denied', reason: 'DEMO_ACCOUNT_REFUSED', ip, clientId });
+      fail(403, 'DEMO_ACCOUNT_REFUSED');
+    }
+    // Shared demo credentials shown: internal-only personas (and, without the reviewed list, every persona) refused.
+    const refusal = shownCredentialsRefusal(user, { showCredentials: config.demo.showCredentials, internal: internalPersonas });
+    if (refusal) {
+      await audit('login', { userId: user.id, outcome: 'denied', reason: refusal, ip, clientId });
       fail(403, 'DEMO_ACCOUNT_REFUSED');
     }
     return user;

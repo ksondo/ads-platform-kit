@@ -7,6 +7,7 @@ import { TOKEN_EXCHANGE, createAdmin } from './admin.mjs';
 import { renderAdminPage } from './admin-page.mjs';
 import { renderDemoAdmin } from './demo-admin-page.mjs';
 import { createDemoAccess } from './demo-access.mjs';
+import { readInternalPersonas } from './demo.mjs';
 import { createLegacyApi } from './legacy.mjs';
 import { createOAuth } from './oauth.mjs';
 import { createServiceTokens } from './service-tokens.mjs';
@@ -35,10 +36,15 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     await db.query(`INSERT INTO platform.identity_audit(event_type,user_id,tenant_id,project_id,outcome,reason,metadata,ip,client_id)
       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9)`, [eventType, userId, tenantId, projectId, outcome, reason, JSON.stringify(metadata), ip, clientId]);
   }
-  const accounts = createAccounts({ pool, config, mailer, audit, log });
+  // Internal-only personas of the reviewed file (config/demo-personas.json internal_only): never listed on the
+  // sign-in page, and refused at sign-in and token issue while shared credentials are shown. null (file unreadable)
+  // = no persona listed and every persona refused while credentials are shown (fail closed).
+  const internalPersonas = readInternalPersonas();
+  if (!internalPersonas && config.demo.showCredentials) log.warn?.('demo personas hidden and refused: the reviewed personas file is unreadable');
+  const accounts = createAccounts({ pool, config, mailer, audit, log, internalPersonas });
   // Both public and private visitor modes use the same canonical grant check.
   const demoAccess = config.demoAccess?.enabled ? createDemoAccess({ pool, config, mailer, audit, log }) : null;
-  const oauth = createOAuth({ pool, config, keys, audit, demoAccess });
+  const oauth = createOAuth({ pool, config, keys, audit, demoAccess, internalPersonas });
   const legacy = createLegacyApi({ pool, config, accounts, audit });
   const localJwks = createLocalJWKSet(keys.jwks);
   const admin = createAdmin({ pool, config, keys, jwks: localJwks, audit, mailer, log });
@@ -167,14 +173,18 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
 
   // BRIEF16: the demo personas of the product the tester came from (written by demo-orgs/demo-reset),
   // under the same rule, and only when the persona password is configured. Cached briefly per product.
+  // Internal-only personas (config/demo-personas.json internal_only: ADS staff QA such as Morphoo platform-admin,
+  // Commerce investor/auditor) are never listed there, even with DEMO_SHOW_CREDENTIALS=1. If the reviewed file
+  // cannot be read, no persona is listed at all (fail closed).
   const personaCache = new Map();
   async function personasFor(clientId) {
-    if (!config.demo.showCredentials || !config.demo.shownPersonaPassword || !clientId) return null;
+    if (!config.demo.showCredentials || !config.demo.shownPersonaPassword || !clientId || !internalPersonas) return null;
     const hit = personaCache.get(clientId);
     if (hit && Date.now() - hit.at < 30_000) return hit.value;
-    const list = (await pool.query(`SELECT p.persona_key AS key, p.label, p.hint, u.email FROM platform.demo_personas p
+    const list = (await pool.query(`SELECT p.product_slug, p.persona_key AS key, p.label, p.hint, u.email FROM platform.demo_personas p
       JOIN platform.users u ON u.id=p.user_id AND u.is_demo AND u.status='active'
-      WHERE p.client_id=$1 AND p.demo_set='' ORDER BY p.position, p.persona_key`, [clientId])).rows;
+      WHERE p.client_id=$1 AND p.demo_set='' ORDER BY p.position, p.persona_key`, [clientId])).rows
+      .filter(r => !internalPersonas.has(`${r.product_slug}:${r.key}`)).map(({ product_slug: _slug, ...r }) => r);
     const value = list.length ? { password: config.demo.shownPersonaPassword, list } : null;
     personaCache.set(clientId, { at: Date.now(), value });
     return value;

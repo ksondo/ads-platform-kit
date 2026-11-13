@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { after, before, describe, it } from 'node:test';
 import { JSDOM } from 'jsdom';
 import { demoSettings, loadConfig } from '../src/config.mjs';
-import { bootstrapDemoAccounts, ensureDemoOrgs, ensurePersonaAccounts, personaAccounts, validatePersonas } from '../src/demo.mjs';
+import { bootstrapDemoAccounts, ensureDemoOrgs, ensurePersonaAccounts, personaAccounts, readInternalPersonas, shownCredentialsRefusal, validatePersonas } from '../src/demo.mjs';
 import { langOf } from '../src/pages.mjs';
 import { DATABASE_URL, browser, createActiveUser, csrfFrom, reqFrom, signInTokens, startService } from './helpers.mjs';
 
@@ -320,8 +320,12 @@ describe('demo personas: bootstrap, organisations, reset, sign-in page and langu
     assert.match(text, /<html lang="en">/);
     const doc = new JSDOM(text, { url: `${svc.base}/login`, runScripts: 'dangerously' }).window.document;
     const items = [...doc.querySelectorAll('li.persona')];
-    assert.deepEqual(items.map(li => li.dataset.persona), personasOf('commerce').map(p => p.key));
-    assert.deepEqual(items.map(li => li.querySelector('.persona-name').textContent), personasOf('commerce').map(p => p.label.en));
+    // Internal-only personas (Commerce investor, auditor, bank loan officer) are never listed (final review L1).
+    const listed = personasOf('commerce').filter(p => p.internal_only !== true);
+    assert.ok(listed.length < personasOf('commerce').length, 'Commerce has internal-only personas to hide');
+    assert.deepEqual(items.map(li => li.dataset.persona), listed.map(p => p.key));
+    assert.deepEqual(items.map(li => li.querySelector('.persona-name').textContent), listed.map(p => p.label.en));
+    for (const p of personasOf('commerce').filter(x => x.internal_only === true)) assert.ok(!text.includes(settings().personaEmail('commerce', p.key)), `${p.key} not on the page`);
     assert.equal(doc.querySelector('ul.personas').getAttribute('aria-label'), 'Demo people');
     const cashier = doc.querySelector('li[data-persona="cashier"] button.persona-use');
     assert.equal(cashier.getAttribute('type'), 'button');
@@ -345,6 +349,72 @@ describe('demo personas: bootstrap, organisations, reset, sign-in page and langu
     // Touch targets and narrow-screen layout rules.
     assert.match(text, /\.demo \.persona-use\{[^}]*min-height:44px;min-width:44px/);
     assert.match(text, /\.persona\{display:flex;flex-wrap:wrap/);
+  });
+
+  it('internal-only personas are never on the sign-in page with DEMO_SHOW_CREDENTIALS=1 (Morphoo platform-admin), but still sign in', async () => {
+    const { page } = await productLogin(svc, 'morphoo', { ui_locales: 'en' });
+    assert.equal(page.res.status, 200);
+    const doc = new JSDOM(page.text).window.document;
+    const keys = [...doc.querySelectorAll('li.persona')].map(li => li.dataset.persona);
+    assert.deepEqual(keys, personasOf('morphoo').filter(p => p.internal_only !== true).map(p => p.key));
+    assert.ok(keys.includes('content-steward'));
+    assert.ok(!keys.includes('platform-admin'));
+    assert.ok(!page.text.includes(settings().personaEmail('morphoo', 'platform-admin')));
+    for (const slug of Object.keys(personasDoc.products)) {
+      for (const p of personasOf(slug).filter(x => x.internal_only === true)) {
+        const { page: other } = await productLogin(svc, slug, { ui_locales: 'en' });
+        assert.ok(!other.text.includes(settings().personaEmail(slug, p.key)), `${slug}/${p.key} listed`);
+      }
+    }
+  });
+
+  // Review of PR #90 (M1): hiding is not a boundary. With DEMO_SHOW_CREDENTIALS=1 the persona password is public and
+  // persona emails are guessable, so internal-only personas are refused at sign-in and at every token issue.
+  it('internal-only personas cannot sign in or get tokens while credentials are shown; they can when hidden (Morphoo platform-admin, Commerce investor)', async () => {
+    const internal = [['morphoo', 'platform-admin', ['pcc_admin', 'super_admin']], ['commerce', 'investor', ['commerce_investor']]];
+    for (const [slug, key] of internal) {
+      const { b, page, location } = await productLogin(svc, slug, { ui_locales: 'en' });
+      const r = await b.post('/login', { csrf: csrfFrom(page.text), req: reqFrom(location), email: settings().personaEmail(slug, key), password: PW.persona });
+      assert.ok(!(r.location ?? '').startsWith(clientOf(slug).redirect), `${slug}/${key} signed in while credentials are shown`);
+      await assert.rejects(signInTokens(svc, clientOf(slug), { email: settings().personaEmail(slug, key), password: PW.persona }), /not redirected back/, `${slug}/${key}`);
+      const denied = (await svc.pool.query("SELECT count(*)::int AS n FROM platform.identity_audit WHERE event_type='login' AND outcome='denied' AND reason='DEMO_PERSONA_INTERNAL' AND user_id=(SELECT id FROM platform.users WHERE email=$1)", [settings().personaEmail(slug, key)])).rows[0].n;
+      assert.ok(denied >= 1, `${slug}/${key}: refusal audited`);
+    }
+    // A visitor-facing persona of the same product still signs in with the shown password.
+    assert.deepEqual(decode((await signInTokens(svc, clientOf('morphoo'), { email: settings().personaEmail('morphoo', 'content-steward'), password: PW.persona })).access_token).roles, ['member']);
+    assert.ok(decode((await signInTokens(svc, clientOf('commerce'), { email: settings().personaEmail('commerce', 'cashier'), password: PW.persona })).access_token).roles.includes('commerce_cashier'));
+    // Credentials hidden (DEMO_SHOW_CREDENTIALS off): ADS staff QA can use them, with exactly their roles.
+    const hidden = await startService({ env: DEMO, keepDb: true });
+    try {
+      const tokens = {};
+      for (const [slug, key, roles] of internal) {
+        tokens[key] = await signInTokens(hidden, clientOf(slug), { email: settings().personaEmail(slug, key), password: PW.persona });
+        assert.deepEqual(decode(tokens[key].access_token).roles.sort(), roles, `${slug}/${key} hidden`);
+      }
+      // A token obtained while hidden is not refreshed once credentials are shown (every token issue is checked).
+      for (const [slug, key] of internal) {
+        const res = await fetch(`${svc.base}/token`, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: tokens[key].refresh_token, client_id: clientOf(slug).id }) });
+        assert.equal(res.status, 400, `${slug}/${key} refresh refused while shown`);
+      }
+    } finally {
+      await hidden.stop();
+    }
+  });
+
+  it('refusal rule: internal personas while shown; every persona when the reviewed list is unreadable; shared demo accounts untouched', () => {
+    const internal = readInternalPersonas();
+    assert.ok(internal.has('morphoo:platform-admin') && internal.has('commerce:investor'));
+    const rule = (demo_key, showCredentials, list = internal) => shownCredentialsRefusal({ is_demo: true, demo_key }, { showCredentials, internal: list });
+    assert.equal(rule('persona:morphoo:platform-admin', true), 'DEMO_PERSONA_INTERNAL');
+    assert.equal(rule('persona:visit-0123456789ab/commerce:investor', true), 'DEMO_PERSONA_INTERNAL', 'named sets too');
+    assert.equal(rule('persona:morphoo:member', true), null);
+    assert.equal(rule('persona:morphoo:platform-admin', false), null, 'allowed when credentials are hidden');
+    assert.equal(rule('persona:morphoo:member', true, null), 'DEMO_PERSONAS_UNAVAILABLE', 'fail closed without the reviewed list');
+    assert.equal(rule('persona:morphoo:member', false, null), null);
+    for (const k of ['user', 'user2', 'admin']) assert.equal(rule(k, true, null), null, k);
+    assert.equal(shownCredentialsRefusal({ is_demo: false, demo_key: 'persona:morphoo:platform-admin' }, { showCredentials: true, internal }), null);
+    assert.equal(readInternalPersonas(new URL('file:///nonexistent/demo-personas.json')), null);
   });
 
   it('the persona picker follows the product language (ui_locales) and the page switch, in French', async () => {
