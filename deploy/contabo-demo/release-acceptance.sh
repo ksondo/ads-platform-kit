@@ -5,8 +5,10 @@
 #   bash deploy/contabo-demo/release-acceptance.sh [--product ID] [--manifest FILE] [--all-clients] [--plan]
 #
 # Products (portal/manifest ids): commerce education agriculture fleet-guard digital-tontine ventureworks tourism.
-# A product with no entry in the manifest is skipped with an INFO line, unless it was named with --product
-# (then it FAILs as not pinned). Tourism is pinned in ads-release-20261113-tourism.manifest.json (TOU-0):
+# Every known product must be pinned in the manifest, except the products in SKIP_IF_ABSENT (Tourism, pinned in its
+# own ads-release-20261113-tourism.manifest.json, TOU-0): those are skipped with an INFO line when absent, unless named
+# with --product (then they FAIL as not pinned). A "kind": "product" manifest entry whose id this script does not know
+# FAILs, and so does a run that checked no product at all.
 #   bash deploy/contabo-demo/release-acceptance.sh --product tourism --manifest deploy/contabo-demo/ads-release-20261113-tourism.manifest.json
 # Per product: (a) running image carries the manifest SHA; (b) Identity client registration has not drifted
 # from /app/config/clients.demo.json and /authorize accepts the demo callback; (c) demo access switch and
@@ -34,6 +36,8 @@ set -euo pipefail
 # no private provisioning); the demo access switch and both grant-check secrets are then reported as INFO.
 # ---------------------------------------------------------------------------------------------------------
 ISSUER="${ADS_ACC_ISSUER:-https://login.demo.africadigitalsynergy.com}"
+# Products that may be absent from a manifest (each has its own release manifest). Fixed here, never from the environment.
+SKIP_IF_ABSENT="tourism"
 IDENTITY_CONTAINER="${ADS_ACC_IDENTITY_CONTAINER:-ads-demo-identity}"
 IDENTITY_DB_CONTAINER="${ADS_ACC_IDENTITY_DB_CONTAINER:-ads-demo-identity-db-1}"
 IDENTITY_DB_USER="${ADS_ACC_IDENTITY_DB_USER:-ads_demo_identity}"
@@ -97,6 +101,7 @@ for f in "$IDENTITY_CONTAINER" "$IDENTITY_DB_CONTAINER" "$IDENTITY_DB_USER" "$ID
 done
 [[ "$ISSUER" =~ ^https://[a-z0-9.-]+$ ]] || { echo 'ADS_ACC_ISSUER must be https://<host> without a path' >&2; exit 2; }
 [[ "$CURL_TIMEOUT" =~ ^[0-9]{1,3}$ ]] || { echo 'Invalid ADS_ACC_CURL_TIMEOUT' >&2; exit 2; }
+ALL_IDS=("${IDS[@]}")
 if [[ -n "$ONLY" ]]; then
   [[ -n "${P_HOST[$ONLY]+x}" ]] || { echo "Unknown product '$ONLY' (use: ${IDS[*]})" >&2; exit 2; }
   IDS=("$ONLY")
@@ -120,6 +125,17 @@ manifest_has() {
 import json, sys
 m = json.load(open(sys.argv[1], encoding="utf-8"))
 sys.exit(0 if any(s.get("id") == sys.argv[2] for s in m.get("immutable_sources", [])) else 1)
+PY
+}
+
+# Ids of the manifest's "kind": "product" entries that this script does not know (one per line).
+unknown_manifest_products() {
+  python3 - "$MANIFEST" "$@" <<'PY'
+import json, sys
+known = set(sys.argv[2:])
+for s in json.load(open(sys.argv[1], encoding="utf-8")).get("immutable_sources", []):
+    if s.get("kind") == "product" and s.get("id") not in known:
+        print(str(s.get("id")))
 PY
 }
 
@@ -274,13 +290,21 @@ elif [[ "$drift_ok" == 1 ]]; then
   fi
 fi
 
+# ---------- manifest products this script does not know (misspelled or unsupported ids) ----------
+while read -r unknown; do
+  [[ -n "$unknown" ]] || continue
+  fail manifest unknown-product "\"$unknown\" (kind product) is not a product this check knows: ${ALL_IDS[*]}"
+done < <(unknown_manifest_products "${ALL_IDS[@]}")
+
 # ---------- per product ----------
+CHECKED=0
 for id in "${IDS[@]}"; do
   app="${P_APP[$id]}"; web="${P_WEB[$id]}"; worker="${P_WORKER[$id]}"; host="${P_HOST[$id]}"
-  if [[ -z "$ONLY" ]] && ! manifest_has "$id"; then
+  if [[ -z "$ONLY" && " $SKIP_IF_ABSENT " == *" $id "* ]] && ! manifest_has "$id"; then
     info "$id" release "not in $(basename "$MANIFEST"); skipped (check it with --product $id and its manifest)"
     continue
   fi
+  CHECKED=$((CHECKED + 1))
   sha="$(manifest_sha "$id")"
   # (a) image carries the manifest SHA (tag, or the OCI revision label)
   if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
@@ -340,6 +364,10 @@ for id in "${IDS[@]}"; do
   code="$("${CURL[@]}" -o /dev/null -w '%{http_code}' "https://$host${P_HEALTH[$id]}" 2>/dev/null || true)"
   if [[ "$code" == 200 ]]; then pass "$id" health "https://$host${P_HEALTH[$id]} 200"; else fail "$id" health "https://$host${P_HEALTH[$id]} -> ${code:-no answer}"; fi
 done
+
+if [[ "$CHECKED" -eq 0 ]]; then
+  fail manifest products 'no product was checked'
+fi
 
 # Every other reviewed client, on request (no /authorize probe: those hosts may not be live yet).
 if [[ "$ALL_CLIENTS" == 1 && "$drift_ok" == 1 ]]; then

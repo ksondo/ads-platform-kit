@@ -13,7 +13,7 @@
       "id": "ads-identity",
       "repo": "ksondo/ads-platform-kit",
       "sha": "",
-      "pending_repin": "Set to the kit main merge commit of the TOU-0 PR (full 40-character SHA) in a follow-up PR once that commit's image ghcr.io/ksondo/ads-platform-kit-identity:sha-<SHA> exists. Until then release-acceptance.sh reports FAIL identity image, on purpose.",
+      "pending_repin": "Set to the kit main merge commit of the TOU-0 PR (full 40-character SHA) in a follow-up PR; the image is built on the server from that commit (RUNBOOK.md E3.2 step 2). Until then release-acceptance.sh reports FAIL identity image, on purpose.",
       "kind": "shared-auth",
       "deployment_order": 1,
       "host": "login.demo.africadigitalsynergy.com",
@@ -47,7 +47,7 @@
   ],
   "excluded_until_certified": [],
   "hard_gates": {
-    "source_ci": "GitHub Actions is unavailable (billing) since 13 Nov 2026: work merged in this period is not deployed until GitHub runs once on each repo's main and passes (owner rule). That applies to the kit (Identity image) and to Tourism main ca8d390.",
+    "source_ci": "GitHub Actions is unavailable (billing) since 13 Nov 2026 and publishes no images. Owner approval (13 Nov 2026): deploy today with images built on the Contabo server from the exact merged commits (kit merge commit for Identity, tagged ads-platform-kit-identity:sha-<KIT_SHA> with the OCI revision label; Tourism ca8d390), as in RUNBOOK.md E3.2 step 2. GitHub still runs once on each main as a catch-up when billing is restored.",
     "backups": "Protected Identity database backup before re-registering tourism-web and before demo-orgs; Tourism database backup before its migrations once data exists.",
     "port": "Tourism publishes 127.0.0.1:18130 only (TOUR_DEMO_PORT); free on the host before start (ss -ltn).",
     "activation": "Portal stays 'preparing' for tourism until release-acceptance.sh --product tourism passes and the book, accept and gate journey is checked in a browser."

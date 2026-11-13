@@ -397,6 +397,44 @@ class AcceptanceDryRunTest(unittest.TestCase):
         self.assertEqual(r.returncode, 1)
         self.assertRegex(r.stdout, r"(?m)^FAIL tourism +client-drift +tourism-web: redirect_uris missing https://tourism.demo.africadigitalsynergy.com/")
 
+    # Security review of PR #87 (MEDIUM): a full run must not pass with products missing or misspelled.
+    def probe(self, edit):
+        m = copy.deepcopy(self.manifest)
+        edit(m)
+        f = self.host.dir / "probe-manifest.json"
+        f.write_text(json.dumps(m))
+        return self.host.run(ACCEPT, "--manifest", str(f))
+
+    def test_probe_commerce_removed_fails(self):
+        r = self.probe(lambda m: m.update(immutable_sources=[s for s in m["immutable_sources"] if s["id"] != "commerce"]))
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertRegex(r.stdout, r"(?m)^FAIL commerce +image +manifest SHA not pinned \(absent\)")
+        self.assertIn("ADS_RELEASE_ACCEPTANCE=FAIL", r.stdout)
+
+    def test_probe_misspelled_product_id_fails(self):
+        def misspell(m):
+            for s in m["immutable_sources"]:
+                if s["id"] == "fleet-guard":
+                    s["id"] = "fleetguard"
+        r = self.probe(misspell)
+        self.assertEqual(r.returncode, 1, r.stdout)
+        self.assertRegex(r.stdout, r'(?m)^FAIL manifest +unknown-product +"fleetguard" \(kind product\)')
+        self.assertRegex(r.stdout, r"(?m)^FAIL fleet-guard +image +manifest SHA not pinned \(absent\)")
+
+    def test_probe_identity_only_manifest_fails(self):
+        r = self.probe(lambda m: m.update(immutable_sources=[s for s in m["immutable_sources"] if s["id"] == "ads-identity"]))
+        self.assertEqual(r.returncode, 1, r.stdout)
+        for pid in SIX:
+            self.assertRegex(r.stdout, r"(?m)^FAIL %s +image +manifest SHA not pinned \(absent\)" % pid)
+        self.assertRegex(r.stdout, r"(?m)^INFO tourism +release +not in ")
+        self.assertNotIn("ADS_RELEASE_ACCEPTANCE=PASS", r.stdout)
+
+    def test_only_listed_products_may_be_absent_and_a_run_with_no_product_fails(self):
+        src = ACCEPT.read_text()
+        self.assertIn('\nSKIP_IF_ABSENT="tourism"\n', src, "fixed in the script, not from the environment")
+        self.assertNotIn("ADS_ACC_SKIP", src)
+        self.assertIn("no product was checked", src)
+
     def test_tourism_named_with_a_manifest_that_lacks_it_fails_as_not_pinned(self):
         r = self.run_acc("--product", "tourism")
         self.assertEqual(r.returncode, 1)
@@ -635,6 +673,26 @@ class RunbookTest(unittest.TestCase):
         self.assertEqual(at, sorted(at), "backup, client dry run, apply, demo-bootstrap, demo-orgs, seed, acceptance")
         self.assertIn("18130", e32)
         self.assertIn("Deferred to the next phase", e32)
+
+    def test_runbook_tourism_review_fixes(self):
+        # Security review of PR #87: server-built Identity image, preview before replacing the tenants file,
+        # Tourism backup before --reset, rollback through the previous Identity image, private-visitor follow-up.
+        rb = (ROOT / "RUNBOOK.md").read_text()
+        e32 = rb[rb.index("#### E3.2 ADS Tourism demo"):rb.index("## F.")]
+        build = e32[e32.index("2. **Build and deploy the Identity image"):e32.index("3. **Re-register the Tourism client")]
+        for x in ("git checkout --detach <KIT_SHA>", "docker build -f services/identity/Dockerfile --label org.opencontainers.image.revision=<KIT_SHA> -t ads-platform-kit-identity:sha-<KIT_SHA> .",
+                  "compose.identity.yml up -d --no-deps identity", "identity-image-before-tou0.txt", "images.env.before-tou0"):
+            self.assertIn(x, build)
+        self.assertLess(e32.index("1. **Back up Identity**"), e32.index("2. **Build and deploy the Identity image"))
+        orgs = e32[e32.index("4. **Re-run demo-bootstrap"):e32.index("5. **Tourism demo seed.**")]
+        self.assertLess(orgs.index("demo-tenants.json.new"), orgs.index("CHANGED"))
+        self.assertLess(orgs.index("CHANGED"), orgs.index("cp -p /var/lib/ads-demo/operator-secrets/demo-tenants.json.new /var/lib/ads-demo/operator-secrets/demo-tenants.json"))
+        seed = e32[e32.index("5. **Tourism demo seed.**"):e32.index("6. **HTTPS**")]
+        self.assertLess(seed.index("back up the Tourism database"), seed.index("`--reset`"))
+        rollback = e32[e32.index("Rollback, in this order:"):e32.index("Deferred to the next phase")]
+        self.assertLess(rollback.index("Redeploy the previous Identity image"), rollback.index("`demo-bootstrap` and `demo-orgs`"))
+        self.assertLess(rollback.index("`demo-bootstrap` and `demo-orgs`"), rollback.index("demo-tenants.json.before-tou0"))
+        self.assertIn("PRIVATE_VISITOR_PLATFORMS", e32[e32.index("Deferred to the next phase"):])
 
 
 if __name__ == "__main__":

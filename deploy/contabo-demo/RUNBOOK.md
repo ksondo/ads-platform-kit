@@ -258,43 +258,91 @@ What the kit changes (TOU-0 PR):
 - Release lists: `nine-platform-rollout.json` lists Tourism (`planned_not_verified`, port 18130); `ads-release-20261113-tourism.manifest.json` pins Tourism main `ca8d3901e242125d5b9f6de927854a1444a5927d` and leaves the Identity pin to be set after this PR merges; `release-acceptance.sh` knows Tourism (container `ads-tourism-demo-tourism-1`, static root `/app/dist`, `/health`).
 - Port: Tourism publishes only `127.0.0.1:18130` (`TOUR_DEMO_PORT`). It does not clash with the documented demo ports (portal 18089, Identity 18090, Commerce 18086, Agriculture 18140, VentureWorks 18481, Education, Fleet Guard and Tontine below 9000) or the occupied 18084, 18085 and 18088; still check it on the host: `ss -ltn | grep -c ':18130 '` prints `0`.
 
-Gate before any step: GitHub Actions is unavailable (billing) since 13 November 2026, and the owner's rule is that work merged in this period is not deployed until GitHub runs once on each repository's main and passes. These steps therefore need **(a)** that catch-up to pass for the kit and for Tourism, or the owner's explicit go-ahead, and **(b)** an Identity image built from the kit main commit that contains this change, deployed the same way as the previous Identity release (`ADS_RELEASE_20261111B.md` row 1: same volume, signing key, accounts and secrets). The Identity container reads the client and persona lists from its own image (`/app/config`), so none of the steps below has any effect on the old image. Then set that commit's full SHA as `ads-identity` in `ads-release-20261113-tourism.manifest.json` (a one-line follow-up PR).
+Gate before any step: GitHub Actions is unavailable (billing) since 13 November 2026, so GitHub publishes no images. The owner approved (13 November 2026) deploying TOU-0 today with images **built on the Contabo server** from the exact merged commits: the kit (Identity) and Tourism main `ca8d390`. The Identity container reads the client and persona lists from its own image (`/app/config`), so step 2 must run before the others; none of the later steps has any effect on the old image.
 
-Steps (operator, GPT), in this order, on the Contabo host from the kit checkout at that same commit:
+Steps (operator, GPT), in this order, on the Contabo host:
 
-1. **Back up Identity.** Take the protected Identity database backup and record it in a root-only marker file outside any repository (backup path, time and checksum; no passwords), as in §E3.1: `/var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker`. Keep a copy of the current tenants file: `cp -p /var/lib/ads-demo/operator-secrets/demo-tenants.json /var/lib/ads-demo/operator-secrets/demo-tenants.json.before-tou0`.
-2. **Re-register the Tourism client: dry run, then apply.**
+1. **Back up Identity** (before anything else). Take the protected Identity database backup and record it in a root-only marker file outside any repository (backup path, time and checksum; no passwords), as in §E3.1: `/var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker`. Keep a copy of the current tenants file: `cp -p /var/lib/ads-demo/operator-secrets/demo-tenants.json /var/lib/ads-demo/operator-secrets/demo-tenants.json.before-tou0`.
+2. **Build and deploy the Identity image on the server from the exact merged kit commit.** `<KIT_SHA>` is the full 40-character merge commit of the TOU-0 PR on `main`. `deploy-identity.sh` is **not** used here: it accepts only a GHCR tag and pulls it. The image is built with the kit's own `services/identity/Dockerfile` and started with the kit's `compose.identity.yml`, recreating only the `identity` service (database container, volume `ads-demo-identity-postgres`, signing key, accounts and client secrets unchanged).
+
+       cd /opt/ads/demo-platform-kit
+       git fetch origin main && git checkout --detach <KIT_SHA>
+       test "$(git rev-parse HEAD)" = <KIT_SHA> && git status --porcelain | wc -l          # prints 0: clean checkout of exactly that commit
+       docker inspect -f '{{.Config.Image}}' ads-demo-identity | tee /var/lib/ads-demo/operator-secrets/identity-image-before-tou0.txt   # previous image, kept for rollback (never prune it)
+       docker build -f services/identity/Dockerfile --label org.opencontainers.image.revision=<KIT_SHA> -t ads-platform-kit-identity:sha-<KIT_SHA> .
+       docker run --rm --entrypoint grep ads-platform-kit-identity:sha-<KIT_SHA> -q '"https://tourism.demo.africadigitalsynergy.com/"' /app/config/clients.demo.json && echo IMAGE_HAS_TOURISM_DEMO
+       cp -p /etc/ads-demo/images.env /etc/ads-demo/images.env.before-tou0
+       # edit /etc/ads-demo/images.env: ADS_DEMO_IDENTITY_IMAGE=ads-platform-kit-identity:sha-<KIT_SHA>   (only this line)
+       docker compose --env-file /etc/ads-demo/images.env -f deploy/contabo-demo/compose.identity.yml config -q
+       docker compose --env-file /etc/ads-demo/images.env -f deploy/contabo-demo/compose.identity.yml up -d --no-deps identity
+       curl -fsS http://127.0.0.1:18090/health
+       curl -fsS https://login.demo.africadigitalsynergy.com/.well-known/openid-configuration | python3 -c 'import sys,json; print(json.load(sys.stdin)["issuer"])'   # https://login.demo.africadigitalsynergy.com
+
+   The local tag carries `<KIT_SHA>` and the OCI revision label, which is what `release-acceptance.sh` checks. Set `<KIT_SHA>` as `ads-identity` in `ads-release-20261113-tourism.manifest.json` (a one-line follow-up PR); until then the acceptance check reports `FAIL identity image` on purpose. This image also carries PR #85 (Agriculture and Fleet Guard personas); no Identity migration is added since `b768b47`. Re-apply `agriculture-web` and `fleet-guard-web` as described in the addendum just above, in the same window.
+3. **Re-register the Tourism client: dry run, then apply.**
 
        bash deploy/contabo-demo/register-identity-client.sh tourism-web --backup-confirmed /var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker
        bash deploy/contabo-demo/register-identity-client.sh tourism-web --backup-confirmed /var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker --apply
 
    The dry run must show only the added `https://tourism.demo.africadigitalsynergy.com/` in the redirect and post-logout URIs (and nothing else for `tourism-web`). Stop if it shows anything more.
-3. **Re-run demo-bootstrap, then demo-orgs** (both use the server's existing demo secrets; nothing is printed). demo-bootstrap creates any missing persona account and refreshes the existing demo and persona accounts with the passwords already on the server; demo-orgs restores every demo organisation and places each persona in exactly its one workspace, which moves the Tourism visitor out of the operator organisation into its personal workspace. Both are the same operations as the original bootstrap and the nightly demo reset; no other product's personas or organisations change, because their lists did not change.
+4. **Re-run demo-bootstrap, then demo-orgs, and preview before replacing the tenants file** (both use the server's existing demo secrets; nothing is printed). demo-bootstrap creates any missing persona account and refreshes the existing demo and persona accounts with the passwords already on the server; demo-orgs restores every demo organisation and places each persona in exactly its one workspace, which moves the Tourism visitor out of the operator organisation into its personal workspace. Both are the same operations as the original bootstrap and the nightly demo reset.
 
        docker exec ads-demo-identity node -e 'if(process.env.ADS_ENV!=="demo"||process.env.DEMO_MODE!=="1")process.exit(2)'
        docker exec ads-demo-identity node src/cli.mjs demo-bootstrap
        docker exec ads-demo-identity node src/cli.mjs demo-orgs --out /tmp/demo-tenants.json
-       docker cp ads-demo-identity:/tmp/demo-tenants.json /var/lib/ads-demo/operator-secrets/demo-tenants.json
-       chmod 600 /var/lib/ads-demo/operator-secrets/demo-tenants.json
+       docker cp ads-demo-identity:/tmp/demo-tenants.json /var/lib/ads-demo/operator-secrets/demo-tenants.json.new
+       chmod 600 /var/lib/ads-demo/operator-secrets/demo-tenants.json.new
        docker exec -u 0 ads-demo-identity rm -f /tmp/demo-tenants.json
 
-   Check without printing secrets: `python3 -c 'import json;d=json.load(open("/var/lib/ads-demo/operator-secrets/demo-tenants.json"))["products"]["tourism"];p=d["personas"];print(p["visitor"]["org"], p["visitor"]["tenant_id"]!=d["tenants"]["main"], sorted(p))'` prints `personal True ['gate-agent', 'operator-admin', 'tour-admin', 'visitor']`.
-4. **Tourism demo seed.** Follow `ksondo/tourism-platform` `deploy/demo/RELEASE.md` (steps 1-7: images from `ca8d390`, database, migrations, app login) with this tenants file mounted. The seed then records the demo trips under the visitor's own workspace:
+   Preview which tenant ids changed (ids only, no secrets) before copying the file into place:
+
+       python3 - /var/lib/ads-demo/operator-secrets/demo-tenants.json /var/lib/ads-demo/operator-secrets/demo-tenants.json.new <<'PY'
+       import json, sys
+       old, new = (json.load(open(f))["products"] for f in sys.argv[1:3])
+       def ids(m):
+           out = {}
+           for slug, e in m.items():
+               out.update({f"{slug}.tenants.{k}": v for k, v in e.get("tenants", {}).items()})
+               out.update({f"{slug}.personas.{k}": p.get("tenant_id") for k, p in e.get("personas", {}).items()})
+           return out
+       a, b = ids(old), ids(new)
+       for k in sorted(set(a) | set(b)):
+           if a.get(k) != b.get(k): print("CHANGED", k, a.get(k), "->", b.get(k))
+       PY
+
+   Expected: only `tourism.personas.visitor` changes (from the operator organisation's tenant to its own personal workspace), plus personas that are new in this image (#85: Agriculture `processor`, `landowner`; Fleet Guard `co-owner`, `lien-holder`, `finance`) when they were not in the old file. Every `*.tenants.*` id must stay the same. Stop and keep the old file if anything else changed. Then:
+
+       cp -p /var/lib/ads-demo/operator-secrets/demo-tenants.json.new /var/lib/ads-demo/operator-secrets/demo-tenants.json
+
+   Check: `python3 -c 'import json;d=json.load(open("/var/lib/ads-demo/operator-secrets/demo-tenants.json"))["products"]["tourism"];p=d["personas"];print(p["visitor"]["org"], p["visitor"]["tenant_id"]!=d["tenants"]["main"], sorted(p))'` prints `personal True ['gate-agent', 'operator-admin', 'tour-admin', 'visitor']`.
+5. **Tourism demo seed.** Follow `ksondo/tourism-platform` `deploy/demo/RELEASE.md` (steps 1-7: both images built on the server from `ca8d390`, database, migrations, app login) with this tenants file mounted. The seed then records the demo trips under the visitor's own workspace:
 
        docker compose -f deploy/demo/compose.yml --env-file /var/lib/ads-demo/operator-secrets/tourism.env --profile demo-seed run --rm demo-seed
 
-   It prints `{"product":"tourism","inserted":N,"reset":false}`. If the Tourism seed ever ran **before** this change, run it once with `--reset` instead (it rebuilds only the seeded demo trips, operators and listings, so the trips move to the visitor's workspace; testers' own bookings are kept).
-5. **HTTPS** for `tourism.demo.africadigitalsynergy.com` → `127.0.0.1:18130` with the guarded publisher pattern (RELEASE.md step 8), then the **release acceptance check**:
+   It prints `{"product":"tourism","inserted":N,"reset":false}`. If the Tourism seed ever ran **before** this change, **first back up the Tourism database** (protected dump of `tourism_demo` from the `db` service, recorded with path, time and checksum outside any repository, restore tested in a separate database), then run it once with `--reset` instead: it rebuilds only the seeded demo trips, operators and listings, so the trips move to the visitor's workspace; testers' own bookings are kept.
+6. **HTTPS** for `tourism.demo.africadigitalsynergy.com` → `127.0.0.1:18130` with the guarded publisher pattern (RELEASE.md step 8), then the **release acceptance check**:
 
        bash deploy/contabo-demo/release-acceptance.sh --plan --product tourism --manifest deploy/contabo-demo/ads-release-20261113-tourism.manifest.json
        bash deploy/contabo-demo/release-acceptance.sh --product tourism --manifest deploy/contabo-demo/ads-release-20261113-tourism.manifest.json
-       bash deploy/contabo-demo/release-acceptance.sh                              # the six products of ads-release-20261111b still pass; Tourism shows INFO "skipped"
+       bash deploy/contabo-demo/release-acceptance.sh                              # the six products of ads-release-20261111b; Tourism shows INFO "skipped"
 
-   Every Tourism line must be `PASS` (Demo Access switch and secrets show as `INFO`: Tourism has no product-side grant check). Then check in a browser, desktop English and 360 px French: visitor books a demo-operator visit and pays in Test mode → site operator accepts → gate agent scans the ticket. Only then set `"tourism": "open"` in `/etc/ads-demo/portal/demo-activation.json` (§G2).
+   Every Tourism line must be `PASS` (Demo Access switch and secrets show as `INFO`: Tourism has no product-side grant check). The Tourism manifest is run with `--product tourism` only: a full run with it FAILs the six other products as not pinned, by design. Then check in a browser, desktop English and 360 px French: visitor books a demo-operator visit and pays in Test mode → site operator accepts → gate agent scans the ticket. Only then set `"tourism": "open"` in `/etc/ads-demo/portal/demo-activation.json` (§G2).
 
-Rollback: re-register `tourism-web` from the previous Identity image (or restore the Identity backup in a separately verified database), put back `demo-tenants.json.before-tou0`, and set Tourism to `preparing` on the portal. Never delete visitor data or volumes.
+Rollback, in this order:
 
-Deferred to the next phase (not in TOU-0): a Tourism `/demo/personas` page (the Demo Access entry address is the Tourism home page until then; visitors pick a persona on the shared ADS sign-in), Tourism's own no-access card (then `demo_access_denied_redirect: true`), a product-side Demo Access grant check and private operator provisioning for Tourism, and demo data for approved visitors' own copies (`visit-*`): their site operator starts with an empty organisation because Tourism has no per-visitor seed worker yet.
+1. Set Tourism to `preparing` (or `unavailable`) in `/etc/ads-demo/portal/demo-activation.json`.
+2. Redeploy the previous Identity image: put back `/etc/ads-demo/images.env.before-tou0` (its `ADS_DEMO_IDENTITY_IMAGE` is the image recorded in `identity-image-before-tou0.txt`), then `docker compose --env-file /etc/ads-demo/images.env -f deploy/contabo-demo/compose.identity.yml up -d --no-deps identity` and check `/health` and the issuer as in step 2.
+3. From that previous image, re-register `tourism-web` (§E3.1 dry run, then `--apply`), then run `demo-bootstrap` and `demo-orgs` inside `ads-demo-identity` as in step 4 (written to `/tmp`, not copied over the operator file). This puts the personas back where the previous image's lists place them.
+4. Put back `demo-tenants.json.before-tou0` as `/var/lib/ads-demo/operator-secrets/demo-tenants.json`.
+5. If the Tourism seed has to follow, back up the Tourism database first, then run the seed with `--reset`.
+
+If the Identity database itself must be restored, restore the step 1 backup into a separately verified database before a supervised cutover. Never delete visitor data or volumes, and never use `down -v`.
+
+Deferred to the next phase (not in TOU-0):
+- A Tourism `/demo/personas` page. Until then the Demo Access entry address is the Tourism home page and visitors pick a persona on the shared ADS sign-in.
+- Tourism's own no-access card, then `demo_access_denied_redirect: true`.
+- A product-side Demo Access grant check in Tourism (check secret, `TOURISM_DEMO_ACCESS` switch) and, once it exists, adding `tourism` to `PRIVATE_VISITOR_PLATFORMS` (`services/identity/src/demo-access.mjs`). Only then do Identity's visitor token limits (roles narrowed to the grant's personas at code exchange and each refresh) and expiry or revocation apply to Tourism visitors. Until then Tourism is in the registry only and private operator provisioning refuses it.
+- Demo data for approved visitors' own copies (`visit-*`): their site operator starts with an empty organisation because Tourism has no per-visitor seed worker yet.
 
 ## F. Commerce integrated demo THIRD (in Commerce repository)
 
