@@ -11,7 +11,8 @@ RUNBOOK.md §E3.2 step 5c (Tourism's fixed edge subnet, TOU-1). Feed it every Do
 Line formats: "<network name> <subnet> [<subnet> ...]" and "route:<device> <destination>". A destination without
 "/" is a host route (/32). "default" and non-addresses are ignored, and IPv6 subnets never clash with an IPv4 target.
 On a re-run, Tourism's own network (ads-tourism-demo_edge) and its own bridge route (route:<own bridge>) are expected
-and skipped. Exit status 0 when FREE, 1 when something overlaps, 2 on a usage error.
+and skipped. Exit status 0 when FREE, 1 when something overlaps, 2 on a usage error or when no route line was read
+at all (the `ip -4 route` half of the pipe failed or printed nothing: the check cannot say FREE then).
 """
 import ipaddress
 import sys
@@ -19,13 +20,15 @@ import sys
 OWN_NETWORK = "ads-tourism-demo_edge"
 
 
-def overlaps(lines, target, own_bridge=""):
+def overlaps(lines, target, own_bridge="", seen=None):
     hits = []
     for line in lines:
         parts = line.split()
         if not parts:
             continue
         name, words = parts[0], parts[1:]
+        if seen is not None and name.startswith("route:"):
+            seen["routes"] = seen.get("routes", 0) + 1
         if name == OWN_NETWORK or (own_bridge and own_bridge != "br-" and name == "route:" + own_bridge):
             continue
         for w in words:
@@ -48,9 +51,16 @@ def main(argv):
     except ValueError:
         print("invalid subnet: " + argv[1], file=sys.stderr)
         return 2
-    hits = overlaps(sys.stdin, target, argv[2] if len(argv) == 3 else "")
-    print("\n".join(hits) or "FREE")
-    return 1 if hits else 0
+    seen = {}
+    hits = overlaps(sys.stdin, target, argv[2] if len(argv) == 3 else "", seen)
+    if hits:
+        print("\n".join(hits))
+        return 1
+    if not seen.get("routes"):
+        print("NO_ROUTES_READ: no route:<device> line on stdin; the check cannot say FREE", file=sys.stderr)
+        return 2
+    print("FREE")
+    return 0
 
 
 if __name__ == "__main__":

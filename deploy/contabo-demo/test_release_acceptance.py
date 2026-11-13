@@ -663,6 +663,15 @@ class SubnetCheckTest(unittest.TestCase):
         # First run: no own bridge yet ("br-"), so a bridge route for that subnet is a clash.
         self.assertEqual(self.run_check("route:br-0123456789ab 172.30.130.0/24\n", "172.30.130.0/24", "br-").returncode, 1)
 
+    def test_no_route_line_is_an_error_not_free(self):
+        # Review of PR #90 (LOW): an empty or route-less input (ip route failed) must not print FREE.
+        for text in ("", "bridge 172.17.0.0/16 \nfoo 10.1.0.0/16 \n"):
+            r = self.run_check(text, "172.30.130.0/24")
+            self.assertEqual(r.returncode, 2, repr(text))
+            self.assertNotIn("FREE", r.stdout)
+            self.assertIn("NO_ROUTES_READ", r.stderr)
+        self.assertEqual(self.run_check("route:eth0 default\n", "172.30.130.0/24").stdout.strip(), "FREE", "one route line is enough")
+
     def test_usage_errors(self):
         self.assertEqual(self.run_check("", ).returncode, 2)
         self.assertEqual(self.run_check("", "172.30.130.1/24").returncode, 2, "a host address is not a subnet")

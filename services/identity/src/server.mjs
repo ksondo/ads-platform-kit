@@ -1,6 +1,5 @@
 import http from 'node:http';
 import crypto from 'node:crypto';
-import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { createLocalJWKSet, jwtVerify } from 'jose';
 import { createAccounts } from './accounts.mjs';
@@ -8,7 +7,7 @@ import { TOKEN_EXCHANGE, createAdmin } from './admin.mjs';
 import { renderAdminPage } from './admin-page.mjs';
 import { renderDemoAdmin } from './demo-admin-page.mjs';
 import { createDemoAccess } from './demo-access.mjs';
-import { internalPersonaKeys } from './demo.mjs';
+import { readInternalPersonas } from './demo.mjs';
 import { createLegacyApi } from './legacy.mjs';
 import { createOAuth } from './oauth.mjs';
 import { createServiceTokens } from './service-tokens.mjs';
@@ -37,10 +36,15 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
     await db.query(`INSERT INTO platform.identity_audit(event_type,user_id,tenant_id,project_id,outcome,reason,metadata,ip,client_id)
       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9)`, [eventType, userId, tenantId, projectId, outcome, reason, JSON.stringify(metadata), ip, clientId]);
   }
-  const accounts = createAccounts({ pool, config, mailer, audit, log });
+  // Internal-only personas of the reviewed file (config/demo-personas.json internal_only): never listed on the
+  // sign-in page, and refused at sign-in and token issue while shared credentials are shown. null (file unreadable)
+  // = no persona listed and every persona refused while credentials are shown (fail closed).
+  const internalPersonas = readInternalPersonas();
+  if (!internalPersonas && config.demo.showCredentials) log.warn?.('demo personas hidden and refused: the reviewed personas file is unreadable');
+  const accounts = createAccounts({ pool, config, mailer, audit, log, internalPersonas });
   // Both public and private visitor modes use the same canonical grant check.
   const demoAccess = config.demoAccess?.enabled ? createDemoAccess({ pool, config, mailer, audit, log }) : null;
-  const oauth = createOAuth({ pool, config, keys, audit, demoAccess });
+  const oauth = createOAuth({ pool, config, keys, audit, demoAccess, internalPersonas });
   const legacy = createLegacyApi({ pool, config, accounts, audit });
   const localJwks = createLocalJWKSet(keys.jwks);
   const admin = createAdmin({ pool, config, keys, jwks: localJwks, audit, mailer, log });
@@ -173,12 +177,6 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
   // Commerce investor/auditor) are never listed there, even with DEMO_SHOW_CREDENTIALS=1. If the reviewed file
   // cannot be read, no persona is listed at all (fail closed).
   const personaCache = new Map();
-  let internalPersonas = null;
-  try {
-    internalPersonas = internalPersonaKeys(JSON.parse(readFileSync(new URL('../../../config/demo-personas.json', import.meta.url), 'utf8')));
-  } catch (error) {
-    if (config.demo.showCredentials) log.warn?.(`demo personas hidden on the sign-in page: personas file unreadable (${error.code ?? 'invalid'})`);
-  }
   async function personasFor(clientId) {
     if (!config.demo.showCredentials || !config.demo.shownPersonaPassword || !clientId || !internalPersonas) return null;
     const hit = personaCache.get(clientId);

@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { DEMO_ACCOUNTS } from './config.mjs';
 import { withTransaction } from './db.mjs';
 import { checkPasswordStrength, hashPassword } from './security.mjs';
@@ -141,6 +142,26 @@ export function internalPersonaKeys(personasDoc) {
     for (const p of entry?.personas ?? []) if (p?.internal_only === true) out.add(`${slug}:${p.key}`);
   }
   return out;
+}
+
+// The internal-only personas of the reviewed file baked into the image (/app/config/demo-personas.json), or null
+// when it cannot be read (callers then fail closed).
+export function readInternalPersonas(file = new URL('../../../config/demo-personas.json', import.meta.url)) {
+  try { return internalPersonaKeys(JSON.parse(readFileSync(file, 'utf8'))); } catch { return null; }
+}
+
+// While the shared demo credentials are shown (DEMO_SHOW_CREDENTIALS=1), anyone can read the persona password and
+// guess persona emails, so an internal-only persona (ADS staff QA, e.g. Morphoo platform-admin with super_admin)
+// must not sign in or receive tokens at all; hiding it from the page is not enough (review of PR #90, M1). Without
+// the reviewed list (internal = null), every persona account is refused while credentials are shown (fail closed).
+// The three shared demo accounts (demo_key user, user2, admin) are not persona accounts and are not affected here.
+// Returns the refusal reason, or null when allowed.
+export function shownCredentialsRefusal(user, { showCredentials, internal }) {
+  if (!showCredentials || !user?.is_demo) return null;
+  const m = /^persona:(?:[a-z0-9-]+\/)?([a-z0-9-]+):([a-z0-9-]+)$/.exec(String(user.demo_key ?? ''));
+  if (!m) return null;
+  if (!internal) return 'DEMO_PERSONAS_UNAVAILABLE';
+  return internal.has(`${m[1]}:${m[2]}`) ? 'DEMO_PERSONA_INTERNAL' : null;
 }
 const PERSONA_KEY = /^[a-z][a-z0-9-]{0,39}$/;
 const text = v => typeof v === 'string' && v.trim().length > 0 && v.length <= 120;

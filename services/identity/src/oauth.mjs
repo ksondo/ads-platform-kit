@@ -2,12 +2,13 @@ import crypto from 'node:crypto';
 import { withTransaction } from './db.mjs';
 import { HttpError, fail, isPkceChallenge, isPkceVerifier, pkceChallenge, randomToken, safeEqual, seal, sha256, unseal } from './security.mjs';
 import { PRIVATE_VISITOR_PLATFORMS } from './demo-access.mjs';
+import { shownCredentialsRefusal } from './demo.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 // Products sign users in with the OAuth 2.0 authorization code flow + PKCE (RFC 6749, RFC 7636).
 // Tokens are JWTs with the claims every ADS product already checks: sub, tenant_id, roles.
-export function createOAuth({ pool, config, keys, audit, demoAccess = null }) {
+export function createOAuth({ pool, config, keys, audit, demoAccess = null, internalPersonas = null }) {
   const visitorPlatform = client => [...PRIVATE_VISITOR_PLATFORMS].find(key => demoAccess?.platformOf(key)?.clientId === client.client_id);
   // A product registered for demo visitors (config/demo-access-platforms.json, Demo Access enabled) whose client
   // opted in to the access_denied return (clients.demo.json demo_access_denied_redirect: true; default false).
@@ -142,9 +143,11 @@ export function createOAuth({ pool, config, keys, audit, demoAccess = null }) {
 
   // A signed access token for this user, workspace and product, after re-checking that access still holds.
   async function accessTokenFor(client, userId, tenantId, ssoSessionId, db = pool) {
-    const user = (await db.query('SELECT id,email,display_name,status,email_verified_at,is_demo FROM platform.users WHERE id=$1', [userId])).rows[0];
+    const user = (await db.query('SELECT id,email,display_name,status,email_verified_at,is_demo,demo_key FROM platform.users WHERE id=$1', [userId])).rows[0];
     if (!user || user.status !== 'active') fail(400, 'invalid_grant');
     if (user.is_demo && !config.demo.enabled) fail(400, 'invalid_grant');
+    // Code exchange and every refresh: no token for an internal-only persona while shared credentials are shown.
+    if (shownCredentialsRefusal(user, { showCredentials: config.demo.showCredentials, internal: internalPersonas })) fail(400, 'invalid_grant');
     // An approved visitor's token carries only the roles of the personas of their grant in that workspace,
     // whatever product_roles holds (a grant from an older persona list, a manual change): code exchange and
     // every refresh go through here, so no route yields a role outside the visitor's persona list.
