@@ -149,6 +149,16 @@
       ]
     },
     {
+      "key": "logistics",
+      "reference_prefix": "LOG",
+      "name": { "en": "ADS Logistics", "fr": "ADS Logistique" },
+      "client_id": "logistics-web",
+      "product_slug": "logistics",
+      "origins": ["https://logistics.demo.africadigitalsynergy.com"],
+      "entry_url": "https://logistics.demo.africadigitalsynergy.com/demo/personas",
+      "personas": ["operator-admin", "dispatcher", "courier", "shipper", "merchant"]
+    },
+    {
       "key": "tourism",
       "reference_prefix": "TOU",
       "name": {
