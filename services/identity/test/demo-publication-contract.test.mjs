@@ -15,6 +15,10 @@ const clients = read('../../../config/clients.demo.json').products;
 const registry = loadPlatforms({});
 
 const PRODUCTS = {
+  tourism: { client: 'tourism-web', slug: 'tourism', host: 'tourism.demo.africadigitalsynergy.com', entry: '/', env: 'DEMO_ACCESS_CHECK_SECRET_TOURISM',
+    personas: { visitor: 'personal', 'gate-agent': 'main', 'operator-admin': 'main' } },
+  logistics: { client: 'logistics-web', slug: 'logistics', host: 'logistics.demo.africadigitalsynergy.com', entry: '/demo/personas', env: 'DEMO_ACCESS_CHECK_SECRET_LOGISTICS',
+    personas: { 'operator-admin': 'main', dispatcher: 'main', courier: 'main', shipper: 'shipper', merchant: 'shipper' } },
   commerce: { client: 'commerce-web', slug: 'commerce', host: 'commerce.demo.africadigitalsynergy.com', entry: '/commerce/demo/personas', env: 'DEMO_ACCESS_CHECK_SECRET_COMMERCE',
     personas: { shopper: 'personal', 'shop-owner': 'main', 'shop-manager': 'main', cashier: 'main', accountant: 'main', 'bank-agent': 'bank', 'bank-officer': 'bank' } },
   education: { client: 'education-web', slug: 'education', host: 'education.demo.africadigitalsynergy.com', entry: '/demo/personas', env: 'DEMO_ACCESS_CHECK_SECRET_EDUCATION',

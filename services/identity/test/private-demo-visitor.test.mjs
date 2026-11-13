@@ -39,6 +39,39 @@ describe('private Demo Access configuration', () => {
   });
 });
 
+describe('private Tourism grant for an existing account', () => {
+  it('requires matching account identity, preserves credentials, and uses revocable visitor-only roles', async () => {
+    const tourismSecret = 'tourism-grant-test-' + 'x'.repeat(32);
+    const svc = await startService({ env: { ...privateEnv, DEMO_ACCESS_CHECK_SECRET_TOURISM: tourismSecret } });
+    try {
+      const redirect = 'https://tourism.demo.africadigitalsynergy.com/';
+      await svc.pool.query(`INSERT INTO platform.oauth_clients(client_id,display_name,redirect_uris,post_logout_redirect_uris,self_service_roles,allow_personal_workspace)
+        VALUES ('tourism-web','Tourism',$1,$1,'{visitor}',true)`, [[redirect]]);
+      const userId = crypto.randomUUID(), email = 'existing-tourism-qa@example.test';
+      const hash = await hashPassword(password);
+      await svc.pool.query("INSERT INTO platform.users(id,email,password_hash,status,locale,is_demo) VALUES ($1,$2,$3,'active','fr',false)", [userId, email, hash]);
+      const args = { userId, email, platform: 'tourism', apply: 'yes', operatorRef: 'test-operator-ADS' };
+      const service = svc.app.demoAccess;
+      await assert.rejects(service.assignPrivate({ ...args, userId: crypto.randomUUID() }), /PRIVATE_VISITOR_ACCOUNT_NOT_ELIGIBLE/);
+      await assert.rejects(service.assignPrivate({ ...args, apply: 'no' }), /PRIVATE_VISITOR_EXPLICIT_APPLY_REQUIRED/);
+      const grant = await service.assignPrivate(args);
+      assert.equal(grant.userId, userId);
+      assert.deepEqual(grant.personas, ['visitor', 'gate-agent', 'operator-admin']);
+      assert.ok(new Date(grant.expiresAt).getTime() - Date.now() <= 30 * 86400_000);
+      await assert.rejects(service.assignPrivate(args), /PRIVATE_VISITOR_GRANT_EXISTS/);
+      const { rows } = await svc.pool.query('SELECT id,password_hash,locale FROM platform.users WHERE email=$1', [email]);
+      assert.deepEqual(rows, [{ id: userId, password_hash: hash, locale: 'fr' }]);
+      const check = credential => fetch(`${svc.base}/demo-access/v1/grants/check?platform=tourism&sub=${userId}`, { headers: { authorization: `Bearer ${credential}` } });
+      assert.equal((await check(secret)).status, 401);
+      assert.equal((await (await check(tourismSecret)).json()).access, 'granted');
+      await service.revokePrivate({ grantId: grant.grantId, operatorRef: args.operatorRef });
+      assert.equal((await (await check(tourismSecret)).json()).reason, 'REVOKED');
+    } finally {
+      await svc.stop();
+    }
+  });
+});
+
 describe('private visitor uses canonical ADS identity and grant activation', () => {
   let svc, first, second;
   before(async () => {

@@ -37,6 +37,7 @@ const usage = `Commands:
 Demo environment only (ADS_ENV=demo AND DEMO_MODE=1; refused everywhere else):
   demo-visitor-provision [--platform commerce|education|agriculture|tontine|fleet-guard|ventureworks] --email visitor@example.test --operator-ref ADS-operator --credentials-out /run/private/visitor.json --apply yes
                                        private mode only: one new individual account, registry-listed visitor personas, 30 days; Commerce default; no mail; password only in an exclusive 0600 file
+  demo-visitor-assign --platform tourism|logistics --user <account uuid> --email visitor@example.test --operator-ref ADS-operator --apply yes
   demo-visitor-revoke --grant <grant uuid> --operator-ref ADS-operator --apply yes
                                        private mode only: revoke a privately provisioned grant without enabling public approvals
   demo-bootstrap [--clients ...] [--personas config/demo-personas.json]
@@ -120,6 +121,12 @@ try {
       need('email', 'operator-ref', 'credentials-out', 'apply');
       const config = loadConfig();
       console.log(JSON.stringify(await provisionPrivateVisitor({ pool, config, email: args.email, operatorRef: args['operator-ref'], credentialsOut: args['credentials-out'], apply: args.apply, locale: args.locale, platform: args.platform })));
+      break;
+    }
+    case 'demo-visitor-assign': {
+      if (Object.keys(args).some(k => !['user', 'email', 'operator-ref', 'apply', 'platform'].includes(k))) throw new Error('PRIVATE_VISITOR_UNKNOWN_ARGUMENT');
+      need('user', 'email', 'operator-ref', 'apply', 'platform');
+      console.log(JSON.stringify(await privateVisitorService(pool, loadConfig()).assignPrivate({ userId: args.user, email: args.email, operatorRef: args['operator-ref'], apply: args.apply, platform: args.platform })));
       break;
     }
     case 'demo-visitor-revoke': {

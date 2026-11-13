@@ -17,7 +17,7 @@ const SHOW = { ADS_ENV: 'demo', DEMO_MODE: '1', DEMO_SHOW_CREDENTIALS: '1', DEMO
 const clientsDoc = JSON.parse(readFileSync(path.join(KIT_ROOT, 'config/clients.demo.json'), 'utf8'));
 const personasDoc = JSON.parse(readFileSync(path.join(KIT_ROOT, 'config/demo-personas.json'), 'utf8'));
 const SLUGS = ['commerce', 'fleetguard'];
-const labels = (slug, lang) => personasDoc.products[slug].personas.map(p => p.label[lang]);
+const labels = (slug, lang) => personasDoc.products[slug].personas.filter(p => !p.internal_only).map(p => p.label[lang]);
 const decode = jwt => JSON.parse(Buffer.from(jwt.split('.')[1], 'base64url').toString('utf8'));
 
 let identity;
@@ -103,6 +103,9 @@ test.describe('persona picker at 360 px', () => {
     await expect(list.getByRole('listitem')).toHaveCount(labels('commerce', 'en').length);
     await expect(list.locator('.persona-name')).toHaveText(labels('commerce', 'en'));
     await expect(page.getByText('Demo Admin')).toHaveCount(0);
+    for (const persona of personasDoc.products.commerce.personas.filter(p => p.internal_only)) {
+      await expect(list.locator(`[data-persona="${persona.key}"]`)).toHaveCount(0);
+    }
     await expectFits(page, 360);
     await page.screenshot({ path: info.outputPath('picker-360-en.png'), fullPage: true });
 

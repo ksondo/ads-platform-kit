@@ -31,7 +31,7 @@ describe('client registration list (config/clients.demo.json)', () => {
   it('uses reviewed HTTPS callback origins, including the approved public Commerce demo hostname', () => {
     const newDemoOrigins = {
       agriculture: 'agriculture', education: 'education', fleetguard: 'fleetguard', 'home-services': 'home-services',
-      mamacare: 'mamacare', morphoo: 'morphoo', tontine: 'tontine', ventureworks: 'ventureworks', tourism: 'tourism'
+      mamacare: 'mamacare', morphoo: 'morphoo', tontine: 'tontine', ventureworks: 'ventureworks', tourism: 'tourism', logistics: 'logistics'
     };
     for (const p of doc.products) {
       const original = p.slug === 'commerce' ? 'https://commerce.demo.africadigitalsynergy.com' : `https://${p.slug}.test.africadigitalsynergy.com`;
