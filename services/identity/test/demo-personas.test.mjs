@@ -320,8 +320,12 @@ describe('demo personas: bootstrap, organisations, reset, sign-in page and langu
     assert.match(text, /<html lang="en">/);
     const doc = new JSDOM(text, { url: `${svc.base}/login`, runScripts: 'dangerously' }).window.document;
     const items = [...doc.querySelectorAll('li.persona')];
-    assert.deepEqual(items.map(li => li.dataset.persona), personasOf('commerce').map(p => p.key));
-    assert.deepEqual(items.map(li => li.querySelector('.persona-name').textContent), personasOf('commerce').map(p => p.label.en));
+    // Internal-only personas (Commerce investor, auditor, bank loan officer) are never listed (final review L1).
+    const listed = personasOf('commerce').filter(p => p.internal_only !== true);
+    assert.ok(listed.length < personasOf('commerce').length, 'Commerce has internal-only personas to hide');
+    assert.deepEqual(items.map(li => li.dataset.persona), listed.map(p => p.key));
+    assert.deepEqual(items.map(li => li.querySelector('.persona-name').textContent), listed.map(p => p.label.en));
+    for (const p of personasOf('commerce').filter(x => x.internal_only === true)) assert.ok(!text.includes(settings().personaEmail('commerce', p.key)), `${p.key} not on the page`);
     assert.equal(doc.querySelector('ul.personas').getAttribute('aria-label'), 'Demo people');
     const cashier = doc.querySelector('li[data-persona="cashier"] button.persona-use');
     assert.equal(cashier.getAttribute('type'), 'button');
@@ -345,6 +349,26 @@ describe('demo personas: bootstrap, organisations, reset, sign-in page and langu
     // Touch targets and narrow-screen layout rules.
     assert.match(text, /\.demo \.persona-use\{[^}]*min-height:44px;min-width:44px/);
     assert.match(text, /\.persona\{display:flex;flex-wrap:wrap/);
+  });
+
+  it('internal-only personas are never on the sign-in page with DEMO_SHOW_CREDENTIALS=1 (Morphoo platform-admin), but still sign in', async () => {
+    const { page } = await productLogin(svc, 'morphoo', { ui_locales: 'en' });
+    assert.equal(page.res.status, 200);
+    const doc = new JSDOM(page.text).window.document;
+    const keys = [...doc.querySelectorAll('li.persona')].map(li => li.dataset.persona);
+    assert.deepEqual(keys, personasOf('morphoo').filter(p => p.internal_only !== true).map(p => p.key));
+    assert.ok(keys.includes('content-steward'));
+    assert.ok(!keys.includes('platform-admin'));
+    assert.ok(!page.text.includes(settings().personaEmail('morphoo', 'platform-admin')));
+    for (const slug of Object.keys(personasDoc.products)) {
+      for (const p of personasOf(slug).filter(x => x.internal_only === true)) {
+        const { page: other } = await productLogin(svc, slug, { ui_locales: 'en' });
+        assert.ok(!other.text.includes(settings().personaEmail(slug, p.key)), `${slug}/${p.key} listed`);
+      }
+    }
+    // The account itself is unchanged: ADS staff still sign in with it (internal QA).
+    const admin = decode((await signInTokens(svc, clientOf('morphoo'), { email: settings().personaEmail('morphoo', 'platform-admin'), password: PW.persona })).access_token);
+    assert.deepEqual(admin.roles.sort(), ['pcc_admin', 'super_admin']);
   });
 
   it('the persona picker follows the product language (ui_locales) and the page switch, in French', async () => {

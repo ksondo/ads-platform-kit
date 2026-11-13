@@ -133,6 +133,15 @@ export async function ensurePersonaAccounts(pool, settings, personas, password, 
 }
 
 // ---------- demo personas (BRIEF16) ----------
+// Personas marked internal_only in the reviewed personas file, as "<product slug>:<persona key>". They are ADS staff
+// or shared-demo-set personas: never offered to a visitor, and never listed on the public sign-in page.
+export function internalPersonaKeys(personasDoc) {
+  const out = new Set();
+  for (const [slug, entry] of Object.entries(personasDoc?.products ?? {})) {
+    for (const p of entry?.personas ?? []) if (p?.internal_only === true) out.add(`${slug}:${p.key}`);
+  }
+  return out;
+}
 const PERSONA_KEY = /^[a-z][a-z0-9-]{0,39}$/;
 const text = v => typeof v === 'string' && v.trim().length > 0 && v.length <= 120;
 

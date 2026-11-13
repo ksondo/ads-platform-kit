@@ -10,6 +10,7 @@ from pathlib import Path
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -628,6 +629,48 @@ class ReleaseManifestTest(unittest.TestCase):
         self.assertNotIn("PENDING", doc)
 
 
+def compose_files():
+    """Every *.yml, *.yaml and compose* file in the repository (recursive), outside .git and node_modules."""
+    out = []
+    for f in REPO.rglob("*"):
+        if not f.is_file() or ".git" in f.parts or "node_modules" in f.parts:
+            continue
+        if f.suffix in (".yml", ".yaml") or f.name.startswith("compose") or f.name.startswith("docker-compose"):
+            out.append(f)
+    return sorted(out)
+
+
+SUBNET_CHECK = ROOT / "check-subnet-free.py"
+
+
+class SubnetCheckTest(unittest.TestCase):
+    # Final review L4: re-run expectations, host routes without "/", IPv6 and "default" ignored.
+    def run_check(self, text, *args):
+        return subprocess.run([sys.executable, "-I", str(SUBNET_CHECK), *args], input=text, capture_output=True, text=True, timeout=30)
+
+    def test_free_and_clashes(self):
+        r = self.run_check("bridge 172.17.0.0/16 \nv6 172.20.0.0/16 fd00:1::/64 \nroute:eth0 default\nroute:eth0 10.0.0.0/8\n", "172.30.130.0/24")
+        self.assertEqual((r.returncode, r.stdout.strip()), (0, "FREE"))
+        r = self.run_check("foo_default 172.30.0.0/16 \nroute:eth1 172.30.130.7\nroute:eth0 192.0.2.0/24\n", "172.30.130.0/24", "br-")
+        self.assertEqual(r.returncode, 1)
+        self.assertEqual(r.stdout.split("\n")[:2], ["foo_default 172.30.0.0/16", "route:eth1 172.30.130.7"])
+
+    def test_rerun_skips_only_tourisms_own_network_and_bridge_route(self):
+        text = "ads-tourism-demo_edge 172.30.130.0/24 \nroute:br-0123456789ab 172.30.130.0/24\n"
+        self.assertEqual(self.run_check(text, "172.30.130.0/24", "br-0123456789ab").stdout.strip(), "FREE")
+        r = self.run_check(text + "route:br-ffffffffffff 172.30.130.0/25\n", "172.30.130.0/24", "br-0123456789ab")
+        self.assertEqual((r.returncode, r.stdout.strip()), (1, "route:br-ffffffffffff 172.30.130.0/25"))
+        # First run: no own bridge yet ("br-"), so a bridge route for that subnet is a clash.
+        self.assertEqual(self.run_check("route:br-0123456789ab 172.30.130.0/24\n", "172.30.130.0/24", "br-").returncode, 1)
+
+    def test_usage_errors(self):
+        self.assertEqual(self.run_check("", ).returncode, 2)
+        self.assertEqual(self.run_check("", "172.30.130.1/24").returncode, 2, "a host address is not a subnet")
+        src = SUBNET_CHECK.read_text()
+        for forbidden in ("subprocess", "os.system", "open("):
+            self.assertNotIn(forbidden, src, "read-only: stdin only")
+
+
 class RepinAndMorphooRunbookTest(unittest.TestCase):
     def test_tourism_pinned_to_tou1_and_its_deploy_notes(self):
         rb = (ROOT / "RUNBOOK.md").read_text()
@@ -649,7 +692,7 @@ class RepinAndMorphooRunbookTest(unittest.TestCase):
                  'docker build --label org.opencontainers.image.revision="$TOUR_SHA" -t "ads-tourism:$TOUR_SHA" "$build"',
                  '--build-arg API_IMAGE="ads-tourism:$TOUR_SHA"',
                  "TOUR_DEMO_WORKER_DB_PASSWORD",
-                 'print("\\n".join(hits) or "FREE")',
+                 'check-subnet-free.py 172.30.130.0/24 "$TOUR_EDGE_BR"',
                  "$C --profile migration run --rm migrate",
                  "$C --profile migration run --rm runtime-login",
                  "$C --profile demo-seed run --rm demo-seed",
@@ -663,8 +706,11 @@ class RepinAndMorphooRunbookTest(unittest.TestCase):
         self.assertIn("X-Forwarded-For $proxy_add_x_forwarded_for", https)
         subnets = [c["edgeSubnet"] for c in rollout.values() if c.get("edgeSubnet")]
         self.assertEqual(subnets, ["172.30.130.0/24"], "only Tourism fixes a subnet; no other candidate claims it")
-        for f in list(ROOT.glob("*.yml")) + list((REPO / "deploy").glob("*.yml")):
-            self.assertNotIn("172.30.", f.read_text(), f.name + " must not use the Tourism edge subnet range")
+        # Final review L2: every Compose/YAML file anywhere in the repository.
+        compose = compose_files()
+        self.assertTrue(any(f.name == "compose.identity.yml" for f in compose) and any(f.name == "docker-compose.yml" for f in compose))
+        for f in compose:
+            self.assertNotIn("172.30.", f.read_text(errors="replace"), str(f.relative_to(REPO)) + " must not use the Tourism edge subnet range")
 
     def test_morphoo_addendum_steps_in_order_and_only_with_mor9(self):
         rb = (ROOT / "RUNBOOK.md").read_text()
@@ -771,6 +817,11 @@ class RunbookTest(unittest.TestCase):
         seed = e32[e32.index("   e. **Demo data**"):e32.index("6. **HTTPS**")]
         self.assertLess(seed.index("back up the Tourism database"), seed.index("`--reset`"))
         rollback = e32[e32.index("Rollback, in this order:"):e32.index("Deferred to the next phase")]
+        # Final review L3: the Tourism app is stopped (volumes kept) and its Nginx site disabled, before Identity is rolled back.
+        self.assertIn("$C stop tourism", rollback)
+        self.assertIn("rm /etc/nginx/sites-enabled/tourism.demo.africadigitalsynergy.com && nginx -t && systemctl reload nginx", rollback)
+        self.assertNotIn("down -v`)", rollback.replace("never `down -v`", ""))
+        self.assertLess(rollback.index("$C stop tourism"), rollback.index("Redeploy the previous Identity image"))
         self.assertLess(rollback.index("Redeploy the previous Identity image"), rollback.index("`demo-bootstrap` and `demo-orgs`"))
         self.assertLess(rollback.index("`demo-bootstrap` and `demo-orgs`"), rollback.index("demo-tenants.json.before-tou0"))
         self.assertIn("PRIVATE_VISITOR_PLATFORMS", e32[e32.index("Deferred to the next phase"):])

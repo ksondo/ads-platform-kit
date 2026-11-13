@@ -366,8 +366,12 @@
           ]
         }
       ],
-      "tenant_settings": {},
-      "notes": "super_admin/pcc_admin/content_steward are trusted by name regardless of organisation (audit 2.3): ADS-only. MOR-9 (Morphoo PR #50, 13 Nov 2026): /demo/personas is the return address after a workspace switch; demo_access_denied_redirect stays false (Morphoo shows its own refusal page; its ads-identity.js has no getLastError yet). The content-steward visitor persona holds member in the main organisation and acts through the church appointment content_steward inside Morphoo."
+      "tenant_settings": {
+        "MORPHOO_STAFF_TENANT_IDS": [
+          "staff"
+        ]
+      },
+      "notes": "super_admin, pcc_admin and content_steward are ADS-only roles (audit 2.3): never assignable, held only in the ADS staff organisation. With Morphoo PR #50, super_admin and pcc_admin count only in the ADS staff organisations listed in MORPHOO_STAFF_TENANT_IDS (tenant_settings: the staff organisation; unset = nowhere) and are dropped and audited elsewhere (ACC-05); content_steward is still recognised by name, so it stays ADS-only and visitors get it only as a church appointment inside Morphoo. Morphoo also keeps, per persona, only the roles the token carries (intersection), so each main-organisation persona lists member with its own role. MOR-9 (Morphoo PR #50, 13 Nov 2026): /demo/personas is the return address after a workspace switch; demo_access_denied_redirect stays false (Morphoo shows its own refusal page; its ads-identity.js has no getLastError yet). The content-steward visitor persona holds member in the main organisation and acts through the church appointment content_steward inside Morphoo."
     },
     {
       "slug": "ventureworks",

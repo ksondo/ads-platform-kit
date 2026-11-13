@@ -1,5 +1,6 @@
 import http from 'node:http';
 import crypto from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { createLocalJWKSet, jwtVerify } from 'jose';
 import { createAccounts } from './accounts.mjs';
@@ -7,6 +8,7 @@ import { TOKEN_EXCHANGE, createAdmin } from './admin.mjs';
 import { renderAdminPage } from './admin-page.mjs';
 import { renderDemoAdmin } from './demo-admin-page.mjs';
 import { createDemoAccess } from './demo-access.mjs';
+import { internalPersonaKeys } from './demo.mjs';
 import { createLegacyApi } from './legacy.mjs';
 import { createOAuth } from './oauth.mjs';
 import { createServiceTokens } from './service-tokens.mjs';
@@ -167,14 +169,24 @@ export function createApp({ config, pool, keys, mailer, google, log = console, s
 
   // BRIEF16: the demo personas of the product the tester came from (written by demo-orgs/demo-reset),
   // under the same rule, and only when the persona password is configured. Cached briefly per product.
+  // Internal-only personas (config/demo-personas.json internal_only: ADS staff QA such as Morphoo platform-admin,
+  // Commerce investor/auditor) are never listed there, even with DEMO_SHOW_CREDENTIALS=1. If the reviewed file
+  // cannot be read, no persona is listed at all (fail closed).
   const personaCache = new Map();
+  let internalPersonas = null;
+  try {
+    internalPersonas = internalPersonaKeys(JSON.parse(readFileSync(new URL('../../../config/demo-personas.json', import.meta.url), 'utf8')));
+  } catch (error) {
+    if (config.demo.showCredentials) log.warn?.(`demo personas hidden on the sign-in page: personas file unreadable (${error.code ?? 'invalid'})`);
+  }
   async function personasFor(clientId) {
-    if (!config.demo.showCredentials || !config.demo.shownPersonaPassword || !clientId) return null;
+    if (!config.demo.showCredentials || !config.demo.shownPersonaPassword || !clientId || !internalPersonas) return null;
     const hit = personaCache.get(clientId);
     if (hit && Date.now() - hit.at < 30_000) return hit.value;
-    const list = (await pool.query(`SELECT p.persona_key AS key, p.label, p.hint, u.email FROM platform.demo_personas p
+    const list = (await pool.query(`SELECT p.product_slug, p.persona_key AS key, p.label, p.hint, u.email FROM platform.demo_personas p
       JOIN platform.users u ON u.id=p.user_id AND u.is_demo AND u.status='active'
-      WHERE p.client_id=$1 AND p.demo_set='' ORDER BY p.position, p.persona_key`, [clientId])).rows;
+      WHERE p.client_id=$1 AND p.demo_set='' ORDER BY p.position, p.persona_key`, [clientId])).rows
+      .filter(r => !internalPersonas.has(`${r.product_slug}:${r.key}`)).map(({ product_slug: _slug, ...r }) => r);
     const value = list.length ? { password: config.demo.shownPersonaPassword, list } : null;
     personaCache.set(clientId, { at: Date.now(), value });
     return value;

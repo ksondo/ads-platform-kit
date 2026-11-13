@@ -296,7 +296,7 @@ Steps (operator, GPT), in this order, on the Contabo host:
        curl -fsS http://127.0.0.1:18090/health
        curl -fsS https://login.demo.africadigitalsynergy.com/.well-known/openid-configuration | python3 -c 'import sys,json; print(json.load(sys.stdin)["issuer"])'   # https://login.demo.africadigitalsynergy.com
 
-   Any `STOP_…` line means: do not continue; put back `images.env.before-tou0` and recreate `identity` (rollback step 2) if `up` already ran. The local tag carries `<KIT_SHA>` and the OCI revision label, which is what `release-acceptance.sh` checks against the manifest pin. This image also carries PR #85 (Agriculture and Fleet Guard personas); no Identity migration is added since `b768b47`. Re-apply `agriculture-web` and `fleet-guard-web` as described in the addendum just above, in the same window.
+   Any `STOP_…` line means: do not continue; put back `images.env.before-tou0` and recreate `identity` (rollback step 3) if `up` already ran. The local tag carries `<KIT_SHA>` and the OCI revision label, which is what `release-acceptance.sh` checks against the manifest pin. This image also carries PR #85 (Agriculture and Fleet Guard personas); no Identity migration is added since `b768b47`. Re-apply `agriculture-web` and `fleet-guard-web` as described in the addendum just above, in the same window.
 3. **Re-register the Tourism client: dry run, then apply.**
 
        bash deploy/contabo-demo/register-identity-client.sh tourism-web --backup-confirmed /var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker
@@ -351,10 +351,14 @@ Steps (operator, GPT), in this order, on the Contabo host:
 
    b. **Env file** `/var/lib/ads-demo/operator-secrets/tourism.env` (from `deploy/demo/tourism.env.example`, `chmod 600`): `TOUR_DEMO_IMAGE=ads-tourism:<TOUR_SHA>`, `TOUR_DEMO_TOOLS_IMAGE=ads-tourism-demo-tools:<TOUR_SHA>`, `TOUR_DEMO_PLATFORM_TENANT_ID` = `products.tourism.tenants.staff` from the step 4 tenants file, and **three different database passwords**, each `openssl rand -hex 32` (hex only, they go into `postgres://` URLs): `TOUR_DEMO_DB_PASSWORD` (owner), `TOUR_DEMO_API_DB_PASSWORD` (`tour_api`) and the new **`TOUR_DEMO_WORKER_DB_PASSWORD`** (`tour_api_worker`, TOU-1). Leave `TOUR_DEMO_TRUSTED_PROXIES`, `TOUR_DEMO_EDGE_SUBNET` and `TOUR_DEMO_EDGE_GATEWAY` empty unless c. says otherwise. Then `docker compose -f deploy/demo/compose.yml --env-file /var/lib/ads-demo/operator-secrets/tourism.env config -q` is silent.
 
-   c. **Fixed `edge` subnet check (before the first `up`).** TOU-1 fixes the app's `edge` network at `172.30.130.0/24` (gateway `172.30.130.1`, the only address besides loopback whose `X-Forwarded-For` the app believes). No ADS demo Compose file in the kit or in the other products (Commerce, Agriculture, Fleet Guard, Tontine, Education, VentureWorks, Morphoo) pins a subnet, but Docker gives networks created without one whole `/16` blocks from `172.17–31.0.0/16`, so on a busy host `172.30.0.0/16` may already be taken, which Tourism's own `ip route | grep -c '172\.30\.130\.'` would not see. This prints `FREE`, or the overlapping networks and routes:
+   c. **Fixed `edge` subnet check (before the first `up`).** TOU-1 fixes the app's `edge` network at `172.30.130.0/24` (gateway `172.30.130.1`, the only address besides loopback whose `X-Forwarded-For` the app believes). No ADS demo Compose file in the kit or in the other products (Commerce, Agriculture, Fleet Guard, Tontine, Education, VentureWorks, Morphoo) pins a subnet, but Docker gives networks created without one whole `/16` blocks from `172.17–31.0.0/16`, so on a busy host `172.30.0.0/16` may already be taken, which Tourism's own `ip route | grep -c '172\.30\.130\.'` would not see. This prints `FREE` (exit 0), or the overlapping networks and routes (exit 1):
 
-       { docker network ls -q | xargs docker network inspect -f '{{.Name}} {{range .IPAM.Config}}{{.Subnet}} {{end}}'; ip -4 route | awk '{print "route", $1}'; } \
-         | python3 -c 'import ipaddress,sys; t=ipaddress.ip_network("172.30.130.0/24"); hits=[l.strip() for l in sys.stdin for w in l.split()[1:] if "/" in w and ipaddress.ip_network(w,strict=False).overlaps(t) and not l.startswith("ads-tourism-demo_edge")]; print("\n".join(hits) or "FREE")'
+       TOUR_EDGE_BR="br-$(docker network inspect -f '{{printf "%.12s" .Id}}' ads-tourism-demo_edge 2>/dev/null)"   # empty on the first run
+       { docker network ls -q | xargs docker network inspect -f '{{.Name}} {{range .IPAM.Config}}{{.Subnet}} {{end}}'; \
+         ip -4 route | awk '{d="-"; for(i=2;i<NF;i++) if($i=="dev") d=$(i+1); print "route:" d, $1}'; } \
+         | python3 -I /opt/ads/demo-platform-kit/deploy/contabo-demo/check-subnet-free.py 172.30.130.0/24 "$TOUR_EDGE_BR"
+
+      `check-subnet-free.py` (kit, read-only) also catches host routes written without `/` (treated as `/32`) and ignores `default` and IPv6 subnets. On a **re-run**, Tourism's own `ads-tourism-demo_edge` network and its own bridge route (`br-<first 12 characters of the network id>`, the `TOUR_EDGE_BR` line) are expected and skipped; anything else it prints is a clash.
 
       If it is not `FREE`, pick a `/24` for which the same command (with that `/24` in place of `172.30.130.0/24`) prints `FREE`, set `TOUR_DEMO_EDGE_SUBNET` and `TOUR_DEMO_EDGE_GATEWAY` (its `.1`) in `tourism.env`, and check again. A missed clash makes `up` stop with "Pool overlaps", and nothing starts.
 
@@ -383,10 +387,11 @@ Steps (operator, GPT), in this order, on the Contabo host:
 Rollback, in this order:
 
 1. Set Tourism to `preparing` (or `unavailable`) in `/etc/ads-demo/portal/demo-activation.json`.
-2. Redeploy the previous Identity image: put back `/etc/ads-demo/images.env.before-tou0` (its `ADS_DEMO_IDENTITY_IMAGE` is the image recorded in `identity-image-before-tou0.txt`), then `docker compose --env-file /etc/ads-demo/images.env -f deploy/contabo-demo/compose.identity.yml up -d --no-deps identity` and check `/health` and the issuer as in step 2.
-3. From that previous image, re-register `tourism-web` (§E3.1 dry run, then `--apply`), then run `demo-bootstrap` and `demo-orgs` inside `ads-demo-identity` as in step 4 (written to `/tmp`, not copied over the operator file). This puts the personas back where the previous image's lists place them.
-4. Put back `demo-tenants.json.before-tou0` as `/var/lib/ads-demo/operator-secrets/demo-tenants.json`.
-5. If the Tourism seed has to follow, back up the Tourism database first, then run the seed with `--reset`.
+2. Stop the Tourism app and take its site offline, keeping every volume and the database: from `/opt/ads/tourism-platform`, `$C stop tourism` (with `C` as in step 5d; never `down -v`), then disable its Nginx site and reload: `rm /etc/nginx/sites-enabled/tourism.demo.africadigitalsynergy.com && nginx -t && systemctl reload nginx` (the file in `sites-available` stays, so re-enabling is one `ln -s`).
+3. Redeploy the previous Identity image: put back `/etc/ads-demo/images.env.before-tou0` (its `ADS_DEMO_IDENTITY_IMAGE` is the image recorded in `identity-image-before-tou0.txt`), then `docker compose --env-file /etc/ads-demo/images.env -f deploy/contabo-demo/compose.identity.yml up -d --no-deps identity` and check `/health` and the issuer as in step 2.
+4. From that previous image, re-register `tourism-web` (§E3.1 dry run, then `--apply`), then run `demo-bootstrap` and `demo-orgs` inside `ads-demo-identity` as in step 4 (written to `/tmp`, not copied over the operator file). This puts the personas back where the previous image's lists place them.
+5. Put back `demo-tenants.json.before-tou0` as `/var/lib/ads-demo/operator-secrets/demo-tenants.json`.
+6. If the Tourism seed has to follow, back up the Tourism database first, then run the seed with `--reset`.
 
 If the Identity database itself must be restored, restore the step 1 backup into a separately verified database before a supervised cutover. Never delete visitor data or volumes, and never use `down -v`.
 

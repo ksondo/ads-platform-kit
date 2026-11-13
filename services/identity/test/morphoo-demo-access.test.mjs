@@ -47,6 +47,31 @@ describe('MOR-9 Morphoo demo access: configuration', () => {
     assert.ok(!main.roles.some(r => morphoo.ads_only_roles.includes(r)), 'no ADS-only role in the visitor organisation');
   });
 
+  it('each main-organisation persona carries member plus its own role, and nothing more (Morphoo intersects with the token)', () => {
+    const own = { member: [], mentor: ['mentor'], 'ministry-lead': ['ministry_lead'], 'pastoral-care': ['pastoral_care'], 'church-admin': ['church_admin'], 'content-steward': [] };
+    for (const key of SIX) {
+      const def = defs.find(x => x.key === key);
+      assert.deepEqual(def.roles, ['member', ...own[key]], key);
+      assert.ok(def.roles.every(r => r === 'member' || own[key].includes(r)), `${key} gains no other role`);
+    }
+    // The registry offers visitors exactly these role lists.
+    const registry = loadPlatforms({}).get('morphoo');
+    for (const x of registry.personas) assert.deepEqual(x.roles, ['member', ...own[x.key]], `registry ${x.key}`);
+    // No main-organisation persona holds an ADS-only role or another persona's job role.
+    const jobRoles = Object.values(own).flat();
+    for (const def of defs.filter(x => x.org === 'main')) {
+      assert.ok(!def.roles.some(r => morphoo.ads_only_roles.includes(r)), def.key);
+      assert.equal(def.roles.filter(r => jobRoles.includes(r)).length, own[def.key].length, `${def.key}: one job role at most`);
+    }
+  });
+
+  it('super_admin and pcc_admin count only in the listed ADS staff organisation: MORPHOO_STAFF_TENANT_IDS is the staff tenant', () => {
+    assert.deepEqual(morphoo.tenant_settings, { MORPHOO_STAFF_TENANT_IDS: ['staff'] });
+    assert.equal(morphoo.demo_orgs.find(o => o.key === 'staff').staff, true);
+    assert.match(morphoo.notes, /MORPHOO_STAFF_TENANT_IDS/);
+    assert.doesNotMatch(morphoo.notes, /trusted by name regardless of organisation/);
+  });
+
   it('platform-admin is an internal ADS staff persona (super_admin, pcc_admin) and is never listed for visitors', () => {
     const admin = defs.find(x => x.key === 'platform-admin');
     assert.deepEqual({ org: admin.org, roles: admin.roles, internal_only: admin.internal_only },

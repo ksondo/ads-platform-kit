@@ -47,10 +47,10 @@
     "morphoo": {
       "personas": [
         {"key": "member", "label": {"en": "Member", "fr": "Membre"}, "hint": {"en": "Follows formation paths", "fr": "Suit les parcours de formation"}, "org": "main", "roles": ["member"]},
-        {"key": "mentor", "label": {"en": "Mentor", "fr": "Mentor"}, "hint": {"en": "Accompanies mentees", "fr": "Accompagne ses mentorés"}, "org": "main", "roles": ["mentor"]},
-        {"key": "ministry-lead", "label": {"en": "Ministry lead", "fr": "Responsable de ministère"}, "hint": {"en": "Leads a ministry team", "fr": "Anime une équipe de ministère"}, "org": "main", "roles": ["ministry_lead"]},
-        {"key": "pastoral-care", "label": {"en": "Pastoral care", "fr": "Accompagnement pastoral"}, "hint": {"en": "Follows pastoral care requests", "fr": "Suit les demandes d'accompagnement"}, "org": "main", "roles": ["pastoral_care"]},
-        {"key": "church-admin", "label": {"en": "Church administrator", "fr": "Administrateur de l'église"}, "hint": {"en": "Runs the church workspace", "fr": "Gère l'espace de l'église"}, "org": "main", "roles": ["church_admin"]},
+        {"key": "mentor", "label": {"en": "Mentor", "fr": "Mentor"}, "hint": {"en": "Accompanies mentees", "fr": "Accompagne ses mentorés"}, "org": "main", "roles": ["member", "mentor"]},
+        {"key": "ministry-lead", "label": {"en": "Ministry lead", "fr": "Responsable de ministère"}, "hint": {"en": "Leads a ministry team", "fr": "Anime une équipe de ministère"}, "org": "main", "roles": ["member", "ministry_lead"]},
+        {"key": "pastoral-care", "label": {"en": "Pastoral care", "fr": "Accompagnement pastoral"}, "hint": {"en": "Follows pastoral care requests", "fr": "Suit les demandes d'accompagnement"}, "org": "main", "roles": ["member", "pastoral_care"]},
+        {"key": "church-admin", "label": {"en": "Church administrator", "fr": "Administrateur de l'église"}, "hint": {"en": "Runs the church workspace", "fr": "Gère l'espace de l'église"}, "org": "main", "roles": ["member", "church_admin"]},
         {"key": "content-steward", "label": {"en": "Content steward", "fr": "Responsable des contenus"}, "hint": {"en": "Reviews formation content", "fr": "Relit les contenus de formation"}, "org": "main", "roles": ["member"]},
         {"key": "platform-admin", "label": {"en": "Platform admin (ADS)", "fr": "Administrateur plateforme (ADS)"}, "hint": {"en": "Verifies churches", "fr": "Vérifie les églises"}, "org": "staff", "roles": ["super_admin", "pcc_admin"], "internal_only": true}
       ]
