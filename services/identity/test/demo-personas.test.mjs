@@ -79,6 +79,11 @@ describe('demo personas file (config/demo-personas.json)', () => {
     for (const k of ['school-admin', 'teacher', 'parent', 'student', 'partner']) assert.ok(roles('education')[k], `education ${k}`);
     assert.equal(roles('education').partner, 'partner:partner_admin');
     for (const k of ['group-admin', 'treasurer', 'payout-approver', 'member', 'auditor', 'cooperative-admin', 'partner']) assert.ok(roles('tontine')[k], `tontine ${k}`);
+    // TOU-0 (13 Nov 2026): the Tourism visitor is a customer in its own personal workspace (like the Commerce shopper), never
+    // inside the operator organisation, because Tourism refuses a booking on a listing of the booker's own organisation (OWN_LISTING).
+    assert.deepEqual(roles('tourism'), {
+      visitor: 'personal:visitor', 'gate-agent': 'main:gate_agent', 'operator-admin': 'main:operator_admin', 'tour-admin': 'staff:tour_admin',
+    });
   });
 
   it('refuses roles outside the persona organisation, ADS-only roles outside staff, and a wrong personal workspace', () => {
@@ -218,6 +223,15 @@ describe('demo personas: bootstrap, organisations, reset, sign-in page and langu
     assert.equal(shopper.tenant_id, tenants.products.commerce.personas.shopper.tenant_id);
     assert.deepEqual((await as('education', 'partner')).roles, ['partner_admin']);
     assert.deepEqual((await as('tontine', 'cooperative-admin')).roles, ['cooperative_admin']);
+    // TOU-0: the Tourism visitor signs in to its own personal workspace, not the demo tour operator's organisation.
+    const visitor = await as('tourism', 'visitor');
+    assert.deepEqual(visitor.roles, ['visitor']);
+    assert.equal(visitor.tenant_id, tenants.products.tourism.personas.visitor.tenant_id);
+    assert.equal(tenants.products.tourism.personas.visitor.org, 'personal');
+    assert.notEqual(visitor.tenant_id, tenants.products.tourism.tenants.main, 'the visitor is outside the operator organisation');
+    const operator = await as('tourism', 'operator-admin');
+    assert.equal(operator.tenant_id, tenants.products.tourism.tenants.main);
+    assert.deepEqual((await as('tourism', 'gate-agent')).tenant_id, tenants.products.tourism.tenants.main);
     // A persona has nothing in another product's organisation.
     await assert.rejects(signInTokens(svc, clientOf('fleetguard'), { email: settings().personaEmail('commerce', 'cashier'), password: PW.persona }), /not redirected back/);
   });

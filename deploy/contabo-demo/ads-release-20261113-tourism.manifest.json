@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "release_id": "ads-release-20261113-tourism",
+  "target": {
+    "host": "vmi3191089",
+    "environment": "demo",
+    "ingress": "https://demo.africadigitalsynergy.com"
+  },
+  "status": "SOURCE_PINNED__IDENTITY_REPIN_PENDING__NOT_APPROVED_FOR_DEPLOY",
+  "summary": "TOU-0: first ADS Tourism demo on Contabo, added next to ads-release-20261111b (which stays the release of record for the other products and is not changed). Identity must run an image built from kit main after the TOU-0 PR merges (tourism-web demo address, Tourism visitor persona in its own personal workspace, Tourism in the Demo Access registry). Tourism runs main ca8d390. No CI, deployment, migration, seed, account creation or portal activation happens when this manifest is committed.",
+  "immutable_sources": [
+    {
+      "id": "ads-identity",
+      "repo": "ksondo/ads-platform-kit",
+      "sha": "",
+      "pending_repin": "Set to the kit main merge commit of the TOU-0 PR (full 40-character SHA) in a follow-up PR once that commit's image ghcr.io/ksondo/ads-platform-kit-identity:sha-<SHA> exists. Until then release-acceptance.sh reports FAIL identity image, on purpose.",
+      "kind": "shared-auth",
+      "deployment_order": 1,
+      "host": "login.demo.africadigitalsynergy.com",
+      "required_gates": [
+        "demo_identity_backup_restore",
+        "tourism_web_client_reregistered",
+        "demo_orgs_visitor_personal_workspace"
+      ]
+    },
+    {
+      "id": "tourism",
+      "repo": "ksondo/tourism-platform",
+      "sha": "ca8d3901e242125d5b9f6de927854a1444a5927d",
+      "kind": "product",
+      "deployment_order": 2,
+      "host": "tourism.demo.africadigitalsynergy.com",
+      "identity_client": "tourism-web",
+      "demo_access_registry_key": "tourism",
+      "loopback_port": 18130,
+      "operator_runbook": "ksondo/tourism-platform deploy/demo/RELEASE.md",
+      "depends_on": [
+        "ads-identity"
+      ],
+      "required_gates": [
+        "tourism_database_backup_restore",
+        "migrations_and_runtime_login_verified",
+        "financial_mock_mode_only",
+        "book_accept_gate_journey"
+      ]
+    }
+  ],
+  "excluded_until_certified": [],
+  "hard_gates": {
+    "source_ci": "GitHub Actions is unavailable (billing) since 13 Nov 2026: work merged in this period is not deployed until GitHub runs once on each repo's main and passes (owner rule). That applies to the kit (Identity image) and to Tourism main ca8d390.",
+    "backups": "Protected Identity database backup before re-registering tourism-web and before demo-orgs; Tourism database backup before its migrations once data exists.",
+    "port": "Tourism publishes 127.0.0.1:18130 only (TOUR_DEMO_PORT); free on the host before start (ss -ltn).",
+    "activation": "Portal stays 'preparing' for tourism until release-acceptance.sh --product tourism passes and the book, accept and gate journey is checked in a browser."
+  },
+  "operator_runbook": "deploy/contabo-demo/RUNBOOK.md (E3.2 Tourism, TOU-0)",
+  "acceptance_check": "bash deploy/contabo-demo/release-acceptance.sh --product tourism --manifest deploy/contabo-demo/ads-release-20261113-tourism.manifest.json"
+}

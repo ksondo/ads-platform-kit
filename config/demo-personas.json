@@ -236,7 +236,7 @@
     },
     "tourism": {
       "personas": [
-        {"key": "visitor", "label": {"en": "Visitor", "fr": "Visiteur"}, "hint": {"en": "Finds and books visits", "fr": "Trouve et réserve des visites"}, "org": "main", "roles": ["visitor"]},
+        {"key": "visitor", "label": {"en": "Visitor", "fr": "Visiteur"}, "hint": {"en": "Finds and books visits", "fr": "Trouve et réserve des visites"}, "org": "personal", "roles": ["visitor"]},
         {"key": "gate-agent", "label": {"en": "Gate agent", "fr": "Agent d'accueil"}, "hint": {"en": "Checks tickets at the gate", "fr": "Contrôle les billets à l'entrée"}, "org": "main", "roles": ["gate_agent"]},
         {"key": "operator-admin", "label": {"en": "Site operator", "fr": "Exploitant du site"}, "hint": {"en": "Runs the site and its offers", "fr": "Gère le site et ses offres"}, "org": "main", "roles": ["operator_admin"]},
         {"key": "tour-admin", "label": {"en": "Tourism admin (ADS)", "fr": "Administrateur tourisme (ADS)"}, "hint": {"en": "Reviews sites and operators", "fr": "Vérifie les sites et les exploitants"}, "org": "staff", "roles": ["tour_admin"]}
