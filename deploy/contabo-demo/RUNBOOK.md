@@ -255,10 +255,10 @@ What the kit changes (TOU-0 PR):
 - `config/clients.demo.json`: `tourism-web` accepts `https://tourism.demo.africadigitalsynergy.com/` as sign-in callback and post-logout address, next to the existing `.test.` address (same pattern as Commerce, Fleet Guard and Agriculture). `demo_access_denied_redirect` is `false` until the Tourism app shows its own no-access card.
 - `config/demo-personas.json`: the Tourism `visitor` persona moves from the operator organisation (`main`, "ADS Demo – Tour operator") to its **own personal workspace**, like the Commerce `shopper`. Tourism refuses a booking on a listing of the booker's own organisation (`OWN_LISTING`), so a visitor inside the operator organisation could not book the demo operator's visits, and book → accept → gate failed. The gate agent and site operator stay in `main`; the Tourism admin stays in the ADS staff organisation.
 - `config/demo-access-platforms.json`: Tourism is in the Demo Access registry (key `tourism`, reference prefix `TOU`, personas visitor, gate agent and site operator; the Tourism admin is ADS staff and never offered). Private operator provisioning is **not** enabled for Tourism (it has no product-side grant check yet), so sign-in to Tourism is unchanged for everyone else.
-- Release lists: `nine-platform-rollout.json` lists Tourism (`planned_not_verified`, port 18130); `ads-release-20261113-tourism.manifest.json` pins Tourism main `ca8d3901e242125d5b9f6de927854a1444a5927d` and leaves the Identity pin to be set after this PR merges; `release-acceptance.sh` knows Tourism (container `ads-tourism-demo-tourism-1`, static root `/app/dist`, `/health`).
+- Release lists: `nine-platform-rollout.json` lists Tourism (`planned_not_verified`, port 18130); `ads-release-20261113-tourism.manifest.json` pins Tourism main `3b023ac57c8421a82f2d705e8b1065f088adffed` (after TOU-1, tourism-platform #13) and Identity `399ee5b` (kit #87); `release-acceptance.sh` knows Tourism (container `ads-tourism-demo-tourism-1`, static root `/app/dist`, `/health`).
 - Port: Tourism publishes only `127.0.0.1:18130` (`TOUR_DEMO_PORT`). It does not clash with the documented demo ports (portal 18089, Identity 18090, Commerce 18086, Agriculture 18140, VentureWorks 18481, Education, Fleet Guard and Tontine below 9000) or the occupied 18084, 18085 and 18088; still check it on the host: `ss -ltn | grep -c ':18130 '` prints `0`.
 
-Gate before any step: GitHub Actions is unavailable (billing) since 13 November 2026, so GitHub publishes no images. The owner approved (13 November 2026) deploying TOU-0 today with images **built on the Contabo server** from the exact merged commits: the kit (Identity) and Tourism main `ca8d390`. The Identity container reads the client and persona lists from its own image (`/app/config`), so step 2 must run before the others; none of the later steps has any effect on the old image.
+Gate before any step: GitHub Actions is unavailable (billing) since 13 November 2026, so GitHub publishes no images. The owner approved (13 November 2026) deploying TOU-0 today with images **built on the Contabo server** from the exact merged commits: the kit (Identity) and Tourism main `3b023ac` (TOU-1). The Identity container reads the client and persona lists from its own image (`/app/config`), so step 2 must run before the others; none of the later steps has any effect on the old image.
 
 Steps (operator, GPT), in this order, on the Contabo host:
 
@@ -333,12 +333,46 @@ Steps (operator, GPT), in this order, on the Contabo host:
        cp -p /var/lib/ads-demo/operator-secrets/demo-tenants.json.new /var/lib/ads-demo/operator-secrets/demo-tenants.json
 
    Check: `python3 -c 'import json;d=json.load(open("/var/lib/ads-demo/operator-secrets/demo-tenants.json"))["products"]["tourism"];p=d["personas"];print(p["visitor"]["org"], p["visitor"]["tenant_id"]!=d["tenants"]["main"], sorted(p))'` prints `personal True ['gate-agent', 'operator-admin', 'tour-admin', 'visitor']`.
-5. **Tourism demo seed.** Follow `ksondo/tourism-platform` `deploy/demo/RELEASE.md` (steps 1-7: both images built on the server from `ca8d390`, database, migrations, app login) with this tenants file mounted. The seed then records the demo trips under the visitor's own workspace:
+5. **Tourism: build on the server, database, logins, demo data.** `<TOUR_SHA>` is `3b023ac57c8421a82f2d705e8b1065f088adffed`, Tourism `main` after TOU-1 (tourism-platform PR #13, hosting hardening), pinned as `tourism` in `ads-release-20261113-tourism.manifest.json` and `nine-platform-rollout.json`. Tourism's own `deploy/demo/RELEASE.md` at that commit is the reference; the kit-specific points are below. Run the block in its own `bash`, as in step 2.
 
-       docker compose -f deploy/demo/compose.yml --env-file /var/lib/ads-demo/operator-secrets/tourism.env --profile demo-seed run --rm demo-seed
+   a. **Build both images on the server from the exact commit** (same pattern as the Identity image in step 2: hard stop on the wrong commit, build only from `git archive`, SHA in the tag and the OCI revision label):
 
-   It prints `{"product":"tourism","inserted":N,"reset":false}`. If the Tourism seed ever ran **before** this change, **first back up the Tourism database** (protected dump of `tourism_demo` from the `db` service, recorded with path, time and checksum outside any repository, restore tested in a separate database), then run it once with `--reset` instead: it rebuilds only the seeded demo trips, operators and listings, so the trips move to the visitor's workspace; testers' own bookings are kept.
-6. **HTTPS** for `tourism.demo.africadigitalsynergy.com` → `127.0.0.1:18130` with the guarded publisher pattern (RELEASE.md step 8), then the **release acceptance check**:
+       cd /opt/ads/tourism-platform
+       TOUR_SHA=3b023ac57c8421a82f2d705e8b1065f088adffed
+       git fetch origin main && git checkout --detach "$TOUR_SHA"
+       git merge-base --is-ancestor "$TOUR_SHA" origin/main && test "$(git rev-parse HEAD)" = "$TOUR_SHA" || { echo STOP_WRONG_COMMIT; exit 1; }
+       test -z "$(git status --porcelain -- deploy/demo)" || { echo STOP_DEPLOY_FILES_NOT_CLEAN; exit 1; }    # compose.yml is used from this checkout
+       build="$(mktemp -d)" && git archive "$TOUR_SHA" | tar -x -C "$build"
+       docker build --label org.opencontainers.image.revision="$TOUR_SHA" -t "ads-tourism:$TOUR_SHA" "$build"
+       docker build -f "$build/deploy/demo/Dockerfile.demo-tools" --build-arg API_IMAGE="ads-tourism:$TOUR_SHA" \
+         --label org.opencontainers.image.revision="$TOUR_SHA" -t "ads-tourism-demo-tools:$TOUR_SHA" "$build"
+       rm -rf "$build"
+       docker image inspect -f '{{.Id}}' "ads-tourism:$TOUR_SHA" "ads-tourism-demo-tools:$TOUR_SHA" | tee /var/lib/ads-demo/operator-secrets/tourism-images-tou1.txt
+
+   b. **Env file** `/var/lib/ads-demo/operator-secrets/tourism.env` (from `deploy/demo/tourism.env.example`, `chmod 600`): `TOUR_DEMO_IMAGE=ads-tourism:<TOUR_SHA>`, `TOUR_DEMO_TOOLS_IMAGE=ads-tourism-demo-tools:<TOUR_SHA>`, `TOUR_DEMO_PLATFORM_TENANT_ID` = `products.tourism.tenants.staff` from the step 4 tenants file, and **three different database passwords**, each `openssl rand -hex 32` (hex only, they go into `postgres://` URLs): `TOUR_DEMO_DB_PASSWORD` (owner), `TOUR_DEMO_API_DB_PASSWORD` (`tour_api`) and the new **`TOUR_DEMO_WORKER_DB_PASSWORD`** (`tour_api_worker`, TOU-1). Leave `TOUR_DEMO_TRUSTED_PROXIES`, `TOUR_DEMO_EDGE_SUBNET` and `TOUR_DEMO_EDGE_GATEWAY` empty unless c. says otherwise. Then `docker compose -f deploy/demo/compose.yml --env-file /var/lib/ads-demo/operator-secrets/tourism.env config -q` is silent.
+
+   c. **Fixed `edge` subnet check (before the first `up`).** TOU-1 fixes the app's `edge` network at `172.30.130.0/24` (gateway `172.30.130.1`, the only address besides loopback whose `X-Forwarded-For` the app believes). No ADS demo Compose file in the kit or in the other products (Commerce, Agriculture, Fleet Guard, Tontine, Education, VentureWorks, Morphoo) pins a subnet, but Docker gives networks created without one whole `/16` blocks from `172.17–31.0.0/16`, so on a busy host `172.30.0.0/16` may already be taken, which Tourism's own `ip route | grep -c '172\.30\.130\.'` would not see. This prints `FREE`, or the overlapping networks and routes:
+
+       { docker network ls -q | xargs docker network inspect -f '{{.Name}} {{range .IPAM.Config}}{{.Subnet}} {{end}}'; ip -4 route | awk '{print "route", $1}'; } \
+         | python3 -c 'import ipaddress,sys; t=ipaddress.ip_network("172.30.130.0/24"); hits=[l.strip() for l in sys.stdin for w in l.split()[1:] if "/" in w and ipaddress.ip_network(w,strict=False).overlaps(t) and not l.startswith("ads-tourism-demo_edge")]; print("\n".join(hits) or "FREE")'
+
+      If it is not `FREE`, pick a `/24` for which the same command (with that `/24` in place of `172.30.130.0/24`) prints `FREE`, set `TOUR_DEMO_EDGE_SUBNET` and `TOUR_DEMO_EDGE_GATEWAY` (its `.1`) in `tourism.env`, and check again. A missed clash makes `up` stop with "Pool overlaps", and nothing starts.
+
+   d. **Database, migrations, then the two app logins** (RELEASE.md steps 3-5). Back up the Tourism database first if it already holds data. Step 5 runs **after migrating**, on every release: it creates `tour_api` (requests, member of `tour_app` only) **and** `tour_api_worker` (signed payment webhook and background worker, member of `tour_worker` only; the app's second pool, `WORKER_DATABASE_URL`), and closes the database to PUBLIC. It prints `"msg":"runtime logins ready"`, or exits 1 with `runtime login refused`:
+
+       C="docker compose -f deploy/demo/compose.yml --env-file /var/lib/ads-demo/operator-secrets/tourism.env"
+       $C up -d db
+       $C --profile migration run --rm migrate          # migrations applied: N (includes 007_harden_function_grants.sql)
+       $C --profile migration run --rm runtime-login    # "runtime logins ready"
+
+   e. **Demo data** with the step 4 tenants file mounted; the seed records the demo trips under the visitor's own workspace:
+
+       $C --profile demo-seed run --rm demo-seed
+
+      It prints `{"product":"tourism","inserted":N,"reset":false}`. If the Tourism seed ever ran **before** this change, **first back up the Tourism database** (protected dump of `tourism_demo` from the `db` service, recorded with path, time and checksum outside any repository, restore tested in a separate database), then run it once with `--reset` instead: it rebuilds only the seeded demo trips, operators and listings, so the trips move to the visitor's workspace; testers' own bookings are kept.
+
+   f. **Start** (RELEASE.md step 7): `$C up -d commerce-pos-mock settlement-mock tourism`; `$C logs tourism | tail -n 3` shows every provider in mock mode. `TOUR_DATABASE_LOGIN_UNSAFE` means one of the two logins is not restricted to its one role: stop and repeat d.
+6. **HTTPS** for `tourism.demo.africadigitalsynergy.com` → `127.0.0.1:18130` with the guarded publisher pattern (RELEASE.md step 8). The Tourism Nginx site must pass the visitor's address exactly as the kit's publishers (`publish-demo-commerce.py`, `publish-demo-login.py`) do: `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`, `X-Real-IP $remote_addr` and `X-Forwarded-Proto https`. TOU-1 limits public pages per visitor address and believes that header only from loopback and the `edge` gateway, so nothing else is set in the app. Then the **release acceptance check**:
 
        bash deploy/contabo-demo/release-acceptance.sh --plan --product tourism --manifest deploy/contabo-demo/ads-release-20261113-tourism.manifest.json
        bash deploy/contabo-demo/release-acceptance.sh --product tourism --manifest deploy/contabo-demo/ads-release-20261113-tourism.manifest.json
@@ -361,6 +395,38 @@ Deferred to the next phase (not in TOU-0):
 - Tourism's own no-access card, then `demo_access_denied_redirect: true`.
 - A product-side Demo Access grant check in Tourism (check secret, `TOURISM_DEMO_ACCESS` switch) and, once it exists, adding `tourism` to `PRIVATE_VISITOR_PLATFORMS` (`services/identity/src/demo-access.mjs`). Only then do Identity's visitor token limits (roles narrowed to the grant's personas at code exchange and each refresh) and expiry or revocation apply to Tourism visitors. Until then Tourism is in the registry only and private operator provisioning refuses it.
 - Demo data for approved visitors' own copies (`visit-*`): their site operator starts with an empty organisation because Tourism has no per-visitor seed worker yet.
+
+#### E3.3 Morphoo demo access (MOR-9, 13 November 2026)
+
+**Needed only when Morphoo PR #50 (MOR-9, demo access) is deployed.** Hosting Morphoo `main` privately today does not need any of this: with `MORPHOO_DEMO_ACCESS` off (the default), Morphoo does not call the grant check and signs people in exactly as before.
+
+What the kit changes (kit side of Morphoo PR #50, as listed in Morphoo `docs/delivery/MOR-9_DEMO_ACCESS.md`, "Kit changes"):
+
+- `config/demo-access-platforms.json`: Morphoo (key `morphoo`, prefix `MOR`, client `morphoo-web`, origin `https://morphoo.demo.africadigitalsynergy.com`, entry `/demo/personas`) with the six visitor personas, keyed as in Morphoo `scripts/ops/demo-personas.mjs`: `member`, `mentor`, `ministry-lead`, `pastoral-care`, `church-admin`, `content-steward`. Every one is in the visitor's own `main` organisation (their demo church): each approved visitor gets a separate `main` organisation in their `visit-*` set.
+- `config/demo-personas.json`: `content-steward` moves from the ADS staff organisation (ADS-only role `content_steward`, refused for visitors) to `main` with role `member`; Morphoo gives it the church appointment `content_steward` inside the visitor's demo church. New `platform-admin` (ADS staff organisation, `super_admin` + `pcc_admin`, `internal_only: true`): internal ADS QA only, never offered to a visitor (the registry refuses to list it).
+- `config/clients.demo.json`, `morphoo-web`: `https://morphoo.demo.africadigitalsynergy.com/demo/personas` added to the sign-in return addresses; `demo_access_denied_redirect` stays `false` (Morphoo shows its own refusal page).
+- Grant-check secret `DEMO_ACCESS_CHECK_SECRET_MORPHOO` (Identity), same value as `MORPHOO_DEMO_ACCESS_CHECK_SECRET` (Morphoo env file, passed to the container as `DEMO_ACCESS_CHECK_SECRET`).
+
+Steps (operator, GPT), only after Morphoo #50 is merged and its images are built on the server from that merge commit:
+
+1. **Back up Identity** and keep `demo-tenants.json.before-mor9`, as in §E3.2 step 1 (marker `identity-backup-<date>.marker`).
+2. **Rebuild the Identity image on the server** from the kit merge commit of this change, exactly as §E3.2 step 2 with `KIT_SHA=<kit merge commit>`: hard stop on the wrong commit, clean checkout including ignored files, build from `git archive`, record the previous tag and image ID (`identity-image-before-mor9.txt`), `images.env` changed only on the Identity line (`images.env.before-mor9`), `up -d --no-deps identity`, then the running-image, demo-mode and no-placeholder checks, health and issuer. The Identity secret is added in the same window: append `DEMO_ACCESS_CHECK_SECRET_MORPHOO=<openssl rand -hex 32>` to the protected `/etc/ads-demo/identity.env` before `up` (never printed; `identity.env` is root-only), and check it inside the container by presence only: `docker exec ads-demo-identity sh -c '[ ${#DEMO_ACCESS_CHECK_SECRET_MORPHOO} -ge 32 ]' && echo MORPHOO_SECRET_PRESENT`.
+3. **Re-register `morphoo-web`: dry run, then apply.**
+
+       bash deploy/contabo-demo/register-identity-client.sh morphoo-web --backup-confirmed /var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker
+       bash deploy/contabo-demo/register-identity-client.sh morphoo-web --backup-confirmed /var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker --apply
+
+   The dry run must show only the added `https://morphoo.demo.africadigitalsynergy.com/demo/personas` redirect address.
+4. **demo-bootstrap and demo-orgs with the `.new` preview**, exactly as §E3.2 step 4 (`demo-orgs --out /tmp/demo-tenants.json`, copied to `demo-tenants.json.new`, the changed-ids preview, then the copy into place). Expected changes: `morphoo.personas.content-steward` moves from the staff organisation's tenant to `morphoo.tenants.main`, and the new `morphoo.personas.platform-admin` appears (staff tenant). Every `*.tenants.*` id stays the same; stop and keep the old file otherwise.
+5. **Morphoo host settings** in `/var/lib/ads-demo/operator-secrets/morphoo-demo.env` (root-only): `MORPHOO_DEMO_ACCESS=1`, `MORPHOO_DEMO_ACCESS_IDENTITY_URL=https://login.demo.africadigitalsynergy.com`, `MORPHOO_DEMO_ACCESS_CHECK_SECRET=<the same value as DEMO_ACCESS_CHECK_SECRET_MORPHOO>`. Recreate the Morphoo app with its own Compose (`docker compose -f deploy/demo/compose.yml --env-file …/morphoo-demo.env up -d …`, Morphoo `deploy/demo/RELEASE.md`) and check presence only: `docker exec <morphoo app container> sh -c '[ "$MORPHOO_DEMO_ACCESS" = 1 ] && [ ${#DEMO_ACCESS_CHECK_SECRET} -ge 32 ]' && echo MORPHOO_DEMO_ACCESS_ON`.
+6. **Turn off the credential display on the sign-in page**: the shared demo passwords are shown only with `DEMO_SHOW_CREDENTIALS=1`; set `DEMO_SHOW_CREDENTIALS=0` in `/etc/ads-demo/identity.env` (Identity refuses to start in private mode with it on: `DEMO_ACCESS_PRIVATE_CREDENTIALS_MUST_BE_HIDDEN`). Check, printing nothing else: `grep -qx 'DEMO_SHOW_CREDENTIALS=0' /etc/ads-demo/identity.env && docker exec ads-demo-identity sh -c '[ "${DEMO_SHOW_CREDENTIALS:-0}" != 1 ]' && echo CREDENTIALS_HIDDEN`, and `curl -fsS 'https://login.demo.africadigitalsynergy.com/login?lang=en' | grep -c 'Use demo account'` prints `0`.
+7. Check in a browser (desktop English, 360 px French): a visitor signs in, sees the six personas on `/demo/personas`, switches persona, and is refused on a page outside their persona; the platform-admin persona is never shown.
+
+Rollback: Morphoo `MORPHOO_DEMO_ACCESS=0` and recreate the Morphoo app; then the §E3.2 rollback order with the `-before-mor9` files (previous Identity image, re-register `morphoo-web`, demo-bootstrap and demo-orgs from it, then `demo-tenants.json.before-mor9`). Never delete visitor data or volumes.
+
+Deferred to the next phase (not in this change):
+- **Morphoo in `PRIVATE_VISITOR_PLATFORMS`** (`services/identity/src/demo-access.mjs`). The demo host runs in private mode (`DEMO_ACCESS_PRIVATE_ENABLED=1`, public requests answer 404), so Morphoo visitors can be provisioned (`demo-visitor-provision --platform morphoo`), and Identity's visitor token limits, expiry and revocation apply to Morphoo sign-ins, only once Morphoo is added there. That is an Identity code change that needs its own review, as Fleet Guard (7 Nov) and VentureWorks (11 Nov) had, with a private-visitor test file like `ventureworks-private-visitor.test.mjs`.
+- Seeding each visitor's own demo church (Morphoo MOR-10), the visitor not owning their demo church (MOR-10), the browser journey for persona switch and refusal (MOR-10), and Morphoo's own no-access card (then `demo_access_denied_redirect: true`).
 
 ## F. Commerce integrated demo THIRD (in Commerce repository)
 

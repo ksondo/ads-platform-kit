@@ -28,7 +28,7 @@ SECRET = "do-not-print-" + "s" * 40
 TONTINE_TEST_SHA = "a" * 40
 TOURISM_MANIFEST_FILE = "ads-release-20261113-tourism.manifest.json"
 TOURISM_MANIFEST = json.loads((ROOT / TOURISM_MANIFEST_FILE).read_text())
-TOURISM_SHA = "ca8d3901e242125d5b9f6de927854a1444a5927d"
+TOURISM_SHA = "3b023ac57c8421a82f2d705e8b1065f088adffed"  # Tourism main after TOU-1 (tourism-platform PR #13)
 KIT_TOU0_SHA = "399ee5bde63625f7206d0b2a636c6252e3a85735"  # kit main merge commit of PR #87
 SIX = ["commerce", "education", "agriculture", "fleet-guard", "digital-tontine", "ventureworks"]
 
@@ -628,6 +628,60 @@ class ReleaseManifestTest(unittest.TestCase):
         self.assertNotIn("PENDING", doc)
 
 
+class RepinAndMorphooRunbookTest(unittest.TestCase):
+    def test_tourism_pinned_to_tou1_and_its_deploy_notes(self):
+        rb = (ROOT / "RUNBOOK.md").read_text()
+        e32 = rb[rb.index("#### E3.2 ADS Tourism demo"):rb.index("#### E3.3")]
+        self.assertNotIn("BEFORE DEPLOYING TOURISM", e32, "the re-pin warning is gone once the pin is set")
+        self.assertNotIn("ca8d390", rb)
+        t = {s["id"]: s for s in TOURISM_MANIFEST["immutable_sources"]}["tourism"]
+        self.assertEqual(t["sha"], TOURISM_SHA)
+        self.assertEqual(t["pr"], 13)
+        self.assertNotIn("pending_repin", t)
+        self.assertEqual(t["image"], "ads-tourism:" + TOURISM_SHA)
+        self.assertEqual(t["tools_image"], "ads-tourism-demo-tools:" + TOURISM_SHA)
+        rollout = {c["catalogueId"]: c for c in json.loads((ROOT / "nine-platform-rollout.json").read_text())["candidates"]}
+        self.assertEqual(rollout["tourism"]["sourceSha"], TOURISM_SHA)
+        step5 = e32[e32.index("5. **Tourism: build on the server"):e32.index("6. **HTTPS** for `tourism.demo")]
+        self.assertIn("TOUR_SHA=" + TOURISM_SHA, step5)
+        order = ['git merge-base --is-ancestor "$TOUR_SHA" origin/main && test "$(git rev-parse HEAD)" = "$TOUR_SHA" || { echo STOP_WRONG_COMMIT; exit 1; }',
+                 'git archive "$TOUR_SHA" | tar -x -C "$build"',
+                 'docker build --label org.opencontainers.image.revision="$TOUR_SHA" -t "ads-tourism:$TOUR_SHA" "$build"',
+                 '--build-arg API_IMAGE="ads-tourism:$TOUR_SHA"',
+                 "TOUR_DEMO_WORKER_DB_PASSWORD",
+                 'print("\\n".join(hits) or "FREE")',
+                 "$C --profile migration run --rm migrate",
+                 "$C --profile migration run --rm runtime-login",
+                 "$C --profile demo-seed run --rm demo-seed",
+                 "$C up -d commerce-pos-mock settlement-mock tourism"]
+        at = [step5.index(x) for x in order]
+        self.assertEqual(at, sorted(at), "build from the exact commit, env with the third password, subnet check, migrate, logins, seed, start")
+        for x in ("tour_api_worker", "WORKER_DATABASE_URL", "closes the database to PUBLIC", "172.30.130.0/24", "172.30.0.0/16", "TOUR_DEMO_EDGE_SUBNET", "after migrating"):
+            self.assertIn(x, step5)
+        self.assertNotIn("docker build -t ads-tourism", step5, "never build from the working tree")
+        https = e32[e32.index("6. **HTTPS** for `tourism.demo"):]
+        self.assertIn("X-Forwarded-For $proxy_add_x_forwarded_for", https)
+        subnets = [c["edgeSubnet"] for c in rollout.values() if c.get("edgeSubnet")]
+        self.assertEqual(subnets, ["172.30.130.0/24"], "only Tourism fixes a subnet; no other candidate claims it")
+        for f in list(ROOT.glob("*.yml")) + list((REPO / "deploy").glob("*.yml")):
+            self.assertNotIn("172.30.", f.read_text(), f.name + " must not use the Tourism edge subnet range")
+
+    def test_morphoo_addendum_steps_in_order_and_only_with_mor9(self):
+        rb = (ROOT / "RUNBOOK.md").read_text()
+        e33 = rb[rb.index("#### E3.3 Morphoo demo access"):rb.index("## F.")]
+        self.assertIn("Needed only when Morphoo PR #50 (MOR-9, demo access) is deployed", e33)
+        self.assertIn("does not need any of this", e33)
+        order = ["Back up Identity", "Rebuild the Identity image on the server", "git archive", "register-identity-client.sh morphoo-web --backup-confirmed",
+                 "morphoo-web --backup-confirmed /var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker --apply",
+                 "demo-tenants.json.new", "MORPHOO_DEMO_ACCESS=1", "MORPHOO_DEMO_ACCESS_CHECK_SECRET=", "DEMO_SHOW_CREDENTIALS=0"]
+        at = [e33.index(x) for x in order]
+        self.assertEqual(at, sorted(at))
+        self.assertIn("DEMO_ACCESS_CHECK_SECRET_MORPHOO", e33)
+        self.assertIn("PRIVATE_VISITOR_PLATFORMS", e33[e33.index("Deferred to the next phase"):])
+        example = (ROOT / "identity.env.example").read_text()
+        self.assertIn("# DEMO_ACCESS_CHECK_SECRET_MORPHOO=", example)
+
+
 class TourismManifestTest(unittest.TestCase):
     def test_tourism_manifest_pins_tourism_main_and_waits_for_the_identity_repin(self):
         m = TOURISM_MANIFEST
@@ -711,10 +765,10 @@ class RunbookTest(unittest.TestCase):
         self.assertLess(build.index("up -d --no-deps identity"), build.index("STOP_NOT_DEMO_OR_PLACEHOLDER"))
         self.assertLess(build.index("STOP_NOT_DEMO_OR_PLACEHOLDER"), build.index("curl -fsS http://127.0.0.1:18090/health"))
         self.assertLess(e32.index("1. **Back up Identity**"), e32.index("2. **Build and deploy the Identity image"))
-        orgs = e32[e32.index("4. **Re-run demo-bootstrap"):e32.index("5. **Tourism demo seed.**")]
+        orgs = e32[e32.index("4. **Re-run demo-bootstrap"):e32.index("5. **Tourism: build on the server")]
         self.assertLess(orgs.index("demo-tenants.json.new"), orgs.index("CHANGED"))
         self.assertLess(orgs.index("CHANGED"), orgs.index("cp -p /var/lib/ads-demo/operator-secrets/demo-tenants.json.new /var/lib/ads-demo/operator-secrets/demo-tenants.json"))
-        seed = e32[e32.index("5. **Tourism demo seed.**"):e32.index("6. **HTTPS**")]
+        seed = e32[e32.index("   e. **Demo data**"):e32.index("6. **HTTPS**")]
         self.assertLess(seed.index("back up the Tourism database"), seed.index("`--reset`"))
         rollback = e32[e32.index("Rollback, in this order:"):e32.index("Deferred to the next phase")]
         self.assertLess(rollback.index("Redeploy the previous Identity image"), rollback.index("`demo-bootstrap` and `demo-orgs`"))

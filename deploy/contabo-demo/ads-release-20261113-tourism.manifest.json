@@ -7,7 +7,7 @@
     "ingress": "https://demo.africadigitalsynergy.com"
   },
   "status": "SOURCE_PINNED__SERVER_BUILD_APPROVED_BY_OWNER_20261113",
-  "summary": "TOU-0: first ADS Tourism demo on Contabo, added next to ads-release-20261111b (which stays the release of record for the other products and is not changed). Identity runs an image built on the server from kit main 399ee5b, the TOU-0 PR #87 merge (tourism-web demo address, Tourism visitor persona in its own personal workspace, Tourism in the Demo Access registry). Tourism runs main ca8d390. No CI, deployment, migration, seed, account creation or portal activation happens when this manifest is committed.",
+  "summary": "TOU-0: first ADS Tourism demo on Contabo, added next to ads-release-20261111b (which stays the release of record for the other products and is not changed). Identity runs an image built on the server from kit main 399ee5b, the TOU-0 PR #87 merge (tourism-web demo address, Tourism visitor persona in its own personal workspace, Tourism in the Demo Access registry). Tourism runs main 3b023ac (TOU-1, tourism-platform PR #13). No CI, deployment, migration, seed, account creation or portal activation happens when this manifest is committed.",
   "immutable_sources": [
     {
       "id": "ads-identity",
@@ -28,7 +28,11 @@
     {
       "id": "tourism",
       "repo": "ksondo/tourism-platform",
-      "sha": "ca8d3901e242125d5b9f6de927854a1444a5927d",
+      "sha": "3b023ac57c8421a82f2d705e8b1065f088adffed",
+      "pr": 13,
+      "image": "ads-tourism:3b023ac57c8421a82f2d705e8b1065f088adffed",
+      "tools_image": "ads-tourism-demo-tools:3b023ac57c8421a82f2d705e8b1065f088adffed",
+      "image_source": "Built on the Contabo server from git archive of this commit (RUNBOOK.md E3.2 step 5a); TOU-1 hosting hardening: two app logins (tour_api, tour_api_worker), fixed edge subnet 172.30.130.0/24.",
       "kind": "product",
       "deployment_order": 2,
       "host": "tourism.demo.africadigitalsynergy.com",
@@ -49,7 +53,7 @@
   ],
   "excluded_until_certified": [],
   "hard_gates": {
-    "source_ci": "GitHub Actions is unavailable (billing) since 13 Nov 2026 and publishes no images. Owner approval (13 Nov 2026): deploy today with images built on the Contabo server from the exact merged commits (kit merge commit for Identity, tagged ads-platform-kit-identity:sha-<KIT_SHA> with the OCI revision label; Tourism ca8d390), as in RUNBOOK.md E3.2 step 2. GitHub still runs once on each main as a catch-up when billing is restored.",
+    "source_ci": "GitHub Actions is unavailable (billing) since 13 Nov 2026 and publishes no images. Owner approval (13 Nov 2026): deploy today with images built on the Contabo server from the exact merged commits (kit merge commit for Identity, tagged ads-platform-kit-identity:sha-<KIT_SHA> with the OCI revision label; Tourism 3b023ac, tagged ads-tourism:<SHA>), as in RUNBOOK.md E3.2 step 2. GitHub still runs once on each main as a catch-up when billing is restored.",
     "backups": "Protected Identity database backup before re-registering tourism-web and before demo-orgs; Tourism database backup before its migrations once data exists.",
     "port": "Tourism publishes 127.0.0.1:18130 only (TOUR_DEMO_PORT); free on the host before start (ss -ltn).",
     "activation": "Portal stays 'preparing' for tourism until release-acceptance.sh --product tourism passes and the book, accept and gate journey is checked in a browser."
