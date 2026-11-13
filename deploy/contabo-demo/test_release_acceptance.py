@@ -29,6 +29,7 @@ TONTINE_TEST_SHA = "a" * 40
 TOURISM_MANIFEST_FILE = "ads-release-20261113-tourism.manifest.json"
 TOURISM_MANIFEST = json.loads((ROOT / TOURISM_MANIFEST_FILE).read_text())
 TOURISM_SHA = "ca8d3901e242125d5b9f6de927854a1444a5927d"
+KIT_TOU0_SHA = "399ee5bde63625f7206d0b2a636c6252e3a85735"  # kit main merge commit of PR #87
 SIX = ["commerce", "education", "agriculture", "fleet-guard", "digital-tontine", "ventureworks"]
 
 FAKE_DOCKER = r'''#!/usr/bin/env python3
@@ -384,7 +385,15 @@ class AcceptanceDryRunTest(unittest.TestCase):
             self.assertNotRegex(r.stdout, r"(?m)^\w+ tourism +%s " % check)
         self.assertNotIn(SECRET, r.stdout + r.stderr + self.host.log.read_text())
 
-    def test_tourism_fails_until_the_identity_pin_is_set_and_without_the_demo_callback(self):
+    def test_tourism_passes_with_the_committed_manifest_when_the_server_built_identity_runs(self):
+        def server_built(st):
+            st["containers"]["ads-demo-identity"]["image"] = "ads-platform-kit-identity:sha-" + KIT_TOU0_SHA
+        self.mutate(server_built)
+        r = self.host.run(ACCEPT, "--manifest", str(ROOT / TOURISM_MANIFEST_FILE), "--product", "tourism")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertRegex(r.stdout, r"(?m)^PASS identity +image +ads-platform-kit-identity:sha-" + KIT_TOU0_SHA)
+
+    def test_tourism_fails_while_the_old_identity_runs_and_without_the_demo_callback(self):
         r = self.host.run(ACCEPT, "--manifest", str(ROOT / TOURISM_MANIFEST_FILE), "--product", "tourism")
         self.assertEqual(r.returncode, 1)
         self.assertRegex(r.stdout, r"(?m)^FAIL identity +image +.*does not carry manifest ads-identity")
@@ -623,7 +632,7 @@ class TourismManifestTest(unittest.TestCase):
     def test_tourism_manifest_pins_tourism_main_and_waits_for_the_identity_repin(self):
         m = TOURISM_MANIFEST
         self.assertEqual(m["release_id"], "ads-release-20261113-tourism")
-        self.assertIn("NOT_APPROVED_FOR_DEPLOY", m["status"])
+        self.assertEqual(m["status"], "SOURCE_PINNED__SERVER_BUILD_APPROVED_BY_OWNER_20261113")
         by_id = {s["id"]: s for s in m["immutable_sources"]}
         self.assertEqual(list(by_id), ["ads-identity", "tourism"])
         t = by_id["tourism"]
@@ -635,8 +644,12 @@ class TourismManifestTest(unittest.TestCase):
         self.assertIn("https://%s/" % t["host"], CLIENTS["tourism-web"]["redirect_uris"])
         ident = by_id["ads-identity"]
         self.assertEqual(ident["repo"], "ksondo/ads-platform-kit")
-        # Either the follow-up repin has happened (full SHA) or the pending note says what to set.
-        self.assertTrue(len(ident["sha"]) == 40 or ("pending_repin" in ident and ident["sha"] == ""))
+        # Repinned after PR #87 merged: the merge commit, built on the server with that SHA in the tag.
+        self.assertEqual(ident["sha"], KIT_TOU0_SHA)
+        self.assertEqual(ident["pr"], 87)
+        self.assertNotIn("pending_repin", ident)
+        self.assertEqual(ident["image"], "ads-platform-kit-identity:sha-" + KIT_TOU0_SHA)
+        self.assertIn(ident["sha"], ident["image"], "release-acceptance.sh matches the running image name against the pin")
         self.assertIn(TOURISM_MANIFEST_FILE, m["acceptance_check"])
 
     def test_tourism_port_is_free_among_the_documented_demo_ports(self):
@@ -680,9 +693,23 @@ class RunbookTest(unittest.TestCase):
         rb = (ROOT / "RUNBOOK.md").read_text()
         e32 = rb[rb.index("#### E3.2 ADS Tourism demo"):rb.index("## F.")]
         build = e32[e32.index("2. **Build and deploy the Identity image"):e32.index("3. **Re-register the Tourism client")]
-        for x in ("git checkout --detach <KIT_SHA>", "docker build -f services/identity/Dockerfile --label org.opencontainers.image.revision=<KIT_SHA> -t ads-platform-kit-identity:sha-<KIT_SHA> .",
-                  "compose.identity.yml up -d --no-deps identity", "identity-image-before-tou0.txt", "images.env.before-tou0"):
+        for x in ('KIT_SHA=' + KIT_TOU0_SHA, 'git checkout --detach "$KIT_SHA"',
+                  # final review (a): build only from the committed tree, and the image's sources carry no ignored file
+                  'git archive "$KIT_SHA" | tar -x -C "$build"',
+                  'docker build -f "$build/services/identity/Dockerfile" --label org.opencontainers.image.revision="$KIT_SHA" -t "ads-platform-kit-identity:sha-$KIT_SHA" "$build"',
+                  'git status --porcelain --ignored -- services/identity config packages/identity-client',
+                  # (b) hard stop on the wrong commit
+                  'git merge-base --is-ancestor "$KIT_SHA" origin/main && test "$(git rev-parse HEAD)" = "$KIT_SHA" || { echo STOP_WRONG_COMMIT; exit 1; }',
+                  # (c) image ID recorded, images.env diff limited to the Identity line, demo-mode check right after up
+                  "docker inspect -f '{{.Config.Image}} {{.Image}}' ads-demo-identity", "identity-image-before-tou0.txt", "images.env.before-tou0",
+                  "diff /etc/ads-demo/images.env.before-tou0 /etc/ads-demo/images.env", "STOP_OTHER_LINES_CHANGED", "STOP_IDENTITY_LINE_NOT_SET",
+                  "sed 's/=.*/=(value hidden)/'",
+                  "compose.identity.yml up -d --no-deps identity", "STOP_WRONG_IMAGE_RUNNING", "STOP_NOT_DEMO_OR_PLACEHOLDER", "STOP_PLACEHOLDER_IN_ENV_FILES"):
             self.assertIn(x, build)
+        self.assertNotIn("docker build -f services/identity/Dockerfile", build, "never build from the working tree")
+        self.assertLess(build.index("STOP_WRONG_COMMIT"), build.index("docker build"))
+        self.assertLess(build.index("up -d --no-deps identity"), build.index("STOP_NOT_DEMO_OR_PLACEHOLDER"))
+        self.assertLess(build.index("STOP_NOT_DEMO_OR_PLACEHOLDER"), build.index("curl -fsS http://127.0.0.1:18090/health"))
         self.assertLess(e32.index("1. **Back up Identity**"), e32.index("2. **Build and deploy the Identity image"))
         orgs = e32[e32.index("4. **Re-run demo-bootstrap"):e32.index("5. **Tourism demo seed.**")]
         self.assertLess(orgs.index("demo-tenants.json.new"), orgs.index("CHANGED"))
