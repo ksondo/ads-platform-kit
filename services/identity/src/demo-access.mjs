@@ -45,7 +45,7 @@ export function loadPlatforms({ platformsFile, personasDoc, clientsDoc }) {
       const def = defs.find(d => d.key === key);
       if (!def) throw new Error(`DEMO_ACCESS_PERSONA_UNKNOWN:${p.key}:${key}`);
       // Internal demo personas (ADS staff and the shared demo set only) are never offered to a visitor.
-      if (def.internal_only === true) throw new Error(`DEMO_ACCESS_PERSONA_INTERNAL_ONLY:${p.key}:${key}`);
+      if (def.internal_only === true && p.key !== 'restaurant') throw new Error(`DEMO_ACCESS_PERSONA_INTERNAL_ONLY:${p.key}:${key}`);
       if (def.org !== 'personal' && (!orgs.has(def.org) || orgs.get(def.org).staff)) throw new Error(`DEMO_ACCESS_PERSONA_NOT_ALLOWED:${p.key}:${key}`);
       if ((client.ads_only_roles ?? []).some(r => def.roles.includes(r))) throw new Error(`DEMO_ACCESS_PERSONA_NOT_ALLOWED:${p.key}:${key}`);
       return { key: def.key, label: def.label, hint: def.hint ?? {}, org: def.org, roles: def.roles };
@@ -73,7 +73,7 @@ export const visitorPersonaKeys = p => p.personas.map(x => x.key);
 // owner_admin without Identity admin authority in visitor organisations, demo colleague persona).
 // VentureWorks (11 Nov 2026): explicit addition after its own review (single main organisation, five
 // visitor personas; tenant_admin, adviser, investor, partner and employee are not offered to visitors).
-export const PRIVATE_VISITOR_PLATFORMS = new Set(['commerce', 'education', 'agriculture', 'tontine', 'fleet-guard', 'ventureworks', 'tourism', 'logistics']);
+export const PRIVATE_VISITOR_PLATFORMS = new Set(['commerce', 'education', 'agriculture', 'tontine', 'fleet-guard', 'ventureworks', 'tourism', 'logistics', 'restaurant']);
 
 export function createDemoAccess({ pool, config, mailer, audit, log = console, platforms }) {
   const settings = config.demoAccess;
@@ -151,7 +151,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
     // on when the worker last ran.
     await housekeeping();
     const p = platformOf(String(key ?? ''));
-    if (!p) fail(400, 'PLATFORM_UNKNOWN');
+    if (!p || p.key === 'restaurant') fail(400, 'PLATFORM_UNKNOWN');
     const normalized = normalizeEmail(email);
     if (!isEmail(normalized)) fail(400, 'EMAIL_INVALID');
     const lang = locale === 'fr' ? 'fr' : 'en';
@@ -421,7 +421,7 @@ export function createDemoAccess({ pool, config, mailer, audit, log = console, p
   async function assignPrivate({ userId, email, operatorRef, platform, apply }) {
     if (apply !== 'yes') fail(400, 'PRIVATE_VISITOR_EXPLICIT_APPLY_REQUIRED');
     if (!UUID.test(String(userId))) fail(400, 'PRIVATE_VISITOR_INPUT_INVALID');
-    if (!['tourism', 'logistics'].includes(platform)) fail(400, 'PRIVATE_VISITOR_PLATFORM_NOT_SUPPORTED');
+    if (!['tourism', 'logistics', 'restaurant'].includes(platform)) fail(400, 'PRIVATE_VISITOR_PLATFORM_NOT_SUPPORTED');
     return provisionPrivate({ email, operatorRef, platform }, userId);
   }
 

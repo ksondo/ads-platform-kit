@@ -62,7 +62,7 @@ describe('client registry: demo_access_denied_redirect', () => {
     assert.deepEqual(clients.filter(c => demoAccessDeniedRedirect(c)).map(c => c.client_id).sort(), ON);
     for (const c of clients) if (!ON.includes(c.client_id)) assert.equal(demoAccessDeniedRedirect(c), false, c.client_id);
     assert.deepEqual([...loadPlatforms({}).values()].filter(p => p.deniedRedirect).map(p => p.key).sort(), ['fleet-guard', 'tontine', 'ventureworks']);
-    assert.deepEqual([...loadPlatforms({}).values()].filter(p => !p.deniedRedirect).map(p => p.key).sort(), ['agriculture', 'commerce', 'education', 'logistics', 'morphoo', 'tourism']);
+    assert.deepEqual([...loadPlatforms({}).values()].filter(p => !p.deniedRedirect).map(p => p.key).sort(), ['agriculture', 'commerce', 'education', 'logistics', 'morphoo', 'restaurant', 'tourism']);
   });
 });
 
