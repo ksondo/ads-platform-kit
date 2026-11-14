@@ -433,6 +433,33 @@ Deferred to the next phase (not in this change):
 - **Morphoo in `PRIVATE_VISITOR_PLATFORMS`** (`services/identity/src/demo-access.mjs`). The demo host runs in private mode (`DEMO_ACCESS_PRIVATE_ENABLED=1`, public requests answer 404), so Morphoo visitors can be provisioned (`demo-visitor-provision --platform morphoo`), and Identity's visitor token limits, expiry and revocation apply to Morphoo sign-ins, only once Morphoo is added there. That is an Identity code change that needs its own review, as Fleet Guard (7 Nov) and VentureWorks (11 Nov) had, with a private-visitor test file like `ventureworks-private-visitor.test.mjs`.
 - Seeding each visitor's own demo church (Morphoo MOR-10), the visitor not owning their demo church (MOR-10), the browser journey for persona switch and refusal (MOR-10), and Morphoo's own no-access card (then `demo_access_denied_redirect: true`).
 
+#### E3.4 Morphoo pastor and child-safety-officer personas (MOR-10 kit items 8 and 9, 14 November 2026)
+
+**What changes in the kit.** Two Morphoo visitor personas are added, built exactly like `content-steward`:
+
+- `config/demo-personas.json`, `products.morphoo`: `pastor` (Pastor / Pasteur) and `child-safety-officer` (Child-safety officer / Responsable de la protection de l'enfance), each in `main` with role `member` only. Morphoo's seed gives them the church appointments `pastor` and `child_safety_officer` in the visitor's own demo church; neither is an Identity role, so `clients.demo.json` gains no role (only the `morphoo-web` note changes).
+- `config/demo-access-platforms.json`, `morphoo`: the visitor list goes from six to eight personas (`… content-steward, pastor, child-safety-officer`). `platform-admin` stays internal and is never listed.
+- Nothing else changes: no Identity code, no client redirect address, no secret.
+
+MOR-9 kit items 1 to 5 and 7 (registry entry, `content-steward` in `main`, `platform-admin` internal only, the `/demo/personas` return address, one `main` organisation per visitor, `member` listed with each persona role) are already in the kit since 13 November (§E3.3). Item 6, the pin bump, is done later in Morphoo.
+
+**Safe before Morphoo MOR-10.** Morphoo's current `main` drops persona keys it does not know from the persona page and refuses them if chosen (`PERSONA_NOT_ALLOWED`), so pastor and child-safety-officer appear in Morphoo only once its MOR-10 release lists them. Personas are fixed on a grant when it is approved; Morphoo is not yet in private provisioning (§E3.3, deferred), so no existing Morphoo visitor grant needs changing.
+
+**Steps (operator, GPT).** If §E3.3 has not been done yet, do §E3.3 with this kit commit instead (its step 4 then also shows these two new personas, and step 7 shows eight personas). Otherwise:
+
+1. **Back up Identity** and keep `demo-tenants.json.before-mor10`, as in §E3.2 step 1 (marker `identity-backup-<date>.marker`).
+2. **Rebuild the Identity image on the server** from the kit merge commit of this change, exactly as §E3.2 step 2 with `KIT_SHA=<kit merge commit>` (record `identity-image-before-mor10.txt` and `images.env.before-mor10`). No new secret.
+3. **Re-register `morphoo-web`: dry run, then apply** (keeps the client record equal to the reviewed file):
+
+       bash deploy/contabo-demo/register-identity-client.sh morphoo-web --backup-confirmed /var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker
+       bash deploy/contabo-demo/register-identity-client.sh morphoo-web --backup-confirmed /var/lib/ads-demo/operator-secrets/identity-backup-<date>.marker --apply
+
+   Expected dry run: no change to the redirect, logout or role lists (this change adds none). Stop if anything else differs.
+4. **demo-bootstrap and demo-orgs with the `.new` preview**, exactly as §E3.2 step 4. Expected: demo-bootstrap reports two more personas created (`demo.morphoo.pastor@…`, `demo.morphoo.child-safety-officer@…`); in the preview only `morphoo.personas.pastor` and `morphoo.personas.child-safety-officer` are new, both in `morphoo.tenants.main` with roles `["member"]`. Every `*.tenants.*` id and every other `*.personas.*` id stays the same; stop and keep the old file otherwise.
+5. Check (no secrets printed): the Identity sign-in page for `morphoo-web` (credentials hidden) does not list any persona; with Morphoo MOR-10 deployed, an approved visitor sees eight personas on `/demo/personas`, and the pastor and child-safety-officer personas each see only their own screens.
+
+Rollback: the §E3.2 rollback order with the `-before-mor10` files (previous Identity image, re-register `morphoo-web`, demo-bootstrap and demo-orgs from it, then `demo-tenants.json.before-mor10`). The two persona accounts are then unplaced (no workspace). Never delete visitor data or volumes.
+
 ## F. Commerce integrated demo THIRD (in Commerce repository)
 
 See `ksondo/ADS-Commerce-Platform/deploy/demo/DEPLOYMENT_GATE.md`. The demo API, web and forward-only migrator images must come from **one reviewed Commerce commit**. Provision a dedicated commerce demo PostgreSQL instance, apply migrations as a schema owner, then run the app under `commerce_demo_app` with tenant RLS enabled. Test public e-commerce and restricted cashier/merchant POS separately.

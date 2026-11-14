@@ -2,6 +2,8 @@
 // Morphoo's scripts/ops/demo-personas.mjs; content-steward is a visitor persona in the visitor's own main organisation
 // (role member; Morphoo gives it the church appointment content_steward); platform-admin is an internal ADS staff
 // persona that is never offered to a visitor; each approved visitor gets their own main organisation (demo church).
+// MOR-10 (kit items 8 and 9): pastor and child-safety-officer are visitor personas built the same way as content-steward
+// (role member in main; Morphoo gives them the church appointments pastor and child_safety_officer).
 import { after, before, describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -13,7 +15,9 @@ import { loadConfig } from '../src/config.mjs';
 import { browser, createActiveUser, csrfFrom, startService } from './helpers.mjs';
 
 const read = p => JSON.parse(readFileSync(new URL(`../../../config/${p}`, import.meta.url), 'utf8'));
-const SIX = ['member', 'mentor', 'ministry-lead', 'pastoral-care', 'church-admin', 'content-steward'];
+const VISITOR = ['member', 'mentor', 'ministry-lead', 'pastoral-care', 'church-admin', 'content-steward', 'pastor', 'child-safety-officer'];
+// Personas whose Morphoo duty is a church appointment inside the visitor's demo church, not an Identity role.
+const APPOINTMENT_PERSONAS = ['content-steward', 'pastor', 'child-safety-officer'];
 const HOST = 'https://morphoo.demo.africadigitalsynergy.com';
 
 describe('MOR-9 Morphoo demo access: configuration', () => {
@@ -22,14 +26,14 @@ describe('MOR-9 Morphoo demo access: configuration', () => {
   const morphoo = clients.products.find(c => c.client_id === 'morphoo-web');
   const defs = personas.products.morphoo.personas;
 
-  it('registry entry: morphoo-web, demo origin, persona page, the six visitor personas in the main organisation', () => {
+  it('registry entry: morphoo-web, demo origin, persona page, the eight visitor personas in the main organisation', () => {
     const p = loadPlatforms({}).get('morphoo');
     assert.equal(p.clientId, 'morphoo-web');
     assert.equal(p.slug, 'morphoo');
     assert.equal(p.prefix, 'MOR');
     assert.deepEqual(p.origins, [HOST]);
     assert.equal(p.entryUrl, `${HOST}/demo/personas`);
-    assert.deepEqual(p.personas.map(x => x.key), SIX);
+    assert.deepEqual(p.personas.map(x => x.key), VISITOR);
     assert.ok(p.personas.every(x => x.org === 'main'), 'every visitor persona is in the visitor\'s own main organisation');
     assert.equal(p.inviteOrg, 'main');
     assert.deepEqual(p.orgs.map(o => o.key), ['main']);
@@ -43,13 +47,33 @@ describe('MOR-9 Morphoo demo access: configuration', () => {
     assert.equal(steward.internal_only, undefined);
     const main = morphoo.demo_orgs.find(o => o.key === 'main');
     for (const role of ['member', 'mentor', 'ministry_lead', 'pastoral_care', 'church_admin']) assert.ok(main.roles.includes(role), role);
-    for (const key of SIX) for (const role of defs.find(x => x.key === key).roles) assert.ok(main.roles.includes(role), `${key}:${role}`);
+    for (const key of VISITOR) for (const role of defs.find(x => x.key === key).roles) assert.ok(main.roles.includes(role), `${key}:${role}`);
     assert.ok(!main.roles.some(r => morphoo.ads_only_roles.includes(r)), 'no ADS-only role in the visitor organisation');
   });
 
+  it('pastor and child-safety-officer (MOR-10) are visitor personas like content-steward: member only in main, EN/FR labels, no new role', () => {
+    const main = morphoo.demo_orgs.find(o => o.key === 'main');
+    for (const key of APPOINTMENT_PERSONAS) {
+      const def = defs.find(x => x.key === key);
+      assert.ok(def, key);
+      assert.deepEqual({ org: def.org, roles: def.roles, internal_only: def.internal_only }, { org: 'main', roles: ['member'], internal_only: undefined }, key);
+      for (const lang of ['en', 'fr']) { assert.ok(def.label[lang]?.trim(), `${key} label ${lang}`); assert.ok(def.hint[lang]?.trim(), `${key} hint ${lang}`); }
+    }
+    assert.deepEqual(defs.find(x => x.key === 'pastor').label, { en: 'Pastor', fr: 'Pasteur' });
+    assert.deepEqual(defs.find(x => x.key === 'child-safety-officer').label, { en: 'Child-safety officer', fr: "Responsable de la protection de l'enfance" });
+    // The church appointments are Morphoo's own: never an Identity role, never assignable, never in the visitor organisation.
+    for (const role of ['pastor', 'child_safety_officer']) {
+      assert.ok(!main.roles.includes(role), role);
+      assert.ok(!morphoo.assignable_roles.includes(role), role);
+      assert.ok(!defs.some(x => x.roles.includes(role)), role);
+    }
+    // Registry order: the two new personas follow content-steward; platform-admin stays last and internal.
+    assert.deepEqual(defs.map(x => x.key), [...VISITOR, 'platform-admin']);
+  });
+
   it('each main-organisation persona carries member plus its own role, and nothing more (Morphoo intersects with the token)', () => {
-    const own = { member: [], mentor: ['mentor'], 'ministry-lead': ['ministry_lead'], 'pastoral-care': ['pastoral_care'], 'church-admin': ['church_admin'], 'content-steward': [] };
-    for (const key of SIX) {
+    const own = { member: [], mentor: ['mentor'], 'ministry-lead': ['ministry_lead'], 'pastoral-care': ['pastoral_care'], 'church-admin': ['church_admin'], 'content-steward': [], pastor: [], 'child-safety-officer': [] };
+    for (const key of VISITOR) {
       const def = defs.find(x => x.key === key);
       assert.deepEqual(def.roles, ['member', ...own[key]], key);
       assert.ok(def.roles.every(r => r === 'member' || own[key].includes(r)), `${key} gains no other role`);
@@ -87,7 +111,7 @@ describe('MOR-9 Morphoo demo access: configuration', () => {
       const doc = read('demo-access-platforms.json');
       const offer = (extra, name) => {
         const file = path.join(dir, `${name}.json`);
-        writeFileSync(file, JSON.stringify({ ...doc, platforms: doc.platforms.map(x => (x.key === 'morphoo' ? { ...x, personas: [...SIX, extra] } : x)) }));
+        writeFileSync(file, JSON.stringify({ ...doc, platforms: doc.platforms.map(x => (x.key === 'morphoo' ? { ...x, personas: [...VISITOR, extra] } : x)) }));
         return file;
       };
       assert.throws(() => loadPlatforms({ platformsFile: offer('platform-admin', 'internal') }), /DEMO_ACCESS_PERSONA_INTERNAL_ONLY:morphoo:platform-admin/);
@@ -142,7 +166,7 @@ describe('MOR-9 Morphoo demo access: an approved visitor gets their own demo chu
   });
   after(async () => { await svc?.stop(); });
 
-  it('two approved visitors each get a separate main organisation; the grant lists the six personas there and never platform-admin', async () => {
+  it('two approved visitors each get a separate main organisation; the grant lists the eight personas there and never platform-admin', async () => {
     const mains = [];
     for (const email of ['morphoo.visitor.one@example.com', 'morphoo.visitor.two@example.com']) {
       const res = await request(email);
@@ -154,7 +178,7 @@ describe('MOR-9 Morphoo demo access: an approved visitor gets their own demo chu
       const grant = (await svc.pool.query('SELECT * FROM platform.demo_access_grants WHERE request_id=$1', [req.id])).rows[0];
       assert.match(grant.demo_set, /^visit-[0-9a-f]{12}$/);
       assert.deepEqual(Object.keys(grant.tenants), ['main'], 'one organisation per visitor: their own demo church');
-      assert.deepEqual(grant.personas.map(p => p.key ?? p), SIX);
+      assert.deepEqual(grant.personas.map(p => p.key ?? p), VISITOR);
       const org = (await svc.pool.query('SELECT o.name, o.is_demo, o.is_staff FROM platform.tenants t JOIN platform.organizations o ON o.id=t.organization_id WHERE t.id=$1', [grant.tenants.main])).rows[0];
       assert.equal(org.is_demo, true);
       assert.equal(org.is_staff, false);

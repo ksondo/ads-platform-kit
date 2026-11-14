@@ -196,7 +196,9 @@
         "ministry-lead",
         "pastoral-care",
         "church-admin",
-        "content-steward"
+        "content-steward",
+        "pastor",
+        "child-safety-officer"
       ]
     }
   ]
