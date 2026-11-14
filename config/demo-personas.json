@@ -245,14 +245,14 @@
     },
     "restaurant": {
       "personas": [
-        {"key":"owner","label":{"en":"Owner","fr":"Propriétaire"},"org":"main","roles":["restaurant_owner"],"internal_only":true},
-        {"key":"manager","label":{"en":"Floor manager","fr":"Responsable de salle"},"org":"main","roles":["restaurant_manager"],"internal_only":true},
-        {"key":"cashier","label":{"en":"Cashier","fr":"Caissier"},"org":"main","roles":["restaurant_cashier"],"internal_only":true},
-        {"key":"waiter","label":{"en":"Waiter","fr":"Serveur"},"org":"main","roles":["restaurant_waiter"],"internal_only":true},
-        {"key":"kitchen","label":{"en":"Kitchen","fr":"Cuisine"},"org":"main","roles":["kitchen_staff"],"internal_only":true},
-        {"key":"bar","label":{"en":"Bar","fr":"Bar"},"org":"main","roles":["bar_staff"],"internal_only":true},
-        {"key":"accountant","label":{"en":"Accountant","fr":"Comptable"},"org":"main","roles":["restaurant_accountant"],"internal_only":true},
-        {"key":"colleague","label":{"en":"Demo colleague","fr":"Collègue de démonstration"},"org":"main","roles":["restaurant_manager"],"internal_only":true}
+        {"key":"owner","label":{"en":"Owner","fr":"Propriétaire"},"hint":{"en":"Manages the restaurant","fr":"Gère le restaurant"},"org":"main","roles":["restaurant_owner"],"internal_only":true},
+        {"key":"manager","label":{"en":"Floor manager","fr":"Responsable de salle"},"hint":{"en":"Manages table service and approvals","fr":"Gère le service en salle et les validations"},"org":"main","roles":["restaurant_manager"],"internal_only":true},
+        {"key":"cashier","label":{"en":"Cashier","fr":"Caissier"},"hint":{"en":"Collects payments and issues receipts","fr":"Encaisse et délivre les reçus"},"org":"main","roles":["restaurant_cashier"],"internal_only":true},
+        {"key":"waiter","label":{"en":"Waiter","fr":"Serveur"},"hint":{"en":"Seats guests and sends orders","fr":"Installe les clients et transmet les commandes"},"org":"main","roles":["restaurant_waiter"],"internal_only":true},
+        {"key":"kitchen","label":{"en":"Kitchen","fr":"Cuisine"},"hint":{"en":"Prepares kitchen orders","fr":"Prépare les commandes en cuisine"},"org":"main","roles":["kitchen_staff"],"internal_only":true},
+        {"key":"bar","label":{"en":"Bar","fr":"Bar"},"hint":{"en":"Prepares drinks","fr":"Prépare les boissons"},"org":"main","roles":["bar_staff"],"internal_only":true},
+        {"key":"accountant","label":{"en":"Accountant","fr":"Comptable"},"hint":{"en":"Reviews settled bills","fr":"Consulte les additions réglées"},"org":"main","roles":["restaurant_accountant"],"internal_only":true},
+        {"key":"colleague","label":{"en":"Demo colleague","fr":"Collègue de démonstration"},"hint":{"en":"Provides a second approval","fr":"Assure une deuxième validation"},"org":"main","roles":["restaurant_manager"],"internal_only":true}
       ]
     },
     "banking": {
