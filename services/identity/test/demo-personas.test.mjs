@@ -358,6 +358,7 @@ describe('demo personas: bootstrap, organisations, reset, sign-in page and langu
     const keys = [...doc.querySelectorAll('li.persona')].map(li => li.dataset.persona);
     assert.deepEqual(keys, personasOf('morphoo').filter(p => p.internal_only !== true).map(p => p.key));
     assert.ok(keys.includes('content-steward'));
+    for (const key of ['pastor', 'child-safety-officer']) assert.ok(keys.includes(key), key);
     assert.ok(!keys.includes('platform-admin'));
     assert.ok(!page.text.includes(settings().personaEmail('morphoo', 'platform-admin')));
     for (const slug of Object.keys(personasDoc.products)) {
@@ -382,6 +383,11 @@ describe('demo personas: bootstrap, organisations, reset, sign-in page and langu
     }
     // A visitor-facing persona of the same product still signs in with the shown password.
     assert.deepEqual(decode((await signInTokens(svc, clientOf('morphoo'), { email: settings().personaEmail('morphoo', 'content-steward'), password: PW.persona })).access_token).roles, ['member']);
+    // MOR-10: the pastor and child-safety-officer tokens carry member only, like content-steward
+    // (the church appointment is Morphoo's, inside the visitor's demo church).
+    for (const key of ['pastor', 'child-safety-officer']) {
+      assert.deepEqual(decode((await signInTokens(svc, clientOf('morphoo'), { email: settings().personaEmail('morphoo', key), password: PW.persona })).access_token).roles, ['member'], key);
+    }
     assert.ok(decode((await signInTokens(svc, clientOf('commerce'), { email: settings().personaEmail('commerce', 'cashier'), password: PW.persona })).access_token).roles.includes('commerce_cashier'));
     // Credentials hidden (DEMO_SHOW_CREDENTIALS off): ADS staff QA can use them, with exactly their roles.
     const hidden = await startService({ env: DEMO, keepDb: true });

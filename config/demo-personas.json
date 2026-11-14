@@ -52,6 +52,8 @@
         {"key": "pastoral-care", "label": {"en": "Pastoral care", "fr": "Accompagnement pastoral"}, "hint": {"en": "Follows pastoral care requests", "fr": "Suit les demandes d'accompagnement"}, "org": "main", "roles": ["member", "pastoral_care"]},
         {"key": "church-admin", "label": {"en": "Church administrator", "fr": "Administrateur de l'église"}, "hint": {"en": "Runs the church workspace", "fr": "Gère l'espace de l'église"}, "org": "main", "roles": ["member", "church_admin"]},
         {"key": "content-steward", "label": {"en": "Content steward", "fr": "Responsable des contenus"}, "hint": {"en": "Reviews formation content", "fr": "Relit les contenus de formation"}, "org": "main", "roles": ["member"]},
+        {"key": "pastor", "label": {"en": "Pastor", "fr": "Pasteur"}, "hint": {"en": "Church overview, pastoral care and teaching", "fr": "Vue d'ensemble de l'église, accompagnement pastoral et enseignement"}, "org": "main", "roles": ["member"]},
+        {"key": "child-safety-officer", "label": {"en": "Child-safety officer", "fr": "Responsable de la protection de l'enfance"}, "hint": {"en": "Children's check-out, release and safeguarding reports", "fr": "Sortie et départ des enfants, signalements de protection"}, "org": "main", "roles": ["member"]},
         {"key": "platform-admin", "label": {"en": "Platform admin (ADS)", "fr": "Administrateur plateforme (ADS)"}, "hint": {"en": "Verifies churches", "fr": "Vérifie les églises"}, "org": "staff", "roles": ["super_admin", "pcc_admin"], "internal_only": true}
       ]
     },
