@@ -18,20 +18,20 @@ const bySlug = Object.fromEntries(doc.products.map(p => [p.slug, p]));
 const apply = (args, env = {}) => spawnSync(process.execPath, [applyScript, ...args], { encoding: 'utf8', env: { PATH: process.env.PATH, DATABASE_URL, ...env }, timeout: 120_000 });
 
 describe('client registration list (config/clients.demo.json)', () => {
-  it('covers the 26 products: 25 sign-in clients plus the RAG gateway, which needs none', () => {
+  it('covers the 27 products: 26 sign-in clients plus the RAG gateway, which needs none', () => {
     validateClientList(doc);
     const slugs = ['software-factory', 'career-path', 'nutrition', 'personal-finance', 'education', 'morphoo', 'ventureworks', 'commerce', 'logistics', 'mamacare',
       'fleetguard', 'tontine', 'leisure-events', 'soulbridge', 'health', 'home-services', 'project-management', 'africover', 'agriculture', 'investment', 'hub',
-      'hopebridge', 'tourism', 'banking', 'transport'];
+      'hopebridge', 'tourism', 'restaurant', 'banking', 'transport'];
     assert.deepEqual(doc.products.map(p => p.slug).sort(), [...slugs].sort());
     assert.deepEqual(doc.no_client.map(n => n.slug), ['rag-gateway']);
-    assert.equal(new Set(doc.products.map(p => p.client_id)).size, 25);
+    assert.equal(new Set(doc.products.map(p => p.client_id)).size, 26);
   });
 
   it('uses reviewed HTTPS callback origins, including the approved public Commerce demo hostname', () => {
     const newDemoOrigins = {
       agriculture: 'agriculture', education: 'education', fleetguard: 'fleetguard', 'home-services': 'home-services',
-      mamacare: 'mamacare', morphoo: 'morphoo', tontine: 'tontine', ventureworks: 'ventureworks', tourism: 'tourism', logistics: 'logistics'
+      mamacare: 'mamacare', morphoo: 'morphoo', tontine: 'tontine', ventureworks: 'ventureworks', tourism: 'tourism', logistics: 'logistics', restaurant: 'restaurant'
     };
     for (const p of doc.products) {
       const original = p.slug === 'commerce' ? 'https://commerce.demo.africadigitalsynergy.com' : `https://${p.slug}.test.africadigitalsynergy.com`;
@@ -52,7 +52,7 @@ describe('client registration list (config/clients.demo.json)', () => {
   it('keeps ADS-only staff roles out of assignable_roles (audit section 2.3 and section 4 step 2)', () => {
     const adsOnly = {
       commerce: ['commerce_reviewer', 'commerce_support'], fleetguard: ['ads_support'], soulbridge: ['ads_support'], mamacare: ['ads_support', 'content_author', 'content_steward'],
-      morphoo: ['super_admin', 'pcc_admin'], nutrition: ['food_data_admin'], health: ['ads_reviewer'], tourism: ['tour_admin'], education: ['platform_admin'],
+      morphoo: ['super_admin', 'pcc_admin'], nutrition: ['food_data_admin'], health: ['ads_reviewer'], tourism: ['tour_admin'], restaurant: ['ads_operator'], education: ['platform_admin'],
     };
     for (const [slug, roles] of Object.entries(adsOnly)) {
       for (const r of roles) {
@@ -161,7 +161,7 @@ describe('apply-clients', () => {
     assert.equal(r.status, 0, r.stderr);
     const rows = (await svc.pool.query('SELECT * FROM platform.oauth_clients ORDER BY client_id')).rows;
     const services = doc.service_clients ?? [];
-    assert.equal(rows.length, 25 + services.length);
+    assert.equal(rows.length, doc.products.length + services.length);
     for (const p of services) {
       const row = rows.find(x => x.client_id === p.client_id);
       assert.equal(row.kind, 'service', p.client_id);

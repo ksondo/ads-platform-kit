@@ -2,6 +2,7 @@
   "$comment": "Platforms whose demonstrations are opened by administrator-approved access (ADS Demo Access). A visitor approved for one platform gets nothing on another. personas: keys from config/demo-personas.json that an approved visitor may use; ADS staff personas (reviewer, support) and personas marked internal_only in config/demo-personas.json (Commerce: investor, auditor, bank-loan-officer) are never listed here; loading refuses them. This list is the single source for both public (administrator-approved) and private (operator-provisioned) visitors. origins: the web addresses allowed to send access requests from the browser. entry_url: where the visitor lands after accepting the invitation (the platform's persona page; Tourism has no persona page yet, so its entry is its home page, TOU-0). ADS staff and administrator personas (platform-admin, tenant-admin, support) and personas without a working home screen are not offered to visitors.",
   "version": 1,
   "platforms": [
+    {"key":"restaurant","reference_prefix":"RST","name":{"en":"ADS Restaurant","fr":"ADS Restaurant"},"client_id":"restaurant-web","product_slug":"restaurant","origins":["https://restaurant.demo.africadigitalsynergy.com"],"entry_url":"https://restaurant.demo.africadigitalsynergy.com/demo/personas","personas":["owner","manager","cashier","waiter","kitchen","bar","accountant","colleague"]},
     {
       "key": "commerce",
       "reference_prefix": "COM",

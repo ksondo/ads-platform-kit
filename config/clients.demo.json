@@ -1484,6 +1484,63 @@
       "notes": "TOU-0 (13 Nov 2026): demo host tourism.demo.africadigitalsynergy.com added next to .test. The demo visitor persona uses its own personal workspace (like the Commerce shopper), never the operator organisation: Tourism refuses a booking on a listing of the booker's own organisation (OWN_LISTING), so a visitor inside the operator organisation could not book, be accepted and pass the gate. demo_access_denied_redirect stays false until the Tourism app shows its own no-access card."
     },
     {
+      "slug": "restaurant",
+      "product": "Digital Restaurant",
+      "repo": "Restaurant-platform",
+      "client_id": "restaurant-web",
+      "display_name": "ADS Digital Restaurant",
+      "accent": "#137B74",
+      "redirect_uris": [
+        "https://restaurant.test.africadigitalsynergy.com/",
+        "https://restaurant.demo.africadigitalsynergy.com/"
+      ],
+      "post_logout_redirect_uris": [
+        "https://restaurant.test.africadigitalsynergy.com/",
+        "https://restaurant.demo.africadigitalsynergy.com/"
+      ],
+      "self_service_roles": [],
+      "allow_personal_workspace": false,
+      "demo_access_denied_redirect": false,
+      "admin_roles": [
+        "restaurant_owner"
+      ],
+      "admin_scopes": [],
+      "assignable_roles": [
+        "restaurant_manager",
+        "restaurant_cashier",
+        "restaurant_waiter",
+        "kitchen_staff",
+        "bar_staff",
+        "restaurant_host",
+        "restaurant_packer",
+        "restaurant_accountant"
+      ],
+      "ads_only_roles": [
+        "ads_operator"
+      ],
+      "needs_client_secret": false,
+      "client_secret_setting": null,
+      "demo_orgs": [
+        {
+          "key": "main",
+          "name": "ADS Demo – Restaurant",
+          "staff": false,
+          "roles": [
+            "restaurant_manager",
+            "restaurant_cashier",
+            "restaurant_waiter",
+            "kitchen_staff",
+            "bar_staff",
+            "restaurant_host",
+            "restaurant_packer",
+            "restaurant_accountant"
+          ]
+        }
+      ],
+      "tenant_settings": {},
+      "notes": "Registration only. Do not apply to a hosted environment until branch grants and the Restaurant pilot are verified. No operator API access through restaurant-web."
+    },
+    {
       "slug": "banking",
       "product": "Banking",
       "repo": "banking-platforms",

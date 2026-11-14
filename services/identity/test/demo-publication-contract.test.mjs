@@ -15,6 +15,8 @@ const clients = read('../../../config/clients.demo.json').products;
 const registry = loadPlatforms({});
 
 const PRODUCTS = {
+  restaurant: { client: 'restaurant-web', slug: 'restaurant', host: 'restaurant.demo.africadigitalsynergy.com', entry: '/demo/personas', env: 'DEMO_ACCESS_CHECK_SECRET_RESTAURANT',
+    personas: { owner: 'main', manager: 'main', cashier: 'main', waiter: 'main', kitchen: 'main', bar: 'main', accountant: 'main', colleague: 'main' } },
   tourism: { client: 'tourism-web', slug: 'tourism', host: 'tourism.demo.africadigitalsynergy.com', entry: '/', env: 'DEMO_ACCESS_CHECK_SECRET_TOURISM',
     personas: { visitor: 'personal', 'gate-agent': 'main', 'operator-admin': 'main' } },
   logistics: { client: 'logistics-web', slug: 'logistics', host: 'logistics.demo.africadigitalsynergy.com', entry: '/demo/personas', env: 'DEMO_ACCESS_CHECK_SECRET_LOGISTICS',
