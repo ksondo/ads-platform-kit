@@ -429,9 +429,15 @@ Steps (operator, GPT), only after Morphoo #50 is merged and its images are built
 
 Rollback: Morphoo `MORPHOO_DEMO_ACCESS=0` and recreate the Morphoo app; then the §E3.2 rollback order with the `-before-mor9` files (previous Identity image, re-register `morphoo-web`, demo-bootstrap and demo-orgs from it, then `demo-tenants.json.before-mor9`). Never delete visitor data or volumes.
 
-Deferred to the next phase (not in this change):
-- **Morphoo in `PRIVATE_VISITOR_PLATFORMS`** (`services/identity/src/demo-access.mjs`). The demo host runs in private mode (`DEMO_ACCESS_PRIVATE_ENABLED=1`, public requests answer 404), so Morphoo visitors can be provisioned (`demo-visitor-provision --platform morphoo`), and Identity's visitor token limits, expiry and revocation apply to Morphoo sign-ins, only once Morphoo is added there. That is an Identity code change that needs its own review, as Fleet Guard (7 Nov) and VentureWorks (11 Nov) had, with a private-visitor test file like `ventureworks-private-visitor.test.mjs`.
-- Seeding each visitor's own demo church (Morphoo MOR-10), the visitor not owning their demo church (MOR-10), the browser journey for persona switch and refusal (MOR-10), and Morphoo's own no-access card (then `demo_access_denied_redirect: true`).
+Private Morphoo QA grant extension (16 November 2026; reviewed merge and release still required):
+- `PRIVATE_VISITOR_PLATFORMS` explicitly includes `morphoo`, and `demo-visitor-assign --platform morphoo` accepts an **existing, active, non-demo** ADS Identity account with matching ID and email. This uses the existing audited 30-day grant mechanism: eight registry-listed visitor personas, one isolated `visit-*` Morphoo church, no ADS staff roles or Identity admin authority. It never changes the account password or claims email verification.
+- **Before applying on Contabo:** obtain independent security review and successful Identity CI; pin and deploy the reviewed Identity image, record and verify the image SHA, verify that its `/app/config/demo-access-platforms.json` includes Morphoo and `DEMO_ACCESS_CHECK_SECRET_MORPHOO` is configured (presence only). Back up the Identity DB and test restore in isolation. Do not edit `platform.demo_access_grants`, roles, or password hashes directly.
+- Confirm the target email, exact active account UUID, `is_demo=false`, no existing Morphoo grant, and private mode enabled with public mode off. Execute **inside the reviewed Identity container**, replacing placeholders with the verified values, and never echo passwords:
+  `docker exec ads-demo-identity node src/cli.mjs demo-visitor-assign --platform morphoo --user '<verified-account-uuid>' --email '<verified-qa-email>' --operator-ref 'MOR-QA-20261116' --apply yes`.
+- Verify Identity grant check, eight allowed personas, no staff role and no cross-tenant access; then use the actual browser for Morphoo sign-in, persona switching, sign-out and revoked/expired-grant refusal. If an account is email-unverified, do not mark it verified without mailbox proof; confirm whether Morphoo's profile linker accepts a new identity or requires email verification for an existing Morphoo profile.
+- The existing Morphoo release and nightly seed still need an isolated tenant/church check. Account and grant creation does **not** automatically certify its per-visitor church appointments or all eight journeys.
+
+Deferred: full live browser acceptance, any Morphoo missing seed/appointment fixes, and Morphoo's own no-access card (then `demo_access_denied_redirect: true`).
 
 #### E3.4 Morphoo pastor and child-safety-officer personas (MOR-10 kit items 8 and 9, 14 November 2026)
 

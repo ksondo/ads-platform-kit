@@ -76,7 +76,33 @@ describe('demo publication contract: Commerce, Education, Agriculture, Tontine, 
       assert.equal(loadConfig({ ...env, [x.env]: value }).demoAccess.checkSecrets[key.replace(/-/g, '_')], value);
     });
   }
+  it('morphoo: explicit private grant extension retains its /auth callback and eight non-staff visitor roles', () => {
+    const key = 'morphoo';
+    const client = clients.find(c => c.client_id === 'morphoo-web');
+    const platform = registry.get(key);
+    const root = 'https://morphoo.demo.africadigitalsynergy.com';
+    assert.ok(PRIVATE_VISITOR_PLATFORMS.has(key));
+    assert.deepEqual(platform.origins, [root]);
+    assert.equal(platform.entryUrl, root + '/demo/personas');
+    assert.ok(client.redirect_uris.includes(root + '/auth'));
+    assert.ok(client.post_logout_redirect_uris.includes(root + '/'));
+    assert.deepEqual(platform.personas.map(p => p.key), [
+      'member', 'mentor', 'ministry-lead', 'pastoral-care', 'church-admin',
+      'content-steward', 'pastor', 'child-safety-officer',
+    ]);
+    const staff = new Set(client.demo_orgs.filter(o => o.staff).map(o => o.key));
+    for (const p of platform.personas) {
+      assert.equal(p.org, 'main');
+      assert.ok(!staff.has(p.org));
+      assert.ok(!p.roles.some(r => (client.ads_only_roles ?? []).includes(r)));
+    }
+    const env = { IDENTITY_PUBLIC_URL: 'http://127.0.0.1:1', IDENTITY_DEV_MODE: '1',
+      DATABASE_URL: 'postgres://x@127.0.0.1/x', MAIL_TRANSPORT: 'memory' };
+    const value = 'morphoo-private-fixture-' + 'z'.repeat(32);
+    assert.equal(loadConfig({ ...env, DEMO_ACCESS_CHECK_SECRET_MORPHOO: value }).demoAccess.checkSecrets.morphoo, value);
+  });
+
   it('private provisioning covers exactly the published products (no silent extension)', () => {
-    assert.deepEqual([...PRIVATE_VISITOR_PLATFORMS].sort(), Object.keys(PRODUCTS).sort());
+    assert.deepEqual([...PRIVATE_VISITOR_PLATFORMS].sort(), [...Object.keys(PRODUCTS), 'morphoo'].sort());
   });
 });
