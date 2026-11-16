@@ -732,7 +732,9 @@ class RepinAndMorphooRunbookTest(unittest.TestCase):
         at = [e33.index(x) for x in order]
         self.assertEqual(at, sorted(at))
         self.assertIn("DEMO_ACCESS_CHECK_SECRET_MORPHOO", e33)
-        self.assertIn("PRIVATE_VISITOR_PLATFORMS", e33[e33.index("Deferred to the next phase"):])
+        self.assertIn("PRIVATE_VISITOR_PLATFORMS", e33[e33.index("Private Morphoo QA grant extension"):])
+        self.assertIn("demo-visitor-assign --platform morphoo", e33)
+        self.assertIn("never changes the account password", e33)
         example = (ROOT / "identity.env.example").read_text()
         self.assertIn("# DEMO_ACCESS_CHECK_SECRET_MORPHOO=", example)
 
