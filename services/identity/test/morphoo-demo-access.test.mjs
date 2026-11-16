@@ -132,13 +132,13 @@ describe('MOR-9 Morphoo demo access: configuration', () => {
     assert.equal(morphoo.demo_access_denied_redirect, false);
   });
 
-  it('reads DEMO_ACCESS_CHECK_SECRET_MORPHOO like the other platforms; private provisioning is not enabled for Morphoo here', () => {
+  it('reads DEMO_ACCESS_CHECK_SECRET_MORPHOO and opts into reviewed private visitor provisioning', () => {
     const env = { IDENTITY_PUBLIC_URL: 'http://127.0.0.1:1', IDENTITY_DEV_MODE: '1', DATABASE_URL: 'postgres://x@127.0.0.1/x', MAIL_TRANSPORT: 'memory' };
     const value = 'morphoo-name-only-fixture-' + 'z'.repeat(32);
     assert.equal(loadConfig({ ...env, DEMO_ACCESS_CHECK_SECRET_MORPHOO: value }).demoAccess.checkSecrets.morphoo, value);
     assert.match(readFileSync(new URL('../../../deploy/contabo-demo/identity.env.example', import.meta.url), 'utf8'), /^# DEMO_ACCESS_CHECK_SECRET_MORPHOO=/m);
-    // Deferred (RUNBOOK §E3.3): Morphoo joins PRIVATE_VISITOR_PLATFORMS in its own reviewed Identity change.
-    assert.equal(PRIVATE_VISITOR_PLATFORMS.has('morphoo'), false);
+    // Private operator provisioning is explicit, and requires the product's check secret.
+    assert.equal(PRIVATE_VISITOR_PLATFORMS.has('morphoo'), true);
   });
 });
 
