@@ -89,7 +89,7 @@ describe('Morphoo private QA visitor: existing-account assignment', () => {
       JOIN platform.organizations o ON o.id=t.organization_id WHERE t.id=$1`, [tenant])).rows[0];
     assert.equal(org.is_demo, true);
     assert.equal(org.is_staff, false);
-    assert.match(org.demo_key, /^visit-[a-f0-9]{12}\\/morphoo:main$/);
+    assert.match(org.demo_key, /^visit-[a-f0-9]{12}\/morphoo:main$/);
     assert.deepEqual(await svc.app.admin.adminWorkspaces(user.id), [], 'no Identity admin authority');
     assert.equal((await svc.app.demoAccess.checkGrant('commerce', user.id)).access, 'none', 'no cross-platform grant');
     const held = (await svc.pool.query(`SELECT roles FROM platform.product_roles
