@@ -196,6 +196,31 @@ describe('service clients and delegated token exchange', () => {
       }
     });
 
+    it('restricts Restaurant fulfilment exchange to a current product role', async () => {
+      const client = 'restaurant-web';
+      const audience = 'ads-logistics-api';
+      const secret = secretOf(client);
+      const manifest = JSON.parse(readFileSync(path.resolve(here, '../../../config/clients.demo.json'), 'utf8'));
+      const product = manifest.products.find(item => item.client_id === client);
+      await registerClient(svc.pool, { id: client });
+      await svc.pool.query('UPDATE platform.oauth_clients SET client_secret_hash=$2,token_exchange=$3::jsonb WHERE client_id=$1',
+        [client, sha(secret), JSON.stringify(product.tokenExchange)]);
+      const subject = await userToken(farmer, coop, client, { roles: ['restaurant_manager'] });
+      const send = scope => exchange({ subject, client, secret, audience, scope: 'logistics.fulfilment.'+scope });
+      assert.equal((await send('book')).body.error, 'invalid_scope');
+      const grant = role => svc.pool.query(`INSERT INTO platform.product_roles(user_id,tenant_id,client_id,roles)
+        VALUES ($1,$2,$3,ARRAY[$4]) ON CONFLICT (user_id,tenant_id,client_id) DO UPDATE SET roles=EXCLUDED.roles`, [farmer.id, coop, client, role]);
+      await grant('restaurant_waiter');
+      assert.equal((await send('book')).body.error, 'invalid_scope');
+      assert.equal((await send('read')).status, 200);
+      await grant('restaurant_manager');
+      const issued = await send('book');
+      assert.equal(issued.status, 200, JSON.stringify(issued.body));
+      const { payload } = await jwtVerify(issued.body.access_token, jwks, { issuer: svc.config.issuer, audience, algorithms: ['RS256'] });
+      assert.deepEqual([payload.sub, payload.tenant_id, payload.act.sub, payload.scope, payload.roles],
+        [farmer.id, coop, client, 'logistics.fulfilment.book', undefined]);
+    });
+
     it('issues Tourism merchant-link proof only with current operator and Commerce owner grants in the same workspace', async () => {
       const client = 'tourism-web';
       const secret = secretOf(client);

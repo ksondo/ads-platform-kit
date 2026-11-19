@@ -1524,8 +1524,11 @@
       "ads_only_roles": [
         "ads_operator"
       ],
-      "needs_client_secret": false,
-      "client_secret_setting": null,
+      "needs_client_secret": true,
+      "client_secret_setting": "RESTAURANT_IDENTITY_CLIENT_SECRET",
+      "tokenExchange": [
+        { "audience": "ads-logistics-api", "scopes": ["logistics.fulfilment.read", "logistics.fulfilment.book"] }
+      ],
       "demo_orgs": [
         {
           "key": "main",
