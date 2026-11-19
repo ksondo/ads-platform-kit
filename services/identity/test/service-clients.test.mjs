@@ -175,6 +175,57 @@ describe('service clients and delegated token exchange', () => {
   });
 
   describe('delegated token exchange (RFC 8693) with a per-client allow list', () => {
+    it('preserves the actor and tenant for the manifest Commerce and Tourism order-read exchanges', async () => {
+      const doc = JSON.parse(readFileSync(path.resolve(here, '../../../config/clients.demo.json'), 'utf8'));
+      for (const [client, audience, scope] of [
+        ['commerce-web', 'ads-logistics-api', 'logistics.fulfilment.read'],
+        ['tourism-web', 'ads-commerce-api', 'commerce.sector_buyer_orders.read'],
+      ]) {
+        const product = doc.products.find(item => item.client_id === client);
+        const secret = secretOf(client);
+        await registerClient(svc.pool, { id: client });
+        await svc.pool.query('UPDATE platform.oauth_clients SET client_secret_hash=$2,token_exchange=$3::jsonb WHERE client_id=$1',
+          [client, sha(secret), JSON.stringify(product.tokenExchange)]);
+        const subject = await userToken(farmer, coop, client);
+        const issued = await exchange({ client, secret, subject, audience, scope });
+        assert.equal(issued.status, 200, JSON.stringify(issued.body));
+        const { payload } = await jwtVerify(issued.body.access_token, jwks, { issuer: svc.config.issuer, audience, algorithms: ['RS256'] });
+        assert.deepEqual([payload.sub, payload.tenant_id, payload.act.sub, payload.scope, payload.roles], [farmer.id, coop, client, scope, undefined]);
+        const denied = await exchange({ client, secret, subject, audience, scope: 'commerce.sector_offers' });
+        assert.equal(denied.body.error, 'invalid_scope');
+      }
+    });
+
+    it('issues Tourism merchant-link proof only with current operator and Commerce owner grants in the same workspace', async () => {
+      const client = 'tourism-web';
+      const secret = secretOf(client);
+      const scope = 'commerce.tourism_merchant_link.manage';
+      const manifest = JSON.parse(readFileSync(path.resolve(here, '../../../config/clients.demo.json'), 'utf8'));
+      const policy = manifest.products.find(product => product.client_id === client).tokenExchange;
+      for (const id of ['tourism-web','commerce-web']) {
+        if (!(await svc.pool.query('SELECT 1 FROM platform.oauth_clients WHERE client_id=$1',[id])).rowCount)
+          await registerClient(svc.pool, { id });
+      }
+      await svc.pool.query('UPDATE platform.oauth_clients SET client_secret_hash=$2,token_exchange=$3::jsonb WHERE client_id=$1',
+        [client, sha(secret), JSON.stringify(policy)]);
+      const subject = await userToken(farmer, coop, client, { roles:['operator_admin','merchant_owner'] });
+      const send = () => exchange({ subject, client, secret, scope });
+      assert.equal((await send()).body.error, 'invalid_scope');
+      const grant = (app,role) => svc.pool.query(`INSERT INTO platform.product_roles(user_id,tenant_id,client_id,roles)
+        VALUES ($1,$2,$3,ARRAY[$4]) ON CONFLICT (user_id,tenant_id,client_id) DO UPDATE SET roles=EXCLUDED.roles`,
+      [farmer.id,coop,app,role]);
+      await grant('tourism-web','operator_admin');
+      assert.equal((await send()).body.error, 'invalid_scope');
+      await grant('commerce-web','merchant_owner');
+      const allowed = await send();
+      assert.equal(allowed.status, 200, JSON.stringify(allowed.body));
+      const { payload } = await jwtVerify(allowed.body.access_token, jwks, { issuer: svc.config.issuer, audience:'ads-commerce-api' });
+      assert.deepEqual([payload.sub,payload.tenant_id,payload.scope,payload.tourism_merchant_link_authorized,payload.roles],
+        [farmer.id,coop,scope,true,undefined]);
+      await grant('commerce-web','commerce_manager');
+      assert.equal((await send()).body.error, 'invalid_scope');
+    });
+
     it('agriculture-web may exchange a signed-in user\'s token for ads-commerce-api / commerce.sector_offers', async () => {
       const subject = await userToken();
       const r = await exchange({ subject });

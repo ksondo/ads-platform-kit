@@ -470,8 +470,11 @@
         "commerce_reviewer",
         "commerce_support"
       ],
-      "needs_client_secret": false,
-      "client_secret_setting": null,
+      "needs_client_secret": true,
+      "client_secret_setting": "COMMERCE_IDENTITY_CLIENT_SECRET",
+      "tokenExchange": [
+        { "audience": "ads-logistics-api", "scopes": ["logistics.fulfilment.read", "logistics.fulfilment.book"] }
+      ],
       "demo_orgs": [
         {
           "key": "main",
@@ -1455,8 +1458,11 @@
       "ads_only_roles": [
         "tour_admin"
       ],
-      "needs_client_secret": false,
-      "client_secret_setting": null,
+      "needs_client_secret": true,
+      "client_secret_setting": "COMMERCE_BUYER_ORDER_CLIENT_SECRET",
+      "tokenExchange": [
+        { "audience": "ads-commerce-api", "scopes": ["commerce.sector_buyer_orders.read","commerce.tourism_merchant_link.manage"] }
+      ],
       "demo_orgs": [
         {
           "key": "main",
