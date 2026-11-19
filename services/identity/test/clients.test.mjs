@@ -82,12 +82,21 @@ describe('client registration list (config/clients.demo.json)', () => {
       assert.equal(bySlug[slug].needs_client_secret, true, slug);
     }
     // Demo check 20 Oct 2026: these never read a client secret at run time.
-    for (const slug of ['tourism', 'mamacare', 'software-factory']) {
+    for (const slug of ['mamacare', 'software-factory']) {
       assert.equal(bySlug[slug].needs_client_secret, false, slug);
       assert.equal(bySlug[slug].client_secret_setting, null, slug);
     }
     assert.equal(bySlug.education.client_secret_setting, 'ADS_IDENTITY_CLIENT_SECRET');
     assert.ok(!JSON.stringify(doc).match(/"secret"\s*:/), 'no secret values in the list');
+  });
+
+  it('allows only delegated order reads from Commerce to Logistics and from Tourism to Commerce', () => {
+    assert.equal(bySlug.commerce.needs_client_secret, true);
+    assert.equal(bySlug.commerce.client_secret_setting, 'COMMERCE_IDENTITY_CLIENT_SECRET');
+    assert.deepEqual(bySlug.commerce.tokenExchange, [{ audience: 'ads-logistics-api', scopes: ['logistics.fulfilment.read','logistics.fulfilment.book'] }]);
+    assert.equal(bySlug.tourism.needs_client_secret, true);
+    assert.equal(bySlug.tourism.client_secret_setting, 'COMMERCE_BUYER_ORDER_CLIENT_SECRET');
+    assert.deepEqual(bySlug.tourism.tokenExchange, [{ audience: 'ads-commerce-api', scopes: ['commerce.sector_buyer_orders.read','commerce.tourism_merchant_link.manage'] }]);
   });
 
   it('gives the demo admin a product admin role where the product has one (commerce, mamacare)', () => {

@@ -5,6 +5,7 @@ import { AUDIENCE, parseScope } from './service-clients.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const oauthError = (code, status = 400) => new HttpError(status, code);
+const TOURISM_MERCHANT_LINK_SCOPE = 'commerce.tourism_merchant_link.manage';
 
 // Server-to-server tokens.
 //
@@ -95,10 +96,26 @@ export function createServiceTokens({ pool, config, keys, jwks, audit }) {
       WHERE u.id=$1 AND u.status='active'`, [userId, tenantId])).rows[0];
     if (!live || (live.is_demo && !config.demo.enabled)) return denied('ACCESS_REMOVED', 'invalid_grant', userId, tenantId);
 
+    const tourismLink = requested.includes(TOURISM_MERCHANT_LINK_SCOPE);
+    if (tourismLink) {
+      if (client.client_id !== 'tourism-web' || audience !== 'ads-commerce-api' || live.is_demo || claims.demo === true) {
+        return denied('TOURISM_MERCHANT_LINK_NOT_ALLOWED', 'invalid_scope', userId, tenantId);
+      }
+      // Tourism roles alone cannot administer an org-owned Commerce branch.
+      const allowed = (await pool.query(`SELECT
+        EXISTS (SELECT 1 FROM platform.product_roles p JOIN platform.oauth_clients c ON c.client_id=p.client_id AND c.status='active'
+          WHERE p.user_id=$1 AND p.tenant_id=$2 AND p.client_id='tourism-web' AND 'operator_admin'=ANY(p.roles))
+        AND EXISTS (SELECT 1 FROM platform.product_roles p JOIN platform.oauth_clients c ON c.client_id=p.client_id AND c.status='active'
+          WHERE p.user_id=$1 AND p.tenant_id=$2 AND p.client_id='commerce-web' AND 'merchant_owner'=ANY(p.roles))
+        AS allowed`, [userId, tenantId])).rows[0]?.allowed;
+      if (!allowed) return denied('TOURISM_MERCHANT_LINK_ROLE_REQUIRED', 'invalid_scope', userId, tenantId);
+    }
+
     const expiresIn = Math.max(1, Math.min(config.serviceTokenTtl, Number(claims.exp) - Math.floor(Date.now() / 1000)));
     const scope = requested.join(' ');
     const token = await keys.sign(
-      { token_use: 'exchange', tenant_id: tenantId, client_id: client.client_id, scope, act: { sub: client.client_id }, sid: claims.sid ?? undefined, demo: claims.demo === true ? true : undefined },
+      { token_use: 'exchange', tenant_id: tenantId, client_id: client.client_id, scope, act: { sub: client.client_id }, sid: claims.sid ?? undefined,
+        demo: claims.demo === true ? true : undefined, ...(tourismLink ? { tourism_merchant_link_authorized: true } : {}) },
       { audience, issuer: config.issuer, subject: userId, expiresIn },
     );
     await audit('token_exchange', { userId, tenantId, outcome: 'allowed', reason: 'token_exchange', ip, clientId: client.client_id, metadata: { audience, scope: requested } });
