@@ -90,10 +90,13 @@ describe('client registration list (config/clients.demo.json)', () => {
     assert.ok(!JSON.stringify(doc).match(/"secret"\s*:/), 'no secret values in the list');
   });
 
-  it('allows only delegated order reads from Commerce to Logistics and from Tourism to Commerce', () => {
+  it('limits Commerce, Restaurant and Tourism exchanges to their fulfilment and order scopes', () => {
     assert.equal(bySlug.commerce.needs_client_secret, true);
     assert.equal(bySlug.commerce.client_secret_setting, 'COMMERCE_IDENTITY_CLIENT_SECRET');
     assert.deepEqual(bySlug.commerce.tokenExchange, [{ audience: 'ads-logistics-api', scopes: ['logistics.fulfilment.read','logistics.fulfilment.book'] }]);
+    assert.equal(bySlug.restaurant.needs_client_secret, true);
+    assert.equal(bySlug.restaurant.client_secret_setting, 'RESTAURANT_IDENTITY_CLIENT_SECRET');
+    assert.deepEqual(bySlug.restaurant.tokenExchange, [{ audience: 'ads-logistics-api', scopes: ['logistics.fulfilment.read','logistics.fulfilment.book'] }]);
     assert.equal(bySlug.tourism.needs_client_secret, true);
     assert.equal(bySlug.tourism.client_secret_setting, 'COMMERCE_BUYER_ORDER_CLIENT_SECRET');
     assert.deepEqual(bySlug.tourism.tokenExchange, [{ audience: 'ads-commerce-api', scopes: ['commerce.sector_buyer_orders.read','commerce.tourism_merchant_link.manage'] }]);

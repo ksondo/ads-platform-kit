@@ -96,6 +96,17 @@ export function createServiceTokens({ pool, config, keys, jwks, audit }) {
       WHERE u.id=$1 AND u.status='active'`, [userId, tenantId])).rows[0];
     if (!live || (live.is_demo && !config.demo.enabled)) return denied('ACCESS_REMOVED', 'invalid_grant', userId, tenantId);
 
+    if (client.client_id === 'restaurant-web' && audience === 'ads-logistics-api') {
+      // Exchange uses the current Restaurant product grant, not stale roles from the subject token.
+      // Restaurant also checks branch authority and the specific delivery order before calling Logistics.
+      const roles = ['restaurant_owner', 'restaurant_manager', 'restaurant_floor_manager', 'restaurant_cashier'];
+      if (!requested.includes('logistics.fulfilment.book')) roles.push('restaurant_packer', 'restaurant_waiter');
+      const grant = (await pool.query(`SELECT 1 FROM platform.product_roles
+        WHERE user_id=$1 AND tenant_id=$2 AND client_id=$3 AND roles && $4::text[]`,
+        [userId, tenantId, client.client_id, roles])).rowCount;
+      if (!grant) return denied('RESTAURANT_FULFILMENT_ROLE_REQUIRED', 'invalid_scope', userId, tenantId);
+    }
+
     const tourismLink = requested.includes(TOURISM_MERCHANT_LINK_SCOPE);
     if (tourismLink) {
       if (client.client_id !== 'tourism-web' || audience !== 'ads-commerce-api' || live.is_demo || claims.demo === true) {
